@@ -1,0 +1,27 @@
+219: -- ── Mythic+ main tab ─────────────────────────────────────────────────────
+223: -- Column X positions (relative to mplusPage left edge)
+296: -- Build sorted player list: all active roster players, EP calculated in-game
+460: -- ── Scrollable player table ────────────────────────────────────────────────
+653: -- ── Main refresh function: reload table for current week ──────────────────
+847: -- Auto-refresh when tab becomes visible
+894: -- Persistent "Active Roster" indicator: top-right of the frame, visible on all tabs.
+895: -- Clicking it opens a dropdown to switch profiles or open Manage Rosters.
+1111: -- ── Header buttons (right-aligned in the title bar, y=-30 matches tabs) ──
+1421: -- Team button: Roster / Team Manager dialog.
+1422: -- Lets council editors set the sync team name AND switch between roster profiles.
+2353: -- Helper: make a small sortable icon-column header button
+2469: -- Sortable stat column headers: Kill, Wipes, BKills
+2539: -- Shared helper: check a roster player by short name if they exist and aren't deleted.
+2615: -- Push Sync button: bottom-right of roster page (officer only)
+2627: -- Non-officer roster picker: visible only to non-officers so they can switch
+2628: -- between local roster profiles (e.g. Main Raid vs Alt Raid) without officer privs.
+2861: -- Wrap the configurables page in a scroll frame so it
+2873: -- Visible scrollbar rail for the settings config page
+2880: -- UIPanelScrollBarTemplate has a built-in handler that calls GetParent():SetVerticalScroll(),
+2881: -- which would crash because the parent is settingsContent (a plain Frame, not a ScrollFrame).
+2908: -- Commands sub-tab: scrollable reference of all /rlm slash commands.
+2943: -- ── Mythic+ sub-tab scroll frame ──────────────────────────────────────────
+3407: -- Section 4: Decay Settings
+3802: -- Initial render + refresh on every Cost-tab open (no /reload needed).
+4532: -- Track which profile we last loaded settings for.
+4533: -- Only re-populate fields when the ACTIVE PROFILE CHANGES (roster switch).

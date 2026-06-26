@@ -1,0 +1,9 @@
+__pycache__/
+*.log
+rlm_importer_config.json
+rlm_bot_db.json
+RLM_Companion.exe
+build/
+dist/
+err.txt
+out.txt
