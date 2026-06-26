@@ -180,7 +180,8 @@ class RLMImporterApp:
             "schedule_logon": True,
             "discord_sync_key": "",
             "discord_sync_url": "https://rlm-desktop-companion-production.up.railway.app/api/sync",
-            "sync_on_import": True
+            "sync_on_import": True,
+            "sync_on_wow_exit": True
         }
         if self.config_path.exists():
             try:
@@ -209,6 +210,7 @@ class RLMImporterApp:
         self.settings["discord_sync_key"] = self.ent_discord_key.get().strip()
         self.settings["discord_sync_url"] = self.ent_discord_url.get().strip()
         self.settings["sync_on_import"] = self.var_sync_on_import.get()
+        self.settings["sync_on_wow_exit"] = self.var_sync_on_wow_exit.get()
 
         try:
             with open(self.config_path, "w", encoding="utf-8") as f:
@@ -375,6 +377,11 @@ class RLMImporterApp:
         self.var_run_on_startup = tk.BooleanVar(value=self.settings.get("run_on_startup", True))
         chk_startup = ttk.Checkbutton(grid, text="Start RLM Desktop UI automatically on Windows logon (Tray)", variable=self.var_run_on_startup)
         chk_startup.grid(row=3, column=0, columnspan=2, sticky="w", pady=6)
+
+        # Sync on WoW Exit
+        self.var_sync_on_wow_exit = tk.BooleanVar(value=self.settings.get("sync_on_wow_exit", True))
+        chk_wow_exit = ttk.Checkbutton(grid, text="Sync immediately when WoW closes (Wow.exe Close Watcher)", variable=self.var_sync_on_wow_exit)
+        chk_wow_exit.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
 
         # OS Task Register Actions
         task_action_frame = ttk.Frame(parent, style="Panel.TFrame")
@@ -636,6 +643,46 @@ class RLMImporterApp:
             # Delete if disabled
             subprocess.run(["schtasks", "/delete", "/tn", f"{task_folder}\\M+ Import - At Logon", "/f"], capture_output=True)
 
+        # Task 4: WoW Watcher
+        watcher_vbs = self.addon_dir / "raidlootmatrix_watcher_run.vbs"
+        if self.var_sync_on_wow_exit.get():
+            # Generate VBScript to run watcher silently
+            vbs_script = (
+                "' raidlootmatrix_watcher_run.vbs\n"
+                "' Launches RLM_Companion.exe --watch-wow with a completely hidden window.\n"
+                "Dim shell, fso, scriptDir, exe\n"
+                "Set shell = CreateObject(\"WScript.Shell\")\n"
+                "Set fso = CreateObject(\"Scripting.FileSystemObject\")\n"
+                "scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)\n\n"
+                "If fso.FileExists(scriptDir & \"\\RLM_Companion.exe\") Then\n"
+                "    exe = \"\"\"\" & scriptDir & \"\\RLM_Companion.exe\"\" --watch-wow\"\n"
+                "Else\n"
+                "    exe = \"python \"\"\" & scriptDir & \"\\rlm_importer_ui.py\"\" --watch-wow\"\n"
+                "End If\n\n"
+                "shell.Run exe, 0, False\n"
+                "Set shell = Nothing\n"
+                "Set fso = Nothing\n"
+            )
+            try:
+                with open(watcher_vbs, "w", encoding="utf-8") as f:
+                    f.write(vbs_script)
+            except Exception as e:
+                self.log_message(f"Failed to generate watcher VBS: {e}")
+
+            cmd_watcher = ["schtasks", "/create", "/tn", f"{task_folder}\\M+ Import - WoW Watcher", "/tr", f"wscript.exe \"{watcher_vbs}\"", "/sc", "ONLOGON", "/f"]
+            run_task_cmd(cmd_watcher, "WoW Watcher (runs on WoW exit)")
+            
+            # Start it immediately so they don't need to log out/in
+            subprocess.run(["schtasks", "/run", "/tn", f"{task_folder}\\M+ Import - WoW Watcher"], capture_output=True)
+        else:
+            # Delete task and cleanup file
+            subprocess.run(["schtasks", "/delete", "/tn", f"{task_folder}\\M+ Import - WoW Watcher", "/f"], capture_output=True)
+            if watcher_vbs.exists():
+                try:
+                    os.remove(watcher_vbs)
+                except Exception:
+                    pass
+
         messagebox.showinfo("Tasks Updated", "Scheduled Tasks updated in Task Scheduler!")
 
     def unregister_background_tasks(self):
@@ -649,7 +696,8 @@ class RLMImporterApp:
         tasks = [
             f"{task_folder}\\M+ Import - Daily AM",
             f"{task_folder}\\M+ Import - Daily PM",
-            f"{task_folder}\\M+ Import - At Logon"
+            f"{task_folder}\\M+ Import - At Logon",
+            f"{task_folder}\\M+ Import - WoW Watcher"
         ]
 
         for t in tasks:
@@ -658,10 +706,17 @@ class RLMImporterApp:
                 if res.returncode == 0:
                     self.log_message(f"SUCCESS: Deleted task: {t}")
                 else:
-                    # If it was already absent, it's not a severe failure
                     self.log_message(f"INFO: Task {t} was not found or already deleted.")
             except Exception as e:
                 self.log_message(f"Execution Error: {e}")
+
+        # Cleanup watcher VBScript
+        watcher_vbs = self.addon_dir / "raidlootmatrix_watcher_run.vbs"
+        if watcher_vbs.exists():
+            try:
+                os.remove(watcher_vbs)
+            except Exception:
+                pass
 
         messagebox.showinfo("Tasks Removed", "RaidLootMatrix scheduled tasks removed.")
 
@@ -798,6 +853,68 @@ class RLMImporterApp:
         except Exception as e:
             self.log_message(f"Could not create desktop shortcut: {e}")
 
+def watch_wow_process():
+    import time
+    import subprocess
+    
+    executable = sys.executable
+    script_dir = os.path.dirname(os.path.abspath(executable))
+    
+    # Resolve log path
+    log_file = os.path.join(script_dir, "raidlootmatrix_mplus_auto.log")
+    
+    def log_msg(msg):
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] [Watcher] {msg}\n")
+        except Exception:
+            pass
+
+    log_msg("WoW Close Watcher process started.")
+    
+    # Determine the execution arguments (python vs compiled exe)
+    if getattr(sys, 'frozen', False):
+        executable_args = [sys.executable]
+    else:
+        executable_args = [sys.executable, sys.argv[0]]
+
+    def is_wow_running():
+        try:
+            # CREATE_NO_WINDOW = 0x08000000
+            output = subprocess.check_output('tasklist /FI "IMAGENAME eq Wow.exe"', shell=True, creationflags=0x08000000).decode('utf-8', errors='ignore')
+            return "Wow.exe" in output
+        except Exception:
+            return False
+
+    was_running = False
+    while True:
+        try:
+            running = is_wow_running()
+            if running:
+                if not was_running:
+                    log_msg("Wow.exe detected running.")
+                    was_running = True
+            else:
+                if was_running:
+                    log_msg("Wow.exe closed! Starting synchronization...")
+                    
+                    # Run Mythic+ runs parser and Discord Sync, outputting to the log file
+                    with open(log_file, "a", encoding="utf-8") as lf:
+                        lf.write("\n--- Running M+ Import ---\n")
+                        lf.flush()
+                        subprocess.run(executable_args + ["--run-mplus", "--week", "both"], stdout=lf, stderr=lf, cwd=script_dir, creationflags=0x08000000)
+                        
+                        lf.write("\n--- Running Discord Sync ---\n")
+                        lf.flush()
+                        subprocess.run(executable_args + ["--run-sync", "--non-interactive"], stdout=lf, stderr=lf, cwd=script_dir, creationflags=0x08000000)
+                    
+                    log_msg("Synchronization completed.")
+                    was_running = False
+        except Exception as e:
+            log_msg(f"Error in watcher loop: {e}")
+            
+        time.sleep(15)
+
 if __name__ == "__main__":
     # Check for command line argument routing
     if len(sys.argv) > 1:
@@ -818,6 +935,13 @@ if __name__ == "__main__":
                 rlm_discord_sync.main()
             except Exception as e:
                 print(f"[ERROR] Discord sync failed: {e}")
+                sys.exit(1)
+            sys.exit(0)
+        elif arg1 == "--watch-wow":
+            try:
+                watch_wow_process()
+            except Exception as e:
+                print(f"[ERROR] WoW watcher failed: {e}")
                 sys.exit(1)
             sys.exit(0)
 
