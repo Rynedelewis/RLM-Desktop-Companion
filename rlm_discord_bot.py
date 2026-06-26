@@ -7,6 +7,20 @@ import discord
 from discord.ext import commands
 from aiohttp import web
 
+# Load local .env file if it exists (for local testing/hosting)
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(env_path):
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    if k.strip() == "DISCORD_BOT_TOKEN":
+                        os.environ["DISCORD_BOT_TOKEN"] = v.strip().strip('"').strip("'")
+    except Exception:
+        pass
+
 TOKEN = os.environ.get("DISCORD_BOT_TOKEN") or "YOUR_DISCORD_BOT_TOKEN_HERE"
 DB_FILE = os.environ.get("RLM_DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "rlm_bot_db.json"))
 

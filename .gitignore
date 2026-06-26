@@ -7,3 +7,4 @@ build/
 dist/
 err.txt
 out.txt
+.env
