@@ -26,6 +26,8 @@ try:
 except Exception:
     pass
 
+VERSION = "1.1.0"
+
 import socket
 SINGLE_INSTANCE_PORT = 55919
 
@@ -162,6 +164,9 @@ class RLMImporterApp:
         # Intercept closing action to hide to system tray
         self.root.protocol("WM_DELETE_WINDOW", self.hide_window)
 
+        # Check for updates in the background
+        self.check_for_updates()
+
         # Start background system tray loop
         try:
             self.start_tray_icon()
@@ -250,12 +255,12 @@ class RLMImporterApp:
 
     def create_widgets(self):
         # Header banner
-        header_frame = ttk.Frame(self.root)
-        header_frame.pack(fill="x", padx=15, pady=10)
+        self.header_frame = ttk.Frame(self.root)
+        self.header_frame.pack(fill="x", padx=15, pady=10)
         
-        lbl_title = ttk.Label(header_frame, text="RLM Importer", style="Title.TLabel")
+        lbl_title = ttk.Label(self.header_frame, text="RLM Importer", style="Title.TLabel")
         lbl_title.pack(side="left")
-        lbl_subtitle = ttk.Label(header_frame, text=" — Raider.IO Mythic+ Settings & Automation Hub", font=("Segoe UI", 10, "italic"))
+        lbl_subtitle = ttk.Label(self.header_frame, text=f" v{VERSION} — Raider.IO Mythic+ Settings & Automation Hub", font=("Segoe UI", 10, "italic"))
         lbl_subtitle.pack(side="left", padx=5, pady=4)
 
         # Main Layout frame (left = options, right = console logs)
@@ -861,6 +866,51 @@ class RLMImporterApp:
             self.log_message("Desktop shortcut created successfully.")
         except Exception as e:
             self.log_message(f"Could not create desktop shortcut: {e}")
+
+    def check_for_updates(self):
+        def worker():
+            import urllib.request
+            import urllib.error
+            import json
+            try:
+                url = "https://api.github.com/repos/Rynedelewis/RLM-Desktop-Companion/releases/latest"
+                req = urllib.request.Request(
+                    url, 
+                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                )
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+                    tag_name = data.get("tag_name", "").strip().lstrip("v")
+                    if tag_name:
+                        # parse version lists
+                        local_parts = [int(x) for x in VERSION.split(".")]
+                        remote_parts = [int(x) for x in tag_name.split(".")]
+                        # Pad lists with zeros if they differ in length
+                        max_len = max(len(local_parts), len(remote_parts))
+                        local_parts += [0] * (max_len - len(local_parts))
+                        remote_parts += [0] * (max_len - len(remote_parts))
+                        if remote_parts > local_parts:
+                            self.root.after(0, lambda: self.show_update_available(data.get("tag_name", ""), data.get("html_url", "")))
+            except Exception as e:
+                # Silently fail, don't interrupt the user
+                pass
+        
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+
+    def show_update_available(self, remote_version, release_url):
+        update_frame = ttk.Frame(self.header_frame)
+        update_frame.pack(side="right", padx=5, pady=4)
+        
+        lbl_update = ttk.Label(update_frame, text=f"Update Available: {remote_version}", foreground="#ffcc00", font=("Segoe UI", 10, "bold"))
+        lbl_update.pack(side="left", padx=5)
+        
+        btn_update = ttk.Button(update_frame, text="Download", width=12, command=lambda: self.open_url(release_url))
+        btn_update.pack(side="left", padx=5)
+
+    def open_url(self, url):
+        import webbrowser
+        webbrowser.open(url)
 
 def watch_wow_process():
     import time
