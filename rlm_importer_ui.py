@@ -485,7 +485,8 @@ class RLMImporterApp:
                     text=True, 
                     bufsize=1,
                     universal_newlines=True,
-                    encoding="utf-8"
+                    encoding="utf-8",
+                    creationflags=0x08000000 if sys.platform == "win32" else 0
                 )
                 while True:
                     line = process.stdout.readline()
@@ -513,7 +514,8 @@ class RLMImporterApp:
                             text=True,
                             bufsize=1,
                             universal_newlines=True,
-                            encoding="utf-8"
+                            encoding="utf-8",
+                            creationflags=0x08000000 if sys.platform == "win32" else 0
                         )
                         while True:
                             line = sync_proc.stdout.readline()
@@ -562,7 +564,8 @@ class RLMImporterApp:
                     text=True, 
                     bufsize=1,
                     universal_newlines=True,
-                    encoding="utf-8"
+                    encoding="utf-8",
+                    creationflags=0x08000000 if sys.platform == "win32" else 0
                 )
                 while True:
                     line = process.stdout.readline()
@@ -617,7 +620,8 @@ class RLMImporterApp:
         # Helper to execute task commands
         def run_task_cmd(cmd_args, desc):
             try:
-                res = subprocess.run(cmd_args, capture_output=True, text=True)
+                res = subprocess.run(cmd_args, capture_output=True, text=True,
+                                     creationflags=0x08000000 if sys.platform == "win32" else 0)
                 if res.returncode == 0:
                     self.log_message(f"SUCCESS: Created task: {desc}")
                 else:
@@ -641,7 +645,8 @@ class RLMImporterApp:
             run_task_cmd(cmd_logon, "At logon (5 min delay)")
         else:
             # Delete if disabled
-            subprocess.run(["schtasks", "/delete", "/tn", f"{task_folder}\\M+ Import - At Logon", "/f"], capture_output=True)
+            subprocess.run(["schtasks", "/delete", "/tn", f"{task_folder}\\M+ Import - At Logon", "/f"], capture_output=True,
+                           creationflags=0x08000000 if sys.platform == "win32" else 0)
 
         # Task 4: WoW Watcher
         watcher_vbs = self.addon_dir / "raidlootmatrix_watcher_run.vbs"
@@ -673,10 +678,12 @@ class RLMImporterApp:
             run_task_cmd(cmd_watcher, "WoW Watcher (runs on WoW exit)")
             
             # Start it immediately so they don't need to log out/in
-            subprocess.run(["schtasks", "/run", "/tn", f"{task_folder}\\M+ Import - WoW Watcher"], capture_output=True)
+            subprocess.run(["schtasks", "/run", "/tn", f"{task_folder}\\M+ Import - WoW Watcher"], capture_output=True,
+                           creationflags=0x08000000 if sys.platform == "win32" else 0)
         else:
             # Delete task and cleanup file
-            subprocess.run(["schtasks", "/delete", "/tn", f"{task_folder}\\M+ Import - WoW Watcher", "/f"], capture_output=True)
+            subprocess.run(["schtasks", "/delete", "/tn", f"{task_folder}\\M+ Import - WoW Watcher", "/f"], capture_output=True,
+                           creationflags=0x08000000 if sys.platform == "win32" else 0)
             if watcher_vbs.exists():
                 try:
                     os.remove(watcher_vbs)
@@ -702,7 +709,8 @@ class RLMImporterApp:
 
         for t in tasks:
             try:
-                res = subprocess.run(["schtasks", "/delete", "/tn", t, "/f"], capture_output=True, text=True)
+                res = subprocess.run(["schtasks", "/delete", "/tn", t, "/f"], capture_output=True, text=True,
+                                     creationflags=0x08000000 if sys.platform == "win32" else 0)
                 if res.returncode == 0:
                     self.log_message(f"SUCCESS: Deleted task: {t}")
                 else:
@@ -846,7 +854,8 @@ class RLMImporterApp:
             with open(vbs_tmp, "w", encoding="utf-8") as f:
                 f.write(vbs_script)
             
-            subprocess.run(["cscript", "/nologo", str(vbs_tmp)], capture_output=True)
+            subprocess.run(["cscript", "/nologo", str(vbs_tmp)], capture_output=True,
+                           creationflags=0x08000000 if sys.platform == "win32" else 0)
             if vbs_tmp.exists():
                 os.remove(vbs_tmp)
             self.log_message("Desktop shortcut created successfully.")

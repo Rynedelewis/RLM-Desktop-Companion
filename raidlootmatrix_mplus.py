@@ -48,7 +48,8 @@ def is_wow_running():
         system = platform.system()
         if system == "Windows":
             result = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Wow.exe", "/NH"],
-                                    capture_output=True, text=True, check=False)
+                                    capture_output=True, text=True, check=False,
+                                    creationflags=0x08000000)
             return "Wow.exe" in result.stdout
         elif system == "Darwin":
             result = subprocess.run(["pgrep", "-f", "World of Warcraft"],
@@ -468,7 +469,8 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
         system = platform.system()
         if system == "Windows":
             result = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Wow.exe", "/NH"],
-                                    capture_output=True, text=True, check=False)
+                                    capture_output=True, text=True, check=False,
+                                    creationflags=0x08000000)
             if "Wow.exe" in result.stdout:
                 is_running = True
         elif system == "Darwin":
