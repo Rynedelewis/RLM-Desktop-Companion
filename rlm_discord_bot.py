@@ -209,6 +209,133 @@ intents.guilds = True
 intents.guild_messages = True
 intents.message_content = True
 
+# Slash command localization mappings
+RLM_NAME_LOCALIZATIONS = {"zh-CN": "rlm", "zh-TW": "rlm", "es-ES": "rlm"}
+RLM_DESC_LOCALIZATIONS = {"zh-CN": "RaidLootMatrix 命令组", "zh-TW": "RaidLootMatrix 命令組", "es-ES": "Grupo de comandos RaidLootMatrix"}
+
+HELP_NAME_LOCALIZATIONS = {"zh-CN": "帮助", "zh-TW": "幫助", "es-ES": "ayuda"}
+HELP_DESC_LOCALIZATIONS = {"zh-CN": "显示 RaidLootMatrix 机器人的可用命令", "zh-TW": "顯示 RaidLootMatrix 機器人的可用命令", "es-ES": "Muestra los comandos disponibles para el bot RaidLootMatrix"}
+
+SYNC_NAME_LOCALIZATIONS = {"zh-CN": "同步密钥", "zh-TW": "同步密鑰", "es-ES": "clave-sincronizacion"}
+SYNC_DESC_LOCALIZATIONS = {"zh-CN": "通过私信将服务器的唯一同步密钥发送给管理员", "zh-TW": "通過私信將伺服器的唯一同步金鑰發送給管理員", "es-ES": "Envia la clave de sincronizacion unica del servidor al administrador via DM"}
+
+STANDINGS_NAME_LOCALIZATIONS = {"zh-CN": "积分榜", "zh-TW": "積分榜", "es-ES": "clasificacion"}
+STANDINGS_DESC_LOCALIZATIONS = {"zh-CN": "显示已同步的 EPGP 积分榜", "zh-TW": "顯示已同步的 EPGP 積分榜", "es-ES": "Muestra las clasificaciones EPGP sincronizadas"}
+
+ROSTER_NAME_LOCALIZATIONS = {"zh-CN": "花名册", "zh-TW": "花名冊", "es-ES": "roster"}
+ROSTER_DESC_LOCALIZATIONS = {"zh-CN": "显示已同步的花名册主角色和关联小号", "zh-TW": "顯示已同步的花名冊主角色和關聯小號", "es-ES": "Muestra los perfiles de roster y alts sincronizados"}
+
+BOT_LOCALES = {
+    "en": {
+        "help_title": "RaidLootMatrix Helper Bot Command Guide",
+        "help_desc": "Interact with the RaidLootMatrix bot using the following commands:",
+        "help_cmd_help": "Shows this list of available commands.",
+        "help_cmd_sync": "*(Administrators Only)* Sends your server's secure API token to you via Direct Message.",
+        "help_cmd_standings": "Displays EPGP standing info for a team roster.",
+        "help_cmd_roster": "Lists mains and alts for the active roster profile.",
+        "err_admin": "❌ **Error:** You must have **Administrator** permissions to run this command.",
+        "err_specify_team": "❌ **Error:** Please specify the team name. Example: `!{full_name} Main Roster`",
+        "err_general": "❌ An error occurred: `{error}`",
+        "sync_dm_title": "🔑 RaidLootMatrix Sync Authorization Key",
+        "sync_dm_desc": "Here is your secure synchronization key for **{guild_name}**.\nKeep this key secret! Anyone with this key can upload and overwrite your server's standings.",
+        "sync_dm_field_key": "Your Sync Key",
+        "sync_dm_field_usage": "How to use it",
+        "sync_dm_field_usage_val": "Paste this key into your local `rlm_discord_sync.py` script as your `SYNC_KEY`.",
+        "sync_sent": "🔑 **Sync Key Sent:** Check your Direct Messages for your secure synchronization key.",
+        "sync_err_dm": "❌ **Error:** I couldn't send you a Direct Message. Please verify that you have 'Allow direct messages from server members' enabled in your privacy settings.",
+        "standings_title": "RaidLootMatrix Standings",
+        "standings_desc": "Active EPGP Standings (Profile: **{profile}**)",
+        "standings_no_mains": "ℹ️ No main characters found in the roster database.",
+        "standings_rank_field": "Current Standings (Rank {start}-{end})",
+        "standings_footer": "Last Synced: {name}",
+        "err_no_sync_data": "❌ **Error:** No synchronization data has been uploaded to this server yet.\nPlease setup and run the RLM Desktop Companion app to sync your in-game roster!",
+        "err_no_profile_match": "❌ **Error:** Could not find a standings profile matching '**{team_name}**'.\nAvailable synced profiles: {available}",
+        "roster_title": "RaidLootMatrix Roster Profiles",
+        "roster_desc": "Synced Roster Details (Profile: **{profile}**)",
+        "roster_mains_field": "Mains & Linked Alts",
+        "roster_mains_field_part": "Mains & Linked Alts (Part {part})",
+        "roster_no_members": "No members registered.",
+        "roster_footer": "Synced via RaidLootMatrix Desktop Sync."
+    },
+    "zh": {
+        "help_title": "RaidLootMatrix 助手机器人命令指南",
+        "help_desc": "使用以下命令与 RaidLootMatrix 机器人进行交互：",
+        "help_cmd_help": "显示可用命令列表。",
+        "help_cmd_sync": "*(仅限管理员)* 通过私信向您发送服务器的安全 API 令牌。",
+        "help_cmd_standings": "显示团队花名册的 EPGP 积分榜信息。",
+        "help_cmd_roster": "列出活动名册配置文件中的主角色和关联小号。",
+        "err_admin": "❌ **错误:** 您必须拥有 **管理员** 权限才能运行此命令。",
+        "err_specify_team": "❌ **错误:** 请指定团队名称。例如：`!{full_name} 主团队名册`",
+        "err_general": "❌ 发生错误：`{error}`",
+        "sync_dm_title": "🔑 RaidLootMatrix 同步授权密钥",
+        "sync_dm_desc": "这是您服务器 **{guild_name}** 的安全同步密钥。\n请保守此密钥的机密！拥有此密钥的任何人都可以上传并覆盖您服务器的积分榜。",
+        "sync_dm_field_key": "您的同步密钥",
+        "sync_dm_field_usage": "如何使用",
+        "sync_dm_field_usage_val": "将此密钥粘贴到您本地的 `rlm_discord_sync.py` 脚本中作为 `SYNC_KEY`。",
+        "sync_sent": "🔑 **同步密钥已发送:** 请检查您的私信以获取安全同步密钥。",
+        "sync_err_dm": "❌ **错误:** 我无法向您发送私信。请确认您在隐私设置中启用了“允许来自服务器成员的私信”。",
+        "standings_title": "RaidLootMatrix 积分榜",
+        "standings_desc": "活动 EPGP 积分榜 (配置文件: **{profile}**)",
+        "standings_no_mains": "ℹ️ 名册数据库中未找到任何主角色。",
+        "standings_rank_field": "当前积分榜 (排名 {start}-{end})",
+        "standings_footer": "最后同步: {name}",
+        "err_no_sync_data": "❌ **错误:** 此服务器尚未上传任何同步数据。\n请设置并运行 RLM 桌面助手应用程序以同步您的游戏内名册！",
+        "err_no_profile_match": "❌ **错误:** 未能找到匹配 '**{team_name}**' 的积分榜配置文件。\n可用同步的配置文件: {available}",
+        "roster_title": "RaidLootMatrix 花名册配置文件",
+        "roster_desc": "已同步的名册详情 (配置文件: **{profile}**)",
+        "roster_mains_field": "主角色与关联小号",
+        "roster_mains_field_part": "主角色与关联小号 (第 {part} 部分)",
+        "roster_no_members": "未注册任何成员。",
+        "roster_footer": "已通过 RaidLootMatrix 桌面同步进行同步。"
+    },
+    "es": {
+        "help_title": "Guía de Comandos del Bot RaidLootMatrix",
+        "help_desc": "Interactúa con el bot RaidLootMatrix usando los siguientes comandos:",
+        "help_cmd_help": "Muestra esta lista de comandos disponibles.",
+        "help_cmd_sync": "*(Solo Administradores)* Envía el token de API seguro de tu servidor por Mensaje Directo.",
+        "help_cmd_standings": "Muestra la clasificación EPGP para una lista de equipo.",
+        "help_cmd_roster": "Lista los personajes principales y alts para el perfil de roster activo.",
+        "err_admin": "❌ **Error:** Debes tener permisos de **Administrador** para ejecutar este comando.",
+        "err_specify_team": "❌ **Error:** Por favor, especifica el nombre del equipo. Ejemplo: `!{full_name} Roster Principal`",
+        "err_general": "❌ Ocurrió un error: `{error}`",
+        "sync_dm_title": "🔑 Clave de Autorización de Sincronización RaidLootMatrix",
+        "sync_dm_desc": "Aquí está tu clave de sincronización segura para **{guild_name}**.\n¡Mantén esta clave en secreto! Cualquiera con esta clave puede subir y sobrescribir las clasificaciones de tu servidor.",
+        "sync_dm_field_key": "Tu Clave de Sincronización",
+        "sync_dm_field_usage": "Cómo usarla",
+        "sync_dm_field_usage_val": "Pega esta clave en tu script local `rlm_discord_sync.py` como `SYNC_KEY`.",
+        "sync_sent": "🔑 **Clave de Sincronización Enviada:** Revisa tus Mensajes Directos para obtener tu clave segura.",
+        "sync_err_dm": "❌ **Error:** No pude enviarte un Mensaje Directo. Por favor, verifica que tienes habilitado 'Permitir mensajes directos de miembros del servidor' en tus ajustes de privacidad.",
+        "standings_title": "Clasificación RaidLootMatrix",
+        "standings_desc": "Clasificación EPGP Activa (Perfil: **{profile}**)",
+        "standings_no_mains": "ℹ️ No se encontraron personajes principales en la base de datos.",
+        "standings_rank_field": "Clasificación Actual (Puestos {start}-{end})",
+        "standings_footer": "Última Sincronización: {name}",
+        "err_no_sync_data": "❌ **Error:** Aún no se han subido datos de sincronización a este servidor.\n¡Por favor, configura y ejecuta la aplicación RLM Desktop Companion para sincronizar tu roster en el juego!",
+        "err_no_profile_match": "❌ **Error:** No se pudo encontrar un perfil de clasificación que coincida con '**{team_name}**'.\nPerfiles sincronizados disponibles: {available}",
+        "roster_title": "Perfiles de Roster RaidLootMatrix",
+        "roster_desc": "Detalles del Roster Sincronizado (Perfil: **{profile}**)",
+        "roster_mains_field": "Personajes Principales y Alts",
+        "roster_mains_field_part": "Personajes Principales y Alts (Parte {part})",
+        "roster_no_members": "No hay miembros registrados.",
+        "roster_footer": "Sincronizado a través de RaidLootMatrix Desktop Sync."
+    }
+}
+
+def get_locale(ctx):
+    locale = "en"
+    if ctx.interaction:
+        locale = str(ctx.interaction.locale or ctx.interaction.guild_locale or "en")
+    
+    if locale.startswith("zh"):
+        return "zh"
+    elif locale.startswith("es"):
+        return "es"
+    return "en"
+
+def L(ctx, key):
+    lang = get_locale(ctx)
+    return BOT_LOCALES[lang].get(key, BOT_LOCALES["en"].get(key, key))
+
 bot = RLMHelperBot(command_prefix="!", intents=intents)
 bot.remove_command('help')
 
@@ -230,44 +357,44 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
-        await ctx.send("❌ **Error:** You must have **Administrator** permissions to run this command.")
+        await ctx.send(L(ctx, "err_admin"))
     elif isinstance(error, commands.MissingRequiredArgument):
         cmd_name = ctx.command.name
         if ctx.command.parent:
             full_name = f"{ctx.command.parent.name} {cmd_name}"
         else:
             full_name = cmd_name
-        await ctx.send(f"❌ **Error:** Please specify the team name. Example: `!{full_name} Main Roster`")
+        await ctx.send(L(ctx, "err_specify_team").format(full_name=full_name))
     elif isinstance(error, commands.CommandNotFound):
         pass
     else:
-        await ctx.send(f"❌ An error occurred: `{error}`")
+        await ctx.send(L(ctx, "err_general").format(error=error))
 
 # Helper function to print command guide
 async def rlm_help_internal(ctx):
     embed = discord.Embed(
-        title="RaidLootMatrix Helper Bot Command Guide",
-        description="Interact with the RaidLootMatrix bot using the following commands:",
+        title=L(ctx, "help_title"),
+        description=L(ctx, "help_desc"),
         color=discord.Color.blue()
     )
     embed.add_field(
         name="`/rlm help` or `!rlm help`",
-        value="Shows this list of available commands.",
+        value=L(ctx, "help_cmd_help"),
         inline=False
     )
     embed.add_field(
         name="`/rlm synckey` or `!rlm synckey`",
-        value="*(Administrators Only)* Sends your server's secure API token to you via Direct Message.",
+        value=L(ctx, "help_cmd_sync"),
         inline=False
     )
     embed.add_field(
         name="`/rlm standings <team>` or `!rlm standings <team>`",
-        value="Displays EPGP standing info for a team roster.",
+        value=L(ctx, "help_cmd_standings"),
         inline=False
     )
     embed.add_field(
         name="`/rlm roster <team>` or `!rlm roster <team>`",
-        value="Lists mains and alts for the active roster profile.",
+        value=L(ctx, "help_cmd_roster"),
         inline=False
     )
     embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
@@ -275,19 +402,35 @@ async def rlm_help_internal(ctx):
     await ctx.send(embed=embed)
 
 # Parent Hybrid Group
-@bot.hybrid_group(name="rlm", description="RaidLootMatrix command group")
+@bot.hybrid_group(
+    name="rlm",
+    description="RaidLootMatrix command group",
+    name_localizations=RLM_NAME_LOCALIZATIONS,
+    description_localizations=RLM_DESC_LOCALIZATIONS
+)
 async def rlm(ctx):
     """Parent command group for RaidLootMatrix. Run `/rlm help` for usage."""
     if ctx.invoked_subcommand is None:
         await rlm_help_internal(ctx)
 
 # 1. Custom Help Command
-@rlm.command(name="help", description="Displays available commands for RaidLootMatrix Bot")
+@rlm.command(
+    name="help",
+    description="Displays available commands for RaidLootMatrix Bot",
+    name_localizations=HELP_NAME_LOCALIZATIONS,
+    description_localizations=HELP_DESC_LOCALIZATIONS
+)
 async def rlm_help(ctx):
     await rlm_help_internal(ctx)
 
 # 2. Sync Key Generator Command
-@rlm.command(name="synckey", aliases=["sync-key"], description="Sends the server's unique sync key to the administrator via DM")
+@rlm.command(
+    name="synckey",
+    aliases=["sync-key"],
+    description="Sends the server's unique sync key to the administrator via DM",
+    name_localizations=SYNC_NAME_LOCALIZATIONS,
+    description_localizations=SYNC_DESC_LOCALIZATIONS
+)
 @commands.has_permissions(administrator=True)
 async def sync_key(ctx):
     """Sends the server's unique sync key to the administrator via DM"""
@@ -298,34 +441,32 @@ async def sync_key(ctx):
     
     try:
         embed = discord.Embed(
-            title="🔑 RaidLootMatrix Sync Authorization Key",
-            description=(
-                f"Here is your secure synchronization key for **{guild_name}**.\n"
-                "Keep this key secret! Anyone with this key can upload and overwrite "
-                "your server's standings."
-            ),
+            title=L(ctx, "sync_dm_title"),
+            description=L(ctx, "sync_dm_desc").format(guild_name=guild_name),
             color=discord.Color.gold()
         )
         embed.add_field(
-            name="Your Sync Key",
+            name=L(ctx, "sync_dm_field_key"),
             value=f"`{key}`",
             inline=False
         )
         embed.add_field(
-            name="How to use it",
-            value="Paste this key into your local `rlm_discord_sync.py` script as your `SYNC_KEY`.",
+            name=L(ctx, "sync_dm_field_usage"),
+            value=L(ctx, "sync_dm_field_usage_val"),
             inline=False
         )
         await ctx.author.send(embed=embed)
-        await ctx.send("🔑 **Sync Key Sent:** Check your Direct Messages for your secure synchronization key.")
+        await ctx.send(L(ctx, "sync_sent"))
     except discord.Forbidden:
-        await ctx.send(
-            "❌ **Error:** I couldn't send you a Direct Message. "
-            "Please verify that you have 'Allow direct messages from server members' enabled in your privacy settings."
-        )
+        await ctx.send(L(ctx, "sync_err_dm"))
 
 # 3. Standings Query Command
-@rlm.command(name="standings", description="Displays EPGP standings (synced)")
+@rlm.command(
+    name="standings",
+    description="Displays EPGP standings (synced)",
+    name_localizations=STANDINGS_NAME_LOCALIZATIONS,
+    description_localizations=STANDINGS_DESC_LOCALIZATIONS
+)
 @discord.app_commands.describe(team_name="The name of the team roster to query")
 async def standings(ctx, *, team_name: str):
     """Displays EPGP standings (synced)"""
@@ -349,9 +490,10 @@ async def standings(ctx, *, team_name: str):
     
     # If we have synced data, render it!
     if active_roster:
+        profile_display = source_profile.split('::')[-1]
         embed = discord.Embed(
-            title="RaidLootMatrix Standings",
-            description=f"Active EPGP Standings (Profile: **{source_profile.split('::')[-1]}**)",
+            title=L(ctx, "standings_title"),
+            description=L(ctx, "standings_desc").format(profile=profile_display),
             color=discord.Color.gold()
         )
         
@@ -368,7 +510,7 @@ async def standings(ctx, *, team_name: str):
         player_list.sort(key=lambda x: x[4], reverse=True)
         
         if not player_list:
-            await ctx.send("ℹ️ No main characters found in the roster database.")
+            await ctx.send(L(ctx, "standings_no_mains"))
             return
 
         # Limit to top 45 players max to fit within embed limits
@@ -384,27 +526,26 @@ async def standings(ctx, *, team_name: str):
                 table_content += f"{clean_name:<15} {cl:<17} {int(ep):<7} {int(gp):<7} {pr:.2f}\n"
             table_content += "```"
             
-            field_name = f"Current Standings (Rank {i+1}-{i+len(chunk)})"
+            field_name = L(ctx, "standings_rank_field").format(start=i+1, end=i+len(chunk))
             embed.add_field(name=field_name, value=table_content, inline=False)
-        embed.set_footer(text=f"Last Synced: {ctx.guild.me.display_name}")
+        embed.set_footer(text=L(ctx, "standings_footer").format(name=ctx.guild.me.display_name))
         await ctx.send(embed=embed)
         return
         
     # No match found -> handle error or empty database gracefully
     if not profiles:
-        await ctx.send(
-            "❌ **Error:** No synchronization data has been uploaded to this server yet.\n"
-            "Please setup and run the RLM Desktop Companion app to sync your in-game roster!"
-        )
+        await ctx.send(L(ctx, "err_no_sync_data"))
     else:
         available = ", ".join([f"`{pk.split('::')[-1]}`" for pk in profiles.keys()])
-        await ctx.send(
-            f"❌ **Error:** Could not find a standings profile matching '**{team_name}**'.\n"
-            f"Available synced profiles: {available}"
-        )
+        await ctx.send(L(ctx, "err_no_profile_match").format(team_name=team_name, available=available))
 
 # 4. Roster Query Command
-@rlm.command(name="roster", description="Displays roster profiles and alts (synced)")
+@rlm.command(
+    name="roster",
+    description="Displays roster profiles and alts (synced)",
+    name_localizations=ROSTER_NAME_LOCALIZATIONS,
+    description_localizations=ROSTER_DESC_LOCALIZATIONS
+)
 @discord.app_commands.describe(team_name="The name of the team roster to query")
 async def roster(ctx, *, team_name: str):
     """Displays roster profiles and alts (synced)"""
@@ -427,9 +568,10 @@ async def roster(ctx, *, team_name: str):
                 break
                 
     if active_roster:
+        profile_display = source_profile.split('::')[-1]
         embed = discord.Embed(
-            title="RaidLootMatrix Roster Profiles",
-            description=f"Synced Roster Details (Profile: **{source_profile.split('::')[-1]}**)",
+            title=L(ctx, "roster_title"),
+            description=L(ctx, "roster_desc").format(profile=profile_display),
             color=discord.Color.green()
         )
         
@@ -458,9 +600,10 @@ async def roster(ctx, *, team_name: str):
                 line = f"• **{clean_main}** ({main_class})\n"
             
             if len(current_chunk) + len(line) > 1000:
+                field_name = L(ctx, "roster_mains_field_part").format(part=chunk_index) if chunk_index > 1 or len(mains) > 15 else L(ctx, "roster_mains_field")
                 embed.add_field(
-                    name=f"Mains & Linked Alts (Part {chunk_index})" if chunk_index > 1 or len(mains) > 15 else "Mains & Linked Alts", 
-                    value=current_chunk or "No members registered.", 
+                    name=field_name, 
+                    value=current_chunk or L(ctx, "roster_no_members"), 
                     inline=False
                 )
                 current_chunk = line
@@ -469,12 +612,13 @@ async def roster(ctx, *, team_name: str):
                 current_chunk += line
                 
         if current_chunk:
+            field_name = L(ctx, "roster_mains_field_part").format(part=chunk_index) if chunk_index > 1 else L(ctx, "roster_mains_field")
             embed.add_field(
-                name=f"Mains & Linked Alts (Part {chunk_index})" if chunk_index > 1 else "Mains & Linked Alts", 
+                name=field_name, 
                 value=current_chunk, 
                 inline=False
             )
-        embed.set_footer(text="Synced via RaidLootMatrix Desktop Sync.")
+        embed.set_footer(text=L(ctx, "roster_footer"))
         await ctx.send(embed=embed)
         return
  

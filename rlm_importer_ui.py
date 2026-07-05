@@ -28,6 +28,111 @@ except Exception:
 
 VERSION = "1.1.0"
 
+LOCALES = {
+    "en": {
+        "header_title": "RLM Importer",
+        "header_subtitle": " v{VERSION} • Raider.IO Mythic+ Settings & Automation Hub",
+        "card_wow_hdr": " WoW & Account Settings",
+        "card_sched_hdr": " Background Task Automation",
+        "card_discord_hdr": " Discord Bot Sync Settings",
+        "btn_save_settings": "Save Current Settings",
+        "lbl_console_hdr": " Import Action & Console Logs",
+        "lbl_account": "WTF Account Name:",
+        "lbl_region": "Raider.IO Region (us/eu):",
+        "lbl_season": "Mythic+ Season Slug:",
+        "lbl_rio_delay": "API Delay (seconds):",
+        "lbl_wow_path": "Custom WTF Folder Path:",
+        "btn_browse": "Browse...",
+        "lbl_sched_am": "AM Scan (24h HH:MM):",
+        "lbl_sched_pm": "PM Scan (24h HH:MM):",
+        "chk_logon": "Run daily scans 5 minutes after logging into Windows",
+        "chk_startup": "Start RLM Desktop UI automatically on Windows logon (Tray)",
+        "chk_wow_exit": "Sync immediately when WoW closes (Wow.exe Close Watcher)",
+        "btn_register": "Register Background Tasks",
+        "btn_unregister": "Remove Tasks",
+        "lbl_discord_key": "Discord Sync Key:",
+        "lbl_discord_url": "Discord Sync URL:",
+        "chk_sync_on_import": "Run Discord Sync after M+ import",
+        "btn_sync_now": "Run Discord Sync Now",
+        "lbl_week_mode": "Import Week Mode:",
+        "btn_run": "Run Import Now",
+        "msg_success_title": "Success",
+        "msg_success_saved": "Settings saved successfully!",
+        "msg_restart_title": "Restart Required",
+        "msg_restart_body": "Language changed. Please restart the application to apply the language settings.",
+        "dialog_select_wtf": "Select your World of Warcraft Retail WTF Account folder",
+        "lbl_language": "Language / 语言 / Idioma:"
+    },
+    "zh": {
+        "header_title": "RLM 导入器",
+        "header_subtitle": " v{VERSION} • Raider.IO 史诗+ 设置与自动化中心",
+        "card_wow_hdr": " 游戏与账号设置",
+        "card_sched_hdr": " 后台任务自动化",
+        "card_discord_hdr": " Discord 机器人同步设置",
+        "btn_save_settings": "保存当前设置",
+        "lbl_console_hdr": " 导入操作与控制台日志",
+        "lbl_account": "WTF 账号名称:",
+        "lbl_region": "Raider.IO 区域 (us/eu):",
+        "lbl_season": "史诗+ 赛季标识:",
+        "lbl_rio_delay": "API 延迟 (秒):",
+        "lbl_wow_path": "自定义 WTF 文件夹路径:",
+        "btn_browse": "浏览...",
+        "lbl_sched_am": "上午扫描 (24h HH:MM):",
+        "lbl_sched_pm": "下午扫描 (24h HH:MM):",
+        "chk_logon": "登录 Windows 5 分钟后运行每日扫描",
+        "chk_startup": "登录 Windows 时自动启动 RLM 桌面 UI (系统托盘)",
+        "chk_wow_exit": "WoW 关闭时立即同步 (Wow.exe 运行监控)",
+        "btn_register": "注册后台任务",
+        "btn_unregister": "删除注册任务",
+        "lbl_discord_key": "Discord 同步密钥:",
+        "lbl_discord_url": "Discord 同步 URL:",
+        "chk_sync_on_import": "导入 M+ 数据后运行 Discord 同步",
+        "btn_sync_now": "立即运行 Discord 同步",
+        "lbl_week_mode": "导入周模式:",
+        "btn_run": "立即运行导入",
+        "msg_success_title": "成功",
+        "msg_success_saved": "设置已成功保存！",
+        "msg_restart_title": "需要重启",
+        "msg_restart_body": "语言已更改。请重新启动应用程序以应用语言设置。",
+        "dialog_select_wtf": "选择您的 World of Warcraft Retail WTF Account 文件夹",
+        "lbl_language": "语言 / Language / Idioma:"
+    },
+    "es": {
+        "header_title": "Importador RLM",
+        "header_subtitle": " v{VERSION} • Centro de Automatización y Ajustes Mítica+ de Raider.IO",
+        "card_wow_hdr": " Configuración de WoW y Cuenta",
+        "card_sched_hdr": " Automatización de Tareas en Segundo Plano",
+        "card_discord_hdr": " Sincronización del Bot de Discord",
+        "btn_save_settings": "Guardar Ajustes Actuales",
+        "lbl_console_hdr": " Operaciones de Importación y Consola",
+        "lbl_account": "Nombre de Cuenta WTF:",
+        "lbl_region": "Región de Raider.IO (us/eu):",
+        "lbl_season": "Identificador de Temporada Mítica+:",
+        "lbl_rio_delay": "Retraso de API (segundos):",
+        "lbl_wow_path": "Ruta de Carpeta WTF Personalizada:",
+        "btn_browse": "Buscar...",
+        "lbl_sched_am": "Escaneo AM (24h HH:MM):",
+        "lbl_sched_pm": "Escaneo PM (24h HH:MM):",
+        "chk_logon": "Escanear diariamente 5 minutos después de iniciar Windows",
+        "chk_startup": "Iniciar RLM Desktop UI automáticamente con Windows (Bandeja)",
+        "chk_wow_exit": "Sincronizar inmediatamente al cerrar WoW (Watcher de Wow.exe)",
+        "btn_register": "Registrar Tareas en Segundo Plano",
+        "btn_unregister": "Eliminar Tareas",
+        "lbl_discord_key": "Clave de Sincronización de Discord:",
+        "lbl_discord_url": "URL de Sincronización de Discord:",
+        "chk_sync_on_import": "Sincronizar Discord tras importar M+",
+        "btn_sync_now": "Sincronizar Discord Ahora",
+        "lbl_week_mode": "Modo de Semana a Importar:",
+        "btn_run": "Ejecutar Importación Ahora",
+        "msg_success_title": "Éxito",
+        "msg_success_saved": "¡Ajustes guardados correctamente!",
+        "msg_restart_title": "Reinicio Requerido",
+        "msg_restart_body": "Idioma cambiado. Por favor, reinicie la aplicación para aplicar los ajustes de idioma.",
+        "dialog_select_wtf": "Seleccione su carpeta de WTF Account de World of Warcraft Retail",
+        "lbl_language": "Idioma / Language / 语言:"
+    }
+}
+
 import socket
 SINGLE_INSTANCE_PORT = 55919
 
@@ -173,8 +278,15 @@ class RLMImporterApp:
         except Exception as e:
             self.log_message(f"[ERROR] Failed to start system tray icon: {e}")
 
+    def L(self, key):
+        lang = self.settings.get("language", "en")
+        if lang not in LOCALES:
+            lang = "en"
+        return LOCALES[lang].get(key, LOCALES["en"].get(key, key))
+
     def load_settings(self):
         defaults = {
+            "language": "en",
             "account": "APSU14RYNE",
             "region": "us",
             "season": "season-tww-2",
@@ -198,6 +310,18 @@ class RLMImporterApp:
         return defaults
 
     def save_settings(self):
+        # Check if language changed
+        old_lang = self.settings.get("language", "en")
+        lang_val = self.cb_language.get()
+        if lang_val == "简体中文":
+            new_lang = "zh"
+        elif lang_val == "Español":
+            new_lang = "es"
+        else:
+            new_lang = "en"
+            
+        self.settings["language"] = new_lang
+
         # Gather inputs
         self.settings["account"] = self.ent_account.get().strip()
         self.settings["region"] = self.ent_region.get().strip()
@@ -221,7 +345,10 @@ class RLMImporterApp:
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.settings, f, indent=2)
             self.log_message("Settings saved successfully to config JSON.")
-            messagebox.showinfo("Success", "Settings saved successfully!")
+            if old_lang != new_lang:
+                messagebox.showinfo(self.L("msg_restart_title"), self.L("msg_restart_body"))
+            else:
+                messagebox.showinfo(self.L("msg_success_title"), self.L("msg_success_saved"))
         except Exception as e:
             self.log_message(f"Error saving settings: {e}")
             messagebox.showerror("Error", f"Failed to save settings: {e}")
@@ -258,9 +385,9 @@ class RLMImporterApp:
         self.header_frame = ttk.Frame(self.root)
         self.header_frame.pack(fill="x", padx=15, pady=10)
         
-        lbl_title = ttk.Label(self.header_frame, text="RLM Importer", style="Title.TLabel")
+        lbl_title = ttk.Label(self.header_frame, text=self.L("header_title"), style="Title.TLabel")
         lbl_title.pack(side="left")
-        lbl_subtitle = ttk.Label(self.header_frame, text=f" v{VERSION} — Raider.IO Mythic+ Settings & Automation Hub", font=("Segoe UI", 10, "italic"))
+        lbl_subtitle = ttk.Label(self.header_frame, text=self.L("header_subtitle").format(VERSION=VERSION), font=("Segoe UI", 10, "italic"))
         lbl_subtitle.pack(side="left", padx=5, pady=4)
 
         # Main Layout frame (left = options, right = console logs)
@@ -275,7 +402,7 @@ class RLMImporterApp:
         card_wow = ttk.Frame(left_col, style="Panel.TFrame")
         card_wow.pack(fill="x", pady=(0, 10))
         
-        lbl_card_wow_hdr = ttk.Label(card_wow, text=" WoW & Account Settings", style="Header.TLabel")
+        lbl_card_wow_hdr = ttk.Label(card_wow, text=self.L("card_wow_hdr"), style="Header.TLabel")
         lbl_card_wow_hdr.pack(fill="x", padx=10, pady=(10, 5))
         
         self.create_wow_settings_fields(card_wow)
@@ -284,7 +411,7 @@ class RLMImporterApp:
         card_sched = ttk.Frame(left_col, style="Panel.TFrame")
         card_sched.pack(fill="x", pady=(0, 10))
         
-        lbl_card_sched_hdr = ttk.Label(card_sched, text=" Background Task Automation", style="Header.TLabel")
+        lbl_card_sched_hdr = ttk.Label(card_sched, text=self.L("card_sched_hdr"), style="Header.TLabel")
         lbl_card_sched_hdr.pack(fill="x", padx=10, pady=(10, 5))
         
         self.create_scheduler_fields(card_sched)
@@ -293,7 +420,7 @@ class RLMImporterApp:
         card_discord = ttk.Frame(left_col, style="Panel.TFrame")
         card_discord.pack(fill="x", pady=(0, 10))
         
-        lbl_card_discord_hdr = ttk.Label(card_discord, text=" Discord Bot Sync Settings", style="Header.TLabel")
+        lbl_card_discord_hdr = ttk.Label(card_discord, text=self.L("card_discord_hdr"), style="Header.TLabel")
         lbl_card_discord_hdr.pack(fill="x", padx=10, pady=(10, 5))
         
         self.create_discord_sync_fields(card_discord)
@@ -302,14 +429,14 @@ class RLMImporterApp:
         card_save = ttk.Frame(left_col, style="Panel.TFrame")
         card_save.pack(fill="x")
         
-        btn_save = ttk.Button(card_save, text="Save Current Settings", command=self.save_settings, width=30)
+        btn_save = ttk.Button(card_save, text=self.L("btn_save_settings"), command=self.save_settings, width=30)
         btn_save.pack(padx=10, pady=10, fill="x")
 
         # Right Column: Console/Console Log Card
         right_col = ttk.Frame(main_pane, style="Panel.TFrame")
         right_col.pack(side="right", fill="both", expand=True)
 
-        lbl_console_hdr = ttk.Label(right_col, text=" Import Action & Console Logs", style="Header.TLabel")
+        lbl_console_hdr = ttk.Label(right_col, text=self.L("lbl_console_hdr"), style="Header.TLabel")
         lbl_console_hdr.pack(fill="x", padx=10, pady=(10, 5))
 
         self.create_console_view(right_col)
@@ -318,41 +445,54 @@ class RLMImporterApp:
         grid = ttk.Frame(parent, style="Panel.TFrame")
         grid.pack(fill="x", padx=10, pady=5)
 
+        # Language Selection
+        ttk.Label(grid, text=self.L("lbl_language"), style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        self.cb_language = ttk.Combobox(grid, values=["English", "简体中文", "Español"], state="readonly", width=15)
+        self.cb_language.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=4)
+        
+        lang = self.settings.get("language", "en")
+        if lang == "zh":
+            self.cb_language.set("简体中文")
+        elif lang == "es":
+            self.cb_language.set("Español")
+        else:
+            self.cb_language.set("English")
+
         # Account Name
-        ttk.Label(grid, text="WTF Account Name:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_account"), style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
         self.ent_account = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_account.grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=4)
+        self.ent_account.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_account.insert(0, self.settings["account"])
 
         # Region
-        ttk.Label(grid, text="Raider.IO Region (us/eu):", style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_region"), style="Panel.TLabel").grid(row=2, column=0, sticky="w", pady=4)
         self.ent_region = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_region.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=4)
+        self.ent_region.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_region.insert(0, self.settings["region"])
 
         # Season
-        ttk.Label(grid, text="Mythic+ Season Slug:", style="Panel.TLabel").grid(row=2, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_season"), style="Panel.TLabel").grid(row=3, column=0, sticky="w", pady=4)
         self.ent_season = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_season.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=4)
+        self.ent_season.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_season.insert(0, self.settings["season"])
 
         # RIO API Delay
-        ttk.Label(grid, text="API Delay (seconds):", style="Panel.TLabel").grid(row=3, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_rio_delay"), style="Panel.TLabel").grid(row=4, column=0, sticky="w", pady=4)
         self.ent_rio_delay = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_rio_delay.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=4)
+        self.ent_rio_delay.grid(row=4, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_rio_delay.insert(0, str(self.settings["rio_delay"]))
 
         # WoW Directory Selector
-        ttk.Label(grid, text="Custom WTF Folder Path:", style="Panel.TLabel").grid(row=4, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_wow_path"), style="Panel.TLabel").grid(row=5, column=0, sticky="w", pady=4)
         dir_frame = ttk.Frame(grid, style="Panel.TFrame")
-        dir_frame.grid(row=4, column=1, sticky="ew", padx=(10, 0), pady=4)
+        dir_frame.grid(row=5, column=1, sticky="ew", padx=(10, 0), pady=4)
         dir_frame.columnconfigure(0, weight=1)
 
         self.ent_wow_path = tk.Entry(dir_frame, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.ent_wow_path.grid(row=0, column=0, sticky="ew")
         self.ent_wow_path.insert(0, self.settings["wow_path"])
 
-        btn_browse = ttk.Button(dir_frame, text="Browse...", command=self.browse_wow_directory, width=8)
+        btn_browse = ttk.Button(dir_frame, text=self.L("btn_browse"), command=self.browse_wow_directory, width=8)
         btn_browse.grid(row=0, column=1, padx=(5, 0))
 
         grid.columnconfigure(1, weight=1)
@@ -362,40 +502,40 @@ class RLMImporterApp:
         grid.pack(fill="x", padx=10, pady=5)
 
         # AM Run Time
-        ttk.Label(grid, text="AM Scan (24h HH:MM):", style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_sched_am"), style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
         self.ent_sched_am = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1, width=10)
         self.ent_sched_am.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=4)
         self.ent_sched_am.insert(0, self.settings["schedule_am"])
 
         # PM Run Time
-        ttk.Label(grid, text="PM Scan (24h HH:MM):", style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_sched_pm"), style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
         self.ent_sched_pm = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1, width=10)
         self.ent_sched_pm.grid(row=1, column=1, sticky="w", padx=(10, 0), pady=4)
         self.ent_sched_pm.insert(0, self.settings["schedule_pm"])
 
         # Run on Logon Trigger
         self.var_sched_logon = tk.BooleanVar(value=self.settings["schedule_logon"])
-        chk_logon = ttk.Checkbutton(grid, text="Run daily scans 5 minutes after logging into Windows", variable=self.var_sched_logon)
+        chk_logon = ttk.Checkbutton(grid, text=self.L("chk_logon"), variable=self.var_sched_logon)
         chk_logon.grid(row=2, column=0, columnspan=2, sticky="w", pady=6)
 
         # Run UI on Startup
         self.var_run_on_startup = tk.BooleanVar(value=self.settings.get("run_on_startup", True))
-        chk_startup = ttk.Checkbutton(grid, text="Start RLM Desktop UI automatically on Windows logon (Tray)", variable=self.var_run_on_startup)
+        chk_startup = ttk.Checkbutton(grid, text=self.L("chk_startup"), variable=self.var_run_on_startup)
         chk_startup.grid(row=3, column=0, columnspan=2, sticky="w", pady=6)
 
         # Sync on WoW Exit
         self.var_sync_on_wow_exit = tk.BooleanVar(value=self.settings.get("sync_on_wow_exit", True))
-        chk_wow_exit = ttk.Checkbutton(grid, text="Sync immediately when WoW closes (Wow.exe Close Watcher)", variable=self.var_sync_on_wow_exit)
+        chk_wow_exit = ttk.Checkbutton(grid, text=self.L("chk_wow_exit"), variable=self.var_sync_on_wow_exit)
         chk_wow_exit.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
 
         # OS Task Register Actions
         task_action_frame = ttk.Frame(parent, style="Panel.TFrame")
         task_action_frame.pack(fill="x", padx=10, pady=(5, 10))
         
-        btn_register = ttk.Button(task_action_frame, text="Register Background Tasks", command=self.register_background_tasks)
+        btn_register = ttk.Button(task_action_frame, text=self.L("btn_register"), command=self.register_background_tasks)
         btn_register.pack(side="left", fill="x", expand=True, padx=(0, 5))
         
-        btn_unregister = ttk.Button(task_action_frame, text="Remove Tasks", command=self.unregister_background_tasks)
+        btn_unregister = ttk.Button(task_action_frame, text=self.L("btn_unregister"), command=self.unregister_background_tasks)
         btn_unregister.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
     def create_discord_sync_fields(self, parent):
@@ -403,39 +543,39 @@ class RLMImporterApp:
         grid.pack(fill="x", padx=10, pady=5)
 
         # Sync Key
-        ttk.Label(grid, text="Discord Sync Key:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_discord_key"), style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
         self.ent_discord_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.ent_discord_key.grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_discord_key.insert(0, self.settings.get("discord_sync_key", ""))
 
         # Sync URL
-        ttk.Label(grid, text="Discord Sync URL:", style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
+        ttk.Label(grid, text=self.L("lbl_discord_url"), style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
         self.ent_discord_url = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.ent_discord_url.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_discord_url.insert(0, self.settings.get("discord_sync_url", "https://rlm-desktop-companion-production.up.railway.app/api/sync"))
 
         # Checkbutton to auto-sync on import
         self.var_sync_on_import = tk.BooleanVar(value=self.settings.get("sync_on_import", True))
-        chk_sync_on_import = ttk.Checkbutton(grid, text="Run Discord Sync after M+ import", variable=self.var_sync_on_import)
+        chk_sync_on_import = ttk.Checkbutton(grid, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
         chk_sync_on_import.grid(row=2, column=0, columnspan=2, sticky="w", pady=6)
 
         grid.columnconfigure(1, weight=1)
 
         # Button inside Card 3 to run sync now
-        self.btn_sync_now = ttk.Button(parent, text="Run Discord Sync Now", command=self.trigger_discord_sync)
+        self.btn_sync_now = ttk.Button(parent, text=self.L("btn_sync_now"), command=self.trigger_discord_sync)
         self.btn_sync_now.pack(padx=10, pady=(5, 10), fill="x")
 
     def create_console_view(self, parent):
         action_bar = ttk.Frame(parent, style="Panel.TFrame")
         action_bar.pack(fill="x", padx=10, pady=5)
 
-        ttk.Label(action_bar, text="Import Week Mode:", style="Panel.TLabel").pack(side="left", pady=4)
+        ttk.Label(action_bar, text=self.L("lbl_week_mode"), style="Panel.TLabel").pack(side="left", pady=4)
         
         self.cb_week_mode = ttk.Combobox(action_bar, values=["both", "current", "last"], state="readonly", width=10)
         self.cb_week_mode.set("both")
         self.cb_week_mode.pack(side="left", padx=5)
 
-        self.btn_run = ttk.Button(action_bar, text="Run Import Now", style="Accent.TButton", command=self.trigger_live_import)
+        self.btn_run = ttk.Button(action_bar, text=self.L("btn_run"), style="Accent.TButton", command=self.trigger_live_import)
         self.btn_run.pack(side="right", fill="x", expand=True, padx=(10, 0))
 
         # Console Text Box
@@ -451,7 +591,7 @@ class RLMImporterApp:
         self.txt_console.configure(yscrollcommand=scrollbar.set)
 
     def browse_wow_directory(self):
-        dir_selected = filedialog.askdirectory(title="Select your World of Warcraft Retail WTF Account folder", initialdir="C:\\Program Files (x86)\\World of Warcraft")
+        dir_selected = filedialog.askdirectory(title=self.L("dialog_select_wtf"), initialdir="C:\\Program Files (x86)\\World of Warcraft")
         if dir_selected:
             self.ent_wow_path.delete(0, tk.END)
             self.ent_wow_path.insert(0, os.path.normpath(dir_selected))
