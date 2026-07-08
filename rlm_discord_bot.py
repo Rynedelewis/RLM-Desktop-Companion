@@ -288,6 +288,37 @@ BOT_LOCALES = {
         "roster_no_members": "未注册任何成员。",
         "roster_footer": "已通过 RaidLootMatrix 桌面同步进行同步。"
     },
+    "zh_tw": {
+        "help_title": "RaidLootMatrix 助手機器人命令指南",
+        "help_desc": "使用以下命令與 RaidLootMatrix 機器人進行互動：",
+        "help_cmd_help": "顯示可用命令清單。",
+        "help_cmd_sync": "*(僅限管理員)* 透過私信向您發送伺服器的安全 API 權杖。",
+        "help_cmd_standings": "顯示團隊花名冊的 EPGP 積分榜資訊。",
+        "help_cmd_roster": "列出活動名冊設定檔中的主角色和關聯小號。",
+        "err_admin": "❌ **錯誤:** 您必須擁有 **管理員** 權限才能執行此命令。",
+        "err_specify_team": "❌ **錯誤:** 請指定團隊名稱。例如：`!{full_name} 主團隊名冊`",
+        "err_general": "❌ 發生錯誤：`{error}`",
+        "sync_dm_title": "🔑 RaidLootMatrix 同步授權金鑰",
+        "sync_dm_desc": "這是您伺服器 **{guild_name}** 的安全同步金鑰。\n請保守此金鑰的機密！擁有此金鑰的任何人都可以上傳並覆蓋您伺服器的積分榜。",
+        "sync_dm_field_key": "您的同步金鑰",
+        "sync_dm_field_usage": "如何使用",
+        "sync_dm_field_usage_val": "將此金鑰貼上到您本地的 `rlm_discord_sync.py` 腳本中作為 `SYNC_KEY`。",
+        "sync_sent": "🔑 **同步金鑰已發送:** 請檢查您的私信以獲取安全同步金鑰。",
+        "sync_err_dm": "❌ **錯誤:** 我無法向您發送私信。請確認您在隱私設定中啟用了「允許來自伺服器成員的私信」。",
+        "standings_title": "RaidLootMatrix 積分榜",
+        "standings_desc": "活動 EPGP 積分榜 (設定檔: **{profile}**)",
+        "standings_no_mains": "ℹ️ 名冊資料庫中未找到任何主角色。",
+        "standings_rank_field": "當前積分榜 (排名 {start}-{end})",
+        "standings_footer": "最後同步: {name}",
+        "err_no_sync_data": "❌ **錯誤:** 此伺服器尚未上傳任何同步數據。\n請設置並運行 RLM 桌面阻手應用程式以同步您的遊戲內名冊！",
+        "err_no_profile_match": "❌ **錯誤:** 未能找到匹配 '**{team_name}**' 的積分榜設定檔。\n可用同步的設定檔: {available}",
+        "roster_title": "RaidLootMatrix 花名冊設定檔",
+        "roster_desc": "已同步的名冊詳情 (設定檔: **{profile}**)",
+        "roster_mains_field": "主角色與關聯小號",
+        "roster_mains_field_part": "主角色與關聯小號 (第 {part} 部分)",
+        "roster_no_members": "未註冊任何成員。",
+        "roster_footer": "已透過 RaidLootMatrix 桌面同步進行同步。"
+    },
     "es": {
         "help_title": "Guía de Comandos del Bot RaidLootMatrix",
         "help_desc": "Interactúa con el bot RaidLootMatrix usando los siguientes comandos:",
@@ -326,7 +357,10 @@ def get_locale(ctx):
     if ctx.interaction:
         locale = str(ctx.interaction.locale or ctx.interaction.guild_locale or "en")
     
-    if locale.startswith("zh"):
+    locale = locale.lower()
+    if locale in ["zh-tw", "zh-hk", "zh-mo"]:
+        return "zh_tw"
+    elif locale.startswith("zh"):
         return "zh"
     elif locale.startswith("es"):
         return "es"
