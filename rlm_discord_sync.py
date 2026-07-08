@@ -203,40 +203,42 @@ def main():
     sv_file = None
     if wow_path:
         p = pathlib.Path(wow_path)
-        # Direct check
-        if (p / "RaidLootMatrix.lua").exists():
-            sv_file = p / "RaidLootMatrix.lua"
-        elif (p / "SavedVariables" / "RaidLootMatrix.lua").exists():
-            sv_file = p / "SavedVariables" / "RaidLootMatrix.lua"
-        elif p.name == "SavedVariables" and (p / "RaidLootMatrix.lua").exists():
-            sv_file = p / "RaidLootMatrix.lua"
-        # Nested check with account name if provided
-        elif account:
-            if (p / account / "SavedVariables" / "RaidLootMatrix.lua").exists():
-                sv_file = p / account / "SavedVariables" / "RaidLootMatrix.lua"
-            elif (p / "Account" / account / "SavedVariables" / "RaidLootMatrix.lua").exists():
-                sv_file = p / "Account" / account / "SavedVariables" / "RaidLootMatrix.lua"
-            elif (p / "WTF" / "Account" / account / "SavedVariables" / "RaidLootMatrix.lua").exists():
-                sv_file = p / "WTF" / "Account" / account / "SavedVariables" / "RaidLootMatrix.lua"
-            
-    if not sv_file:
-        # Fallback to standard path configurations
+        if p.exists():
+            if p.name == "SavedVariables" and (p / "RaidLootMatrix.lua").exists():
+                sv_file = p / "RaidLootMatrix.lua"
+            elif (p / "SavedVariables" / "RaidLootMatrix.lua").exists():
+                sv_file = p / "SavedVariables" / "RaidLootMatrix.lua"
+            else:
+                try:
+                    for match in p.glob("**/SavedVariables/RaidLootMatrix.lua"):
+                        if match.is_file():
+                            sv_file = match
+                            break
+                except Exception as e:
+                    print(f"[WARNING] Recursive search error: {e}")
+
+    if not sv_file or not sv_file.exists():
+        # Fallback to default WoW installations if nothing found yet
         system = platform.system()
-        base = None
+        default_dir = None
         if system == "Windows":
-            base = pathlib.Path(r"C:\Program Files (x86)\World of Warcraft\_retail_\WTF\Account")
+            default_dir = pathlib.Path(r"C:\Program Files (x86)\World of Warcraft")
         elif system == "Darwin":
-            base = pathlib.Path.home() / "Library/Application Support/World of Warcraft/_retail_/WTF/Account"
-            
-        if base and base.exists() and account:
-            account_dir = base / account
-            if account_dir.exists():
-                sv_file = account_dir / "SavedVariables" / "RaidLootMatrix.lua"
+            default_dir = pathlib.Path.home() / "Library/Application Support/World of Warcraft"
+        
+        if default_dir and default_dir.exists():
+            try:
+                for match in default_dir.glob("**/SavedVariables/RaidLootMatrix.lua"):
+                    if match.is_file():
+                        sv_file = match
+                        break
+            except Exception:
+                pass
 
     if not sv_file or not sv_file.exists():
         print("❌ Error: Could not locate your 'RaidLootMatrix.lua' SavedVariables file.")
         print("To fix this, please run 'Run RLM Importer UI.bat' first and configure your")
-        print("World of Warcraft directory and account name, or specify the path.")
+        print("World of Warcraft directory or WTF Path in the settings.")
         prompt_exit(1)
 
     # 3. Parse EPGP and Roster data

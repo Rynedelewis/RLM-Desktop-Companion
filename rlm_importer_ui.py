@@ -41,7 +41,7 @@ LOCALES = {
         "lbl_region": "Raider.IO Region (us/eu):",
         "lbl_season": "Mythic+ Season Slug:",
         "lbl_rio_delay": "API Delay (seconds):",
-        "lbl_wow_path": "Custom WTF Folder Path:",
+        "lbl_wow_path": "WoW Directory or WTF Path:",
         "btn_browse": "Browse...",
         "lbl_sched_am": "AM Scan (24h HH:MM):",
         "lbl_sched_pm": "PM Scan (24h HH:MM):",
@@ -60,8 +60,11 @@ LOCALES = {
         "msg_success_saved": "Settings saved successfully!",
         "msg_restart_title": "Restart Required",
         "msg_restart_body": "Language changed. Please restart the application to apply the language settings.",
-        "dialog_select_wtf": "Select your World of Warcraft Retail WTF Account folder",
-        "lbl_language": "Language / 语言 / Idioma:"
+        "dialog_select_wtf": "Select your World of Warcraft directory, WTF, or Account folder",
+        "lbl_language": "Language / 语言 / Idioma:",
+        "week_both": "Both Weeks",
+        "week_current": "Current Week",
+        "week_last": "Last Week"
     },
     "zh": {
         "header_title": "RLM 导入器",
@@ -75,7 +78,7 @@ LOCALES = {
         "lbl_region": "Raider.IO 区域 (us/eu):",
         "lbl_season": "史诗+ 赛季标识:",
         "lbl_rio_delay": "API 延迟 (秒):",
-        "lbl_wow_path": "自定义 WTF 文件夹路径:",
+        "lbl_wow_path": "WoW 目录或 WTF 路径:",
         "btn_browse": "浏览...",
         "lbl_sched_am": "上午扫描 (24h HH:MM):",
         "lbl_sched_pm": "下午扫描 (24h HH:MM):",
@@ -94,8 +97,11 @@ LOCALES = {
         "msg_success_saved": "设置已成功保存！",
         "msg_restart_title": "需要重启",
         "msg_restart_body": "语言已更改。请重新启动应用程序以应用语言设置。",
-        "dialog_select_wtf": "选择您的 World of Warcraft Retail WTF Account 文件夹",
-        "lbl_language": "语言 / Language / Idioma:"
+        "dialog_select_wtf": "选择您的魔兽世界游戏目录、WTF 或是账号文件夹",
+        "lbl_language": "语言 / Language / Idioma:",
+        "week_both": "全部双周",
+        "week_current": "仅限本周",
+        "week_last": "仅限上周"
     },
     "es": {
         "header_title": "Importador RLM",
@@ -109,7 +115,7 @@ LOCALES = {
         "lbl_region": "Región de Raider.IO (us/eu):",
         "lbl_season": "Identificador de Temporada Mítica+:",
         "lbl_rio_delay": "Retraso de API (segundos):",
-        "lbl_wow_path": "Ruta de Carpeta WTF Personalizada:",
+        "lbl_wow_path": "Directorio de WoW o Ruta WTF:",
         "btn_browse": "Buscar...",
         "lbl_sched_am": "Escaneo AM (24h HH:MM):",
         "lbl_sched_pm": "Escaneo PM (24h HH:MM):",
@@ -128,10 +134,201 @@ LOCALES = {
         "msg_success_saved": "¡Ajustes guardados correctamente!",
         "msg_restart_title": "Reinicio Requerido",
         "msg_restart_body": "Idioma cambiado. Por favor, reinicie la aplicación para aplicar los ajustes de idioma.",
-        "dialog_select_wtf": "Seleccione su carpeta de WTF Account de World of Warcraft Retail",
-        "lbl_language": "Idioma / Language / 语言:"
+        "dialog_select_wtf": "Seleccione su carpeta de World of Warcraft, carpeta WTF o Cuenta",
+        "lbl_language": "Idioma / Language / 语言:",
+        "week_both": "Ambas Semanas",
+        "week_current": "Semana Actual",
+        "week_last": "Semana Anterior"
     }
 }
+
+CONSOLE_PHRASES = {
+    "en": {
+        "start_importer": "--- Starting Mythic+ Importer Process ---",
+        "executing": "Executing: ",
+        "importer_finished": "Importer finished with exit code ",
+        "importer_success": "Mythic+ data updated! Log into WoW and open /rlm UI to apply changes.",
+        "start_auto_sync": "--- Running Automatic Discord RLM Sync ---",
+        "sync_finished": "Sync finished with exit code ",
+        "process_crashed": "Process crashed: ",
+        "start_sync": "--- Starting Discord RLM Sync Process ---",
+        "shortcut_success": "Desktop shortcut created successfully.",
+        "tasks_updated": "Scheduled Tasks updated in Task Scheduler!",
+        "tasks_removed": "RaidLootMatrix scheduled tasks removed.",
+        "lang_changed": "Language changed to: ",
+        "settings_saved": "Settings saved successfully to config JSON.",
+        "discovered_accts": "Discovered {} account(s) to process:",
+        "running_rio": "Running Raider.IO api query for roster...",
+        "roster_complete": "Roster fetch complete.",
+        "uploading_standings": "Uploading standings data to ",
+        "sync_success": "🚀 Sync Successful! EPGP standings and rosters updated.",
+        "sync_failed": "❌ Sync Failed with status code: ",
+        "reading_db": "Reading database file: ",
+        "parsing_epgp": "Parsing EPGP and Roster data...",
+        "wow_running": "World of Warcraft is currently running. Deferring import until game closes...",
+        "wow_exit": "World of Warcraft exit detected. Resuming import...",
+        "deferring": "Deferring import until game closes...",
+        "control_panel_loaded": "RLM Importer control panel loaded.",
+        "working_directory": "Working directory:",
+        "sync_client_header": "RaidLootMatrix Desktop Sync Client (Method 2)",
+        "successfully_parsed": "Successfully parsed {} database profiles.",
+        "profile_characters": " - Profile '{}' ({} characters)",
+        "wow_running_warn": "[WARNING] World of Warcraft is running.",
+        "corrupt_warn_1": "          Writing M+ data while WoW is open can corrupt SavedVariables.",
+        "corrupt_warn_2": "          Close WoW first, or do /reload after this script finishes.",
+        "no_active_players": "No active players found in any rosters. Exiting.",
+        "fetching_rio_data": "Fetching Raider.IO data for {} unique players",
+        "requesting_runs": "(requesting 20 recent runs to cover {})",
+        "runs_found": "{} total runs found",
+        "account_hdr": "ACCOUNT: {}",
+        "processing_week": "-- Processing week {} [{}] -------",
+        "players_runs_pool": "  {} / {} players with runs | EP pool preview: {}",
+        "dry_run_no_file": "[DRY RUN] No file written.",
+        "wrote_file": "Wrote: {}",
+        "ep_calculated": "EP will be calculated in-game from Settings -> Mythic+.",
+        "log_in_reload": "Log in (or /reload) with an officer and open the Mythic+ tab.",
+        "parse_failed_warn": "[WARNING] Failed to parse SavedVariables at {}"
+    },
+    "zh": {
+        "start_importer": "--- 启动史诗+导入程序 ---",
+        "executing": "正在执行: ",
+        "importer_finished": "导入器完成，退出代码为 ",
+        "importer_success": "史诗+数据已更新！登录 WoW 并打开 /rlm UI 以应用更改。",
+        "start_auto_sync": "--- 正在运行 Discord 自动同步 ---",
+        "sync_finished": "同步完成，退出代码为 ",
+        "process_crashed": "程序崩溃: ",
+        "start_sync": "--- 启动 Discord 同步程序 ---",
+        "shortcut_success": "桌面快捷方式创建成功。",
+        "tasks_updated": "计划任务已在任务计划程序中更新！",
+        "tasks_removed": "RaidLootMatrix 计划任务已删除。",
+        "lang_changed": "语言更改为: ",
+        "settings_saved": "设置成功保存到配置 JSON。",
+        "discovered_accts": "发现 {} 个要处理的账号:",
+        "running_rio": "正在为名册运行 Raider.IO API 查询...",
+        "roster_complete": "名册获取完成。",
+        "uploading_standings": "正在上传积分榜数据至 ",
+        "sync_success": "🚀 同步成功！EPGP 积分榜与名册已更新。",
+        "sync_failed": "❌ 同步失败，状态代码: ",
+        "reading_db": "正在读取数据库文件: ",
+        "parsing_epgp": "正在解析 EPGP 与名册数据...",
+        "wow_running": "魔兽世界目前正在运行。推迟导入直到游戏关闭...",
+        "wow_exit": "检测到魔兽世界退出。恢复导入...",
+        "deferring": "推迟导入直到游戏关闭...",
+        "control_panel_loaded": "RLM 导入器控制面板已加载。",
+        "working_directory": "工作目录:",
+        "sync_client_header": "RaidLootMatrix 桌面同步客户端 (方法 2)",
+        "successfully_parsed": "成功解析了 {} 个数据库配置表。",
+        "profile_characters": " - 配置表 '{}' ({} 个角色)",
+        "wow_running_warn": "[警告] 魔兽世界正在运行。",
+        "corrupt_warn_1": "          当 WoW 打开时写入 M+ 数据可能会损坏 SavedVariables。",
+        "corrupt_warn_2": "          请先关闭 WoW，或者在此脚本完成后执行 /reload。",
+        "no_active_players": "在任何名册中均未发现活跃玩家。退出中。",
+        "fetching_rio_data": "正在为 {} 位唯一玩家获取 Raider.IO 数据",
+        "requesting_runs": "(请求最近 20 次大米运行以覆盖 {})",
+        "runs_found": "总共找到 {} 次运行记录",
+        "account_hdr": "账号: {}",
+        "processing_week": "-- 正在处理周 {} [{}] -------",
+        "players_runs_pool": "  {} / {} 位有运行记录的玩家 | EP 预览点数: {}",
+        "dry_run_no_file": "[模拟运行] 未写入任何文件。",
+        "wrote_file": "写入文件: {}",
+        "ep_calculated": "EP 将在游戏内的 设置 -> 史诗+ 中进行计算。",
+        "log_in_reload": "用官员角色登录游戏（或执行 /reload），并打开史诗+选项卡。",
+        "parse_failed_warn": "[警告] 无法解析位于 {} 的 SavedVariables"
+    },
+    "es": {
+        "start_importer": "--- Iniciando el Proceso de Importador Mítica+ ---",
+        "executing": "Ejecutando: ",
+        "importer_finished": "Importador finalizado con código de salida ",
+        "importer_success": "¡Datos de Mítica+ actualizados! Inicia sesión en WoW y abre /rlm UI para aplicar cambios.",
+        "start_auto_sync": "--- Ejecutando Sincronización Automática de Discord ---",
+        "sync_finished": "Sincronización finalizada con código de salida ",
+        "process_crashed": "Proceso colapsado: ",
+        "start_sync": "--- Iniciando Proceso de Sincronización de Discord ---",
+        "shortcut_success": "Acceso directo en el escritorio creado con éxito.",
+        "tasks_updated": "¡Tareas programadas actualizadas en el Programador de tareas!",
+        "tasks_removed": "Tareas programadas de RaidLootMatrix eliminadas.",
+        "lang_changed": "Idioma cambiado a: ",
+        "settings_saved": "Ajustes guardados correctamente en el JSON de configuración.",
+        "discovered_accts": "Se descubrieron {} cuenta(s) para procesar:",
+        "running_rio": "Ejecutando consulta de API de Raider.IO para el roster...",
+        "roster_complete": "Búsqueda de roster completada.",
+        "uploading_standings": "Subiendo datos de posiciones a ",
+        "sync_success": "🚀 ¡Sincronización Exitosa! Posiciones de EPGP y rosters actualizados.",
+        "sync_failed": "❌ Sincronización Fallida con código de estado: ",
+        "reading_db": "Leyendo archivo de base de datos: ",
+        "parsing_epgp": "Analizando datos de EPGP y Roster...",
+        "wow_running": "World of Warcraft se está ejecutando actualmente. Posponiendo importación...",
+        "wow_exit": "Salida de World of Warcraft detectada. Reanudando importación...",
+        "deferring": "Posponiendo importación hasta que el juego se cierre...",
+        "control_panel_loaded": "Panel de control del importador RLM cargado.",
+        "working_directory": "Directorio de trabajo:",
+        "sync_client_header": "Cliente de Sincronización de Escritorio RaidLootMatrix (Método 2)",
+        "successfully_parsed": "Se analizaron con éxito {} perfiles de base de datos.",
+        "profile_characters": " - Perfil '{}' ({} personajes)",
+        "wow_running_warn": "[ADVERTENCIA] World of Warcraft se está ejecutando.",
+        "corrupt_warn_1": "          Escribir datos de M+ mientras WoW está abierto puede corromper SavedVariables.",
+        "corrupt_warn_2": "          Cierre WoW primero, o haga /reload después de que termine este script.",
+        "no_active_players": "No se encontraron jugadores activos en ningún roster. Saliendo.",
+        "fetching_rio_data": "Obteniendo datos de Raider.IO para {} jugadores únicos",
+        "requesting_runs": "(solicitando 20 carreras recientes para cubrir {})",
+        "runs_found": "Se encontraron {} carreras en total",
+        "account_hdr": "CUENTA: {}",
+        "processing_week": "-- Procesando semana {} [{}] -------",
+        "players_runs_pool": "  {} / {} jugadores con carreras | Vista previa de EP: {}",
+        "dry_run_no_file": "[DRY RUN] No se escribió ningún archivo.",
+        "wrote_file": "Escrito: {}",
+        "ep_calculated": "El EP se calculará dentro del juego desde Ajustes -> Mítica+.",
+        "log_in_reload": "Inicie sesión (o haga /reload) con un oficial y abra la pestaña de Mítica+.",
+        "parse_failed_warn": "[ADVERTENCIA] Error al analizar SavedVariables en {}"
+    }
+}
+
+def translate_line(line, old_lang, new_lang):
+    if old_lang == new_lang:
+        return line
+        
+    old_phrases = CONSOLE_PHRASES.get(old_lang, CONSOLE_PHRASES["en"])
+    new_phrases = CONSOLE_PHRASES.get(new_lang, CONSOLE_PHRASES["en"])
+    
+    import re
+    
+    for key, old_text in old_phrases.items():
+        new_text = new_phrases[key]
+        
+        # Case A: Templated strings with {}
+        if "{}" in old_text:
+            pattern_str = "^" + re.escape(old_text).replace(r"\{\}", r"(.*?)") + "$"
+            try:
+                match = re.match(pattern_str, line)
+                if match:
+                    groups = match.groups()
+                    result = new_text
+                    for g in groups:
+                        # Translate inner keywords if matched (e.g. both weeks / this week)
+                        if g == "both weeks":
+                            g = "双周" if new_lang == "zh" else ("ambas semanas" if new_lang == "es" else g)
+                        elif g == "this week":
+                            g = "本周" if new_lang == "zh" else ("esta semana" if new_lang == "es" else g)
+                        result = result.replace("{}", g, 1)
+                    return result
+            except Exception:
+                pass
+                
+        # Case B: Prefix match
+        elif old_text.endswith(" ") or old_text.endswith(": ") or old_text.endswith("...") or old_text.endswith(":") or old_text.endswith("/"):
+            if line.startswith(old_text):
+                suffix = line[len(old_text):]
+                return new_text + suffix
+                
+        # Case C: Exact match
+        elif line.strip() == old_text.strip():
+            return new_text
+            
+        # Case D: Substring match
+        elif old_text in line:
+            return line.replace(old_text, new_text)
+            
+    return line
 
 import socket
 SINGLE_INSTANCE_PORT = 55919
@@ -181,6 +378,33 @@ FG_ACCENT = "#ffcc00"
 FG_HEADER = "#ff9900"
 BORDER_COLOR = "#3f3f46"
 
+def auto_detect_language():
+    try:
+        import locale
+        sys_lang = locale.getlocale()[0] or locale.getdefaultlocale()[0]
+        if sys_lang:
+            sys_lang = sys_lang.lower()
+            if sys_lang.startswith("zh") or "chinese" in sys_lang:
+                return "zh"
+            elif sys_lang.startswith("es") or "spanish" in sys_lang:
+                return "es"
+    except Exception:
+        pass
+    
+    try:
+        import ctypes
+        windll = ctypes.windll.kernel32
+        lang_id = windll.GetUserDefaultUILanguage()
+        primary_lang = lang_id & 0x3ff
+        if primary_lang == 0x04:
+            return "zh"
+        elif primary_lang == 0x0a:
+            return "es"
+    except Exception:
+        pass
+        
+    return "en"
+
 class RLMImporterApp:
     def __init__(self, root):
         self.root = root
@@ -188,6 +412,13 @@ class RLMImporterApp:
         self.root.geometry("840x760")
         self.root.configure(bg=BG_DARK)
         self.root.minsize(750, 680)
+
+        # Configure Combobox dropdown listbox popup styling
+        self.root.option_add("*TCombobox*Listbox.background", BG_ENTRY)
+        self.root.option_add("*TCombobox*Listbox.foreground", FG_TEXT)
+        self.root.option_add("*TCombobox*Listbox.selectBackground", "#3e3e42")
+        self.root.option_add("*TCombobox*Listbox.selectForeground", FG_ACCENT)
+        self.root.option_add("*TCombobox*Listbox.font", ("Segoe UI", 9))
 
         # Config paths
         if getattr(sys, 'frozen', False):
@@ -286,10 +517,8 @@ class RLMImporterApp:
 
     def load_settings(self):
         defaults = {
-            "language": "en",
-            "account": "APSU14RYNE",
-            "region": "us",
-            "season": "season-tww-2",
+            "language": auto_detect_language(),
+            "region": "",
             "wow_path": "",
             "rio_delay": 0.35,
             "schedule_am": "06:00",
@@ -309,23 +538,122 @@ class RLMImporterApp:
                 print(f"Failed to read config file: {e}")
         return defaults
 
-    def save_settings(self):
-        # Check if language changed
-        old_lang = self.settings.get("language", "en")
-        lang_val = self.cb_language.get()
-        if lang_val == "简体中文":
-            new_lang = "zh"
-        elif lang_val == "Español":
-            new_lang = "es"
-        else:
-            new_lang = "en"
+    def on_language_changed(self, event=None):
+        try:
+            lang_val = self.cb_language.get()
+            if lang_val == "简体中文":
+                new_lang = "zh"
+            elif lang_val == "Español":
+                new_lang = "es"
+            else:
+                new_lang = "en"
             
-        self.settings["language"] = new_lang
+            old_lang = self.settings.get("language", "en")
+            if old_lang != new_lang:
+                self.settings["language"] = new_lang
+                # Save language preference immediately
+                with open(self.config_path, "w", encoding="utf-8") as f:
+                    json.dump(self.settings, f, indent=2)
+                self.log_message(f"Language changed to: {new_lang}")
+                
+                # Dynamically refresh all UI translations
+                self.refresh_ui_translations()
+                self.translate_console_content(old_lang, new_lang)
+        except Exception as e:
+            import traceback
+            err_msg = f"Error changing language: {e}\n{traceback.format_exc()}"
+            self.log_message(err_msg)
+            messagebox.showerror("Language Error", err_msg)
 
+    def translate_console_content(self, old_lang, new_lang):
+        if old_lang == new_lang:
+            return
+        
+        content = self.txt_console.get("1.0", tk.END)
+        lines = content.splitlines()
+        translated_lines = []
+        
+        old_phrases = CONSOLE_PHRASES.get(old_lang, CONSOLE_PHRASES["en"])
+        new_phrases = CONSOLE_PHRASES.get(new_lang, CONSOLE_PHRASES["en"])
+        
+        for line in lines:
+            translated = line
+            for key, old_text in old_phrases.items():
+                new_text = new_phrases[key]
+                
+                if key == "discovered_accts":
+                    import re
+                    pattern = re.escape(old_text).replace(r"\{\}", r"(\d+)")
+                    match = re.match(pattern, line)
+                    if match:
+                        num = match.group(1)
+                        translated = new_text.replace("{}", num)
+                        break
+                elif line.strip() == old_text.strip():
+                    translated = new_text
+                    break
+                elif line.startswith(old_text):
+                    suffix = line[len(old_text):]
+                    translated = new_text + suffix
+                    break
+                elif old_text in line:
+                    translated = line.replace(old_text, new_text)
+                    break
+            
+            translated_lines.append(translated)
+        
+        self.txt_console.delete("1.0", tk.END)
+        self.txt_console.insert("1.0", "\n".join(translated_lines) + "\n")
+        self.txt_console.see(tk.END)
+
+    def refresh_ui_translations(self):
+        # 1. Update Title and Headers
+        self.lbl_title.configure(text=self.L("header_title"))
+        self.lbl_subtitle.configure(text=self.L("header_subtitle").format(VERSION=VERSION))
+        self.lbl_card_wow_hdr.configure(text=self.L("card_wow_hdr"))
+        self.lbl_card_sched_hdr.configure(text=self.L("card_sched_hdr"))
+        self.lbl_card_discord_hdr.configure(text=self.L("card_discord_hdr"))
+        self.lbl_console_hdr.configure(text=self.L("lbl_console_hdr"))
+        self.btn_save.configure(text=self.L("btn_save_settings"))
+
+        # 2. Card 1 (WoW Config)
+        self.lbl_language.configure(text=self.L("lbl_language"))
+        self.lbl_region.configure(text=self.L("lbl_region"))
+        self.lbl_rio_delay.configure(text=self.L("lbl_rio_delay"))
+        self.lbl_wow_path.configure(text=self.L("lbl_wow_path"))
+        self.btn_browse.configure(text=self.L("btn_browse"))
+
+        # 3. Card 2 (Scheduler)
+        self.lbl_sched_am.configure(text=self.L("lbl_sched_am"))
+        self.lbl_sched_pm.configure(text=self.L("lbl_sched_pm"))
+        self.chk_logon.configure(text=self.L("chk_logon"))
+        self.chk_startup.configure(text=self.L("chk_startup"))
+        self.chk_wow_exit.configure(text=self.L("chk_wow_exit"))
+        self.btn_register.configure(text=self.L("btn_register"))
+        self.btn_unregister.configure(text=self.L("btn_unregister"))
+
+        # 4. Card 3 (Discord Sync)
+        self.lbl_discord_key.configure(text=self.L("lbl_discord_key"))
+        self.chk_sync_on_import.configure(text=self.L("chk_sync_on_import"))
+        self.btn_sync_now.configure(text=self.L("btn_sync_now"))
+
+        # 5. Card 4 (Console control bar)
+        self.lbl_week_mode.configure(text=self.L("lbl_week_mode"))
+        self.btn_run.configure(text=self.L("btn_run"))
+
+        # Update week mode Combobox options and preserve selection
+        current_code = self.get_week_code()
+        self.cb_week_mode['values'] = [self.L("week_both"), self.L("week_current"), self.L("week_last")]
+        if current_code == "current":
+            self.cb_week_mode.set(self.L("week_current"))
+        elif current_code == "last":
+            self.cb_week_mode.set(self.L("week_last"))
+        else:
+            self.cb_week_mode.set(self.L("week_both"))
+
+    def save_settings(self):
         # Gather inputs
-        self.settings["account"] = self.ent_account.get().strip()
-        self.settings["region"] = self.ent_region.get().strip()
-        self.settings["season"] = self.ent_season.get().strip()
+        self.settings["region"] = self.cb_region.get().strip().lower()
         self.settings["wow_path"] = self.ent_wow_path.get().strip()
         
         try:
@@ -337,7 +665,7 @@ class RLMImporterApp:
         self.settings["schedule_pm"] = self.ent_sched_pm.get().strip()
         self.settings["schedule_logon"] = self.var_sched_logon.get()
         self.settings["discord_sync_key"] = self.ent_discord_key.get().strip()
-        self.settings["discord_sync_url"] = self.ent_discord_url.get().strip()
+        # self.settings["discord_sync_url"] is preserved from loaded settings, not read from widget
         self.settings["sync_on_import"] = self.var_sync_on_import.get()
         self.settings["sync_on_wow_exit"] = self.var_sync_on_wow_exit.get()
 
@@ -345,10 +673,7 @@ class RLMImporterApp:
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.settings, f, indent=2)
             self.log_message("Settings saved successfully to config JSON.")
-            if old_lang != new_lang:
-                messagebox.showinfo(self.L("msg_restart_title"), self.L("msg_restart_body"))
-            else:
-                messagebox.showinfo(self.L("msg_success_title"), self.L("msg_success_saved"))
+            messagebox.showinfo(self.L("msg_success_title"), self.L("msg_success_saved"))
         except Exception as e:
             self.log_message(f"Error saving settings: {e}")
             messagebox.showerror("Error", f"Failed to save settings: {e}")
@@ -380,15 +705,32 @@ class RLMImporterApp:
         self.style.configure("TCheckbutton", background=BG_PANEL, foreground=FG_TEXT, font=("Segoe UI", 9))
         self.style.map("TCheckbutton", background=[("active", BG_PANEL)], foreground=[("active", FG_ACCENT)])
 
+        # TCombobox Styling for Dark Mode
+        self.style.configure("TCombobox", 
+                             fieldbackground=BG_ENTRY, 
+                             background=BG_PANEL, 
+                             foreground=FG_TEXT,
+                             selectbackground="#3e3e42",
+                             selectforeground=FG_ACCENT,
+                             bordercolor=BORDER_COLOR,
+                             lightcolor=BORDER_COLOR,
+                             darkcolor=BORDER_COLOR,
+                             arrowcolor=FG_TEXT)
+        self.style.map("TCombobox",
+                       fieldbackground=[("readonly", BG_ENTRY), ("focus", BG_ENTRY)],
+                       foreground=[("readonly", FG_TEXT), ("focus", FG_TEXT)],
+                       selectbackground=[("readonly", "#3e3e42")],
+                       selectforeground=[("readonly", FG_ACCENT)])
+
     def create_widgets(self):
         # Header banner
         self.header_frame = ttk.Frame(self.root)
         self.header_frame.pack(fill="x", padx=15, pady=10)
         
-        lbl_title = ttk.Label(self.header_frame, text=self.L("header_title"), style="Title.TLabel")
-        lbl_title.pack(side="left")
-        lbl_subtitle = ttk.Label(self.header_frame, text=self.L("header_subtitle").format(VERSION=VERSION), font=("Segoe UI", 10, "italic"))
-        lbl_subtitle.pack(side="left", padx=5, pady=4)
+        self.lbl_title = ttk.Label(self.header_frame, text=self.L("header_title"), style="Title.TLabel")
+        self.lbl_title.pack(side="left")
+        self.lbl_subtitle = ttk.Label(self.header_frame, text=self.L("header_subtitle").format(VERSION=VERSION), font=("Segoe UI", 10, "italic"))
+        self.lbl_subtitle.pack(side="left", padx=5, pady=4)
 
         # Main Layout frame (left = options, right = console logs)
         main_pane = ttk.Frame(self.root)
@@ -402,8 +744,8 @@ class RLMImporterApp:
         card_wow = ttk.Frame(left_col, style="Panel.TFrame")
         card_wow.pack(fill="x", pady=(0, 10))
         
-        lbl_card_wow_hdr = ttk.Label(card_wow, text=self.L("card_wow_hdr"), style="Header.TLabel")
-        lbl_card_wow_hdr.pack(fill="x", padx=10, pady=(10, 5))
+        self.lbl_card_wow_hdr = ttk.Label(card_wow, text=self.L("card_wow_hdr"), style="Header.TLabel")
+        self.lbl_card_wow_hdr.pack(fill="x", padx=10, pady=(10, 5))
         
         self.create_wow_settings_fields(card_wow)
 
@@ -411,8 +753,8 @@ class RLMImporterApp:
         card_sched = ttk.Frame(left_col, style="Panel.TFrame")
         card_sched.pack(fill="x", pady=(0, 10))
         
-        lbl_card_sched_hdr = ttk.Label(card_sched, text=self.L("card_sched_hdr"), style="Header.TLabel")
-        lbl_card_sched_hdr.pack(fill="x", padx=10, pady=(10, 5))
+        self.lbl_card_sched_hdr = ttk.Label(card_sched, text=self.L("card_sched_hdr"), style="Header.TLabel")
+        self.lbl_card_sched_hdr.pack(fill="x", padx=10, pady=(10, 5))
         
         self.create_scheduler_fields(card_sched)
 
@@ -420,8 +762,8 @@ class RLMImporterApp:
         card_discord = ttk.Frame(left_col, style="Panel.TFrame")
         card_discord.pack(fill="x", pady=(0, 10))
         
-        lbl_card_discord_hdr = ttk.Label(card_discord, text=self.L("card_discord_hdr"), style="Header.TLabel")
-        lbl_card_discord_hdr.pack(fill="x", padx=10, pady=(10, 5))
+        self.lbl_card_discord_hdr = ttk.Label(card_discord, text=self.L("card_discord_hdr"), style="Header.TLabel")
+        self.lbl_card_discord_hdr.pack(fill="x", padx=10, pady=(10, 5))
         
         self.create_discord_sync_fields(card_discord)
 
@@ -429,15 +771,15 @@ class RLMImporterApp:
         card_save = ttk.Frame(left_col, style="Panel.TFrame")
         card_save.pack(fill="x")
         
-        btn_save = ttk.Button(card_save, text=self.L("btn_save_settings"), command=self.save_settings, width=30)
-        btn_save.pack(padx=10, pady=10, fill="x")
+        self.btn_save = ttk.Button(card_save, text=self.L("btn_save_settings"), command=self.save_settings, width=30)
+        self.btn_save.pack(padx=10, pady=10, fill="x")
 
         # Right Column: Console/Console Log Card
         right_col = ttk.Frame(main_pane, style="Panel.TFrame")
         right_col.pack(side="right", fill="both", expand=True)
 
-        lbl_console_hdr = ttk.Label(right_col, text=self.L("lbl_console_hdr"), style="Header.TLabel")
-        lbl_console_hdr.pack(fill="x", padx=10, pady=(10, 5))
+        self.lbl_console_hdr = ttk.Label(right_col, text=self.L("lbl_console_hdr"), style="Header.TLabel")
+        self.lbl_console_hdr.pack(fill="x", padx=10, pady=(10, 5))
 
         self.create_console_view(right_col)
 
@@ -446,7 +788,8 @@ class RLMImporterApp:
         grid.pack(fill="x", padx=10, pady=5)
 
         # Language Selection
-        ttk.Label(grid, text=self.L("lbl_language"), style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        self.lbl_language = ttk.Label(grid, text=self.L("lbl_language"), style="Panel.TLabel")
+        self.lbl_language.grid(row=0, column=0, sticky="w", pady=4)
         self.cb_language = ttk.Combobox(grid, values=["English", "简体中文", "Español"], state="readonly", width=15)
         self.cb_language.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=4)
         
@@ -457,43 +800,36 @@ class RLMImporterApp:
             self.cb_language.set("Español")
         else:
             self.cb_language.set("English")
+            
+        self.cb_language.bind("<<ComboboxSelected>>", self.on_language_changed)
 
-        # Account Name
-        ttk.Label(grid, text=self.L("lbl_account"), style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
-        self.ent_account = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_account.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=4)
-        self.ent_account.insert(0, self.settings["account"])
-
-        # Region
-        ttk.Label(grid, text=self.L("lbl_region"), style="Panel.TLabel").grid(row=2, column=0, sticky="w", pady=4)
-        self.ent_region = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_region.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=4)
-        self.ent_region.insert(0, self.settings["region"])
-
-        # Season
-        ttk.Label(grid, text=self.L("lbl_season"), style="Panel.TLabel").grid(row=3, column=0, sticky="w", pady=4)
-        self.ent_season = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_season.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=4)
-        self.ent_season.insert(0, self.settings["season"])
+        # Region Dropdown
+        self.lbl_region = ttk.Label(grid, text=self.L("lbl_region"), style="Panel.TLabel")
+        self.lbl_region.grid(row=1, column=0, sticky="w", pady=4)
+        self.cb_region = ttk.Combobox(grid, values=["", "us", "eu", "tw", "kr", "cn"], state="readonly", width=15)
+        self.cb_region.grid(row=1, column=1, sticky="w", padx=(10, 0), pady=4)
+        self.cb_region.set(self.settings.get("region", ""))
 
         # RIO API Delay
-        ttk.Label(grid, text=self.L("lbl_rio_delay"), style="Panel.TLabel").grid(row=4, column=0, sticky="w", pady=4)
+        self.lbl_rio_delay = ttk.Label(grid, text=self.L("lbl_rio_delay"), style="Panel.TLabel")
+        self.lbl_rio_delay.grid(row=2, column=0, sticky="w", pady=4)
         self.ent_rio_delay = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_rio_delay.grid(row=4, column=1, sticky="ew", padx=(10, 0), pady=4)
+        self.ent_rio_delay.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_rio_delay.insert(0, str(self.settings["rio_delay"]))
 
         # WoW Directory Selector
-        ttk.Label(grid, text=self.L("lbl_wow_path"), style="Panel.TLabel").grid(row=5, column=0, sticky="w", pady=4)
+        self.lbl_wow_path = ttk.Label(grid, text=self.L("lbl_wow_path"), style="Panel.TLabel")
+        self.lbl_wow_path.grid(row=3, column=0, sticky="w", pady=4)
         dir_frame = ttk.Frame(grid, style="Panel.TFrame")
-        dir_frame.grid(row=5, column=1, sticky="ew", padx=(10, 0), pady=4)
+        dir_frame.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=4)
         dir_frame.columnconfigure(0, weight=1)
 
         self.ent_wow_path = tk.Entry(dir_frame, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.ent_wow_path.grid(row=0, column=0, sticky="ew")
         self.ent_wow_path.insert(0, self.settings["wow_path"])
 
-        btn_browse = ttk.Button(dir_frame, text=self.L("btn_browse"), command=self.browse_wow_directory, width=8)
-        btn_browse.grid(row=0, column=1, padx=(5, 0))
+        self.btn_browse = ttk.Button(dir_frame, text=self.L("btn_browse"), command=self.browse_wow_directory, width=8)
+        self.btn_browse.grid(row=0, column=1, padx=(5, 0))
 
         grid.columnconfigure(1, weight=1)
 
@@ -502,62 +838,59 @@ class RLMImporterApp:
         grid.pack(fill="x", padx=10, pady=5)
 
         # AM Run Time
-        ttk.Label(grid, text=self.L("lbl_sched_am"), style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        self.lbl_sched_am = ttk.Label(grid, text=self.L("lbl_sched_am"), style="Panel.TLabel")
+        self.lbl_sched_am.grid(row=0, column=0, sticky="w", pady=4)
         self.ent_sched_am = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1, width=10)
         self.ent_sched_am.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=4)
         self.ent_sched_am.insert(0, self.settings["schedule_am"])
 
         # PM Run Time
-        ttk.Label(grid, text=self.L("lbl_sched_pm"), style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
+        self.lbl_sched_pm = ttk.Label(grid, text=self.L("lbl_sched_pm"), style="Panel.TLabel")
+        self.lbl_sched_pm.grid(row=1, column=0, sticky="w", pady=4)
         self.ent_sched_pm = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1, width=10)
         self.ent_sched_pm.grid(row=1, column=1, sticky="w", padx=(10, 0), pady=4)
         self.ent_sched_pm.insert(0, self.settings["schedule_pm"])
 
         # Run on Logon Trigger
         self.var_sched_logon = tk.BooleanVar(value=self.settings["schedule_logon"])
-        chk_logon = ttk.Checkbutton(grid, text=self.L("chk_logon"), variable=self.var_sched_logon)
-        chk_logon.grid(row=2, column=0, columnspan=2, sticky="w", pady=6)
+        self.chk_logon = ttk.Checkbutton(grid, text=self.L("chk_logon"), variable=self.var_sched_logon)
+        self.chk_logon.grid(row=2, column=0, columnspan=2, sticky="w", pady=6)
 
         # Run UI on Startup
         self.var_run_on_startup = tk.BooleanVar(value=self.settings.get("run_on_startup", True))
-        chk_startup = ttk.Checkbutton(grid, text=self.L("chk_startup"), variable=self.var_run_on_startup)
-        chk_startup.grid(row=3, column=0, columnspan=2, sticky="w", pady=6)
+        self.chk_startup = ttk.Checkbutton(grid, text=self.L("chk_startup"), variable=self.var_run_on_startup)
+        self.chk_startup.grid(row=3, column=0, columnspan=2, sticky="w", pady=6)
 
         # Sync on WoW Exit
         self.var_sync_on_wow_exit = tk.BooleanVar(value=self.settings.get("sync_on_wow_exit", True))
-        chk_wow_exit = ttk.Checkbutton(grid, text=self.L("chk_wow_exit"), variable=self.var_sync_on_wow_exit)
-        chk_wow_exit.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
+        self.chk_wow_exit = ttk.Checkbutton(grid, text=self.L("chk_wow_exit"), variable=self.var_sync_on_wow_exit)
+        self.chk_wow_exit.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
 
         # OS Task Register Actions
         task_action_frame = ttk.Frame(parent, style="Panel.TFrame")
         task_action_frame.pack(fill="x", padx=10, pady=(5, 10))
         
-        btn_register = ttk.Button(task_action_frame, text=self.L("btn_register"), command=self.register_background_tasks)
-        btn_register.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        self.btn_register = ttk.Button(task_action_frame, text=self.L("btn_register"), command=self.register_background_tasks)
+        self.btn_register.pack(side="left", fill="x", expand=True, padx=(0, 5))
         
-        btn_unregister = ttk.Button(task_action_frame, text=self.L("btn_unregister"), command=self.unregister_background_tasks)
-        btn_unregister.pack(side="right", fill="x", expand=True, padx=(5, 0))
+        self.btn_unregister = ttk.Button(task_action_frame, text=self.L("btn_unregister"), command=self.unregister_background_tasks)
+        self.btn_unregister.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
     def create_discord_sync_fields(self, parent):
         grid = ttk.Frame(parent, style="Panel.TFrame")
         grid.pack(fill="x", padx=10, pady=5)
 
         # Sync Key
-        ttk.Label(grid, text=self.L("lbl_discord_key"), style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        self.lbl_discord_key = ttk.Label(grid, text=self.L("lbl_discord_key"), style="Panel.TLabel")
+        self.lbl_discord_key.grid(row=0, column=0, sticky="w", pady=4)
         self.ent_discord_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.ent_discord_key.grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=4)
         self.ent_discord_key.insert(0, self.settings.get("discord_sync_key", ""))
 
-        # Sync URL
-        ttk.Label(grid, text=self.L("lbl_discord_url"), style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
-        self.ent_discord_url = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
-        self.ent_discord_url.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=4)
-        self.ent_discord_url.insert(0, self.settings.get("discord_sync_url", "https://rlm-desktop-companion-production.up.railway.app/api/sync"))
-
         # Checkbutton to auto-sync on import
         self.var_sync_on_import = tk.BooleanVar(value=self.settings.get("sync_on_import", True))
-        chk_sync_on_import = ttk.Checkbutton(grid, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
-        chk_sync_on_import.grid(row=2, column=0, columnspan=2, sticky="w", pady=6)
+        self.chk_sync_on_import = ttk.Checkbutton(grid, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
+        self.chk_sync_on_import.grid(row=1, column=0, columnspan=2, sticky="w", pady=6)
 
         grid.columnconfigure(1, weight=1)
 
@@ -569,10 +902,12 @@ class RLMImporterApp:
         action_bar = ttk.Frame(parent, style="Panel.TFrame")
         action_bar.pack(fill="x", padx=10, pady=5)
 
-        ttk.Label(action_bar, text=self.L("lbl_week_mode"), style="Panel.TLabel").pack(side="left", pady=4)
+        self.lbl_week_mode = ttk.Label(action_bar, text=self.L("lbl_week_mode"), style="Panel.TLabel")
+        self.lbl_week_mode.pack(side="left", pady=4)
         
-        self.cb_week_mode = ttk.Combobox(action_bar, values=["both", "current", "last"], state="readonly", width=10)
-        self.cb_week_mode.set("both")
+        vals = [self.L("week_both"), self.L("week_current"), self.L("week_last")]
+        self.cb_week_mode = ttk.Combobox(action_bar, values=vals, state="readonly", width=15)
+        self.cb_week_mode.set(self.L("week_both"))
         self.cb_week_mode.pack(side="left", padx=5)
 
         self.btn_run = ttk.Button(action_bar, text=self.L("btn_run"), style="Accent.TButton", command=self.trigger_live_import)
@@ -597,8 +932,42 @@ class RLMImporterApp:
             self.ent_wow_path.insert(0, os.path.normpath(dir_selected))
 
     def log_message(self, msg):
+        lang = self.settings.get("language", "en")
+        if lang != "en":
+            en_phrases = CONSOLE_PHRASES["en"]
+            target_phrases = CONSOLE_PHRASES.get(lang, CONSOLE_PHRASES["en"])
+            
+            for key, en_text in en_phrases.items():
+                target_text = target_phrases[key]
+                if key == "discovered_accts":
+                    import re
+                    pattern = re.escape(en_text).replace(r"\{\}", r"(\d+)")
+                    match = re.match(pattern, msg)
+                    if match:
+                        num = match.group(1)
+                        msg = target_text.replace("{}", num)
+                        break
+                elif msg.strip() == en_text.strip():
+                    msg = target_text
+                    break
+                elif msg.startswith(en_text):
+                    suffix = msg[len(en_text):]
+                    msg = target_text + suffix
+                    break
+                elif en_text in msg:
+                    msg = msg.replace(en_text, target_text)
+                    break
+                    
         self.txt_console.insert(tk.END, f"{msg}\n")
         self.txt_console.see(tk.END)
+
+    def get_week_code(self):
+        val = self.cb_week_mode.get()
+        if val == self.L("week_current"):
+            return "current"
+        elif val == self.L("week_last"):
+            return "last"
+        return "both"
 
     def trigger_live_import(self):
         # Concurrency check
@@ -612,7 +981,7 @@ class RLMImporterApp:
         self.btn_run.configure(state="disabled")
         self.log_message("\n--- Starting Mythic+ Importer Process ---")
         
-        week_mode = self.cb_week_mode.get()
+        week_mode = self.get_week_code()
         script_file = self.addon_dir / "raidlootmatrix_mplus.py"
 
         def worker():

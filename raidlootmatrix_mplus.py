@@ -63,8 +63,8 @@ def is_wow_running():
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 # Default fallback configuration constants
-DEFAULT_ACCOUNT      = "APSU14RYNE"
-DEFAULT_REGION       = "us"
+DEFAULT_ACCOUNT      = ""
+DEFAULT_REGION       = ""
 DEFAULT_SEASON       = "season-tww-2"
 DEFAULT_RIO_DELAY    = 0.35
 MAX_RUNS_PER_PLAYER  = 200    # Raider.IO supports up to ~250; grab as much history as possible
@@ -518,6 +518,10 @@ def main():
                         help=f"WoW account name (default: {ACCOUNT})")
     args = parser.parse_args()
 
+    if not REGION:
+        print("[ERROR] Raider.IO Region is not configured. Please open the RLM Desktop UI to select your region.")
+        sys.exit(1)
+
     # Defer import if WoW is running and this is a scheduled background execution
     if not args.dry_run and os.environ.get("RAIDLOOTMATRIX_SCHEDULED") == "1":
         if is_wow_running():
@@ -530,73 +534,47 @@ def main():
     sv_paths = []
     if args.sv:
         sv_paths = [pathlib.Path(args.sv)]
-    elif args.account and args.account != DEFAULT_ACCOUNT:
-        # User specified a particular account via command line
-        custom_path = config_data.get("wow_path")
-        base_dir = None
-        if custom_path:
-            p = pathlib.Path(custom_path)
-            if p.name == "Account" or p.parent.name == "WTF":
-                base_dir = p
-            elif p.parent.name == "Account":
-                base_dir = p.parent
-            else:
-                base_dir = p
-        
-        if not base_dir:
-            system = platform.system()
-            if system == "Windows":
-                base_dir = pathlib.Path(r"C:\Program Files (x86)\World of Warcraft\_retail_\WTF\Account")
-            elif system == "Darwin":
-                base_dir = pathlib.Path.home() / "Library/Application Support/World of Warcraft/_retail_/WTF/Account"
-        
-        if base_dir:
-            sv_paths = [base_dir / args.account / "SavedVariables"]
-        else:
-            raise RuntimeError(f"Could not find WTF Account path for account {args.account}")
     else:
-        # Default: scan WTF/Account folder to process ALL accounts containing RaidLootMatrix
         custom_path = config_data.get("wow_path")
-        base_dir = None
         if custom_path:
             p = pathlib.Path(custom_path)
-            # If they selected a specific account folder, process only that one
-            if (p / "RaidLootMatrix.lua").exists():
-                sv_paths = [p]
-            elif (p / "SavedVariables" / "RaidLootMatrix.lua").exists():
-                sv_paths = [p / "SavedVariables"]
-            elif p.name == "SavedVariables":
-                sv_paths = [p]
-            else:
-                base_dir = p
+            if p.exists():
+                if p.name == "SavedVariables" and (p / "RaidLootMatrix.lua").exists():
+                    sv_paths = [p]
+                elif (p / "SavedVariables" / "RaidLootMatrix.lua").exists():
+                    sv_paths = [p / "SavedVariables"]
+                else:
+                    try:
+                        for match in p.glob("**/SavedVariables/RaidLootMatrix.lua"):
+                            if match.is_file():
+                                sv_paths.append(match.parent)
+                    except Exception as e:
+                        print(f"[WARNING] Recursive search error: {e}")
         
+        # Fallback to default WoW installations if nothing found yet
         if not sv_paths:
-            if not base_dir:
-                system = platform.system()
-                if system == "Windows":
-                    base_dir = pathlib.Path(r"C:\Program Files (x86)\World of Warcraft\_retail_\WTF\Account")
-                elif system == "Darwin":
-                    base_dir = pathlib.Path.home() / "Library/Application Support/World of Warcraft/_retail_/WTF/Account"
+            system = platform.system()
+            default_dir = None
+            if system == "Windows":
+                # Check default retail path first, fallback to root WoW folder
+                default_dir = pathlib.Path(r"C:\Program Files (x86)\World of Warcraft")
+            elif system == "Darwin":
+                default_dir = pathlib.Path.home() / "Library/Application Support/World of Warcraft"
             
-            if base_dir and base_dir.exists():
-                # Check if it's actually a single account folder
-                if (base_dir / "SavedVariables" / "RaidLootMatrix.lua").exists():
-                    sv_paths = [base_dir / "SavedVariables"]
-                else:
-                    # Scan all subdirectories for SavedVariables/RaidLootMatrix.lua
-                    for item in base_dir.iterdir():
-                        if item.is_dir():
-                            sv_file = item / "SavedVariables" / "RaidLootMatrix.lua"
-                            if sv_file.exists():
-                                sv_paths.append(item / "SavedVariables")
-            
-            # Fallback if no paths found: use default account from config/cli
-            if not sv_paths:
-                acct = args.account or ACCOUNT
-                if base_dir:
-                    sv_paths = [base_dir / acct / "SavedVariables"]
-                else:
-                    raise RuntimeError("Could not find WoW Account directory. Please configure WTF path in RLM Importer UI.")
+            if default_dir and default_dir.exists():
+                try:
+                    for match in default_dir.glob("**/SavedVariables/RaidLootMatrix.lua"):
+                        if match.is_file():
+                            sv_paths.append(match.parent)
+                except Exception:
+                    pass
+
+        # If we still can't find anything, raise a helpful error
+        if not sv_paths:
+            raise RuntimeError(
+                "Could not find any WoW Account directories containing RaidLootMatrix saved variables.\n"
+                "Please configure your WoW Directory or WTF Path in the RLM Desktop UI."
+            )
 
     print(f"Discovered {len(sv_paths)} account(s) to process:")
     for p in sv_paths:
