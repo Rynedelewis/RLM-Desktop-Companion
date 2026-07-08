@@ -103,6 +103,43 @@ LOCALES = {
         "week_current": "仅限本周",
         "week_last": "仅限上周"
     },
+    "zh_tw": {
+        "header_title": "RLM 導入器",
+        "header_subtitle": " v{VERSION} • Raider.IO 史詩+ 設置與自動化中心",
+        "card_wow_hdr": " 遊戲與帳號設置",
+        "card_sched_hdr": " 後台任務自動化",
+        "card_discord_hdr": " Discord 機器人同步設置",
+        "btn_save_settings": "儲存目前設置",
+        "lbl_console_hdr": " 導入操作與主控台日誌",
+        "lbl_account": "WTF 帳號名稱:",
+        "lbl_region": "Raider.IO 區域 (us/eu):",
+        "lbl_season": "史詩+ 賽季識別:",
+        "lbl_rio_delay": "API 延遲 (秒):",
+        "lbl_wow_path": "WoW 目錄或 WTF 路徑:",
+        "btn_browse": "瀏覽...",
+        "lbl_sched_am": "上午掃描 (24h HH:MM):",
+        "lbl_sched_pm": "下午掃描 (24h HH:MM):",
+        "chk_logon": "登入 Windows 5 分鐘後運行每日掃描",
+        "chk_startup": "登入 Windows 時自動啟動 RLM 桌面 UI (系統托盤)",
+        "chk_wow_exit": "WoW 關閉時立即同步 (Wow.exe 運行監控)",
+        "btn_register": "註冊後台任務",
+        "btn_unregister": "刪除註冊任務",
+        "lbl_discord_key": "Discord 同步金鑰:",
+        "lbl_discord_url": "Discord 同步 URL:",
+        "chk_sync_on_import": "導入 M+ 數據後運行 Discord 同步",
+        "btn_sync_now": "立即運行 Discord 同步",
+        "lbl_week_mode": "導入周模式:",
+        "btn_run": "立即運行導入",
+        "msg_success_title": "成功",
+        "msg_success_saved": "設置已成功儲存！",
+        "msg_restart_title": "需要重啟",
+        "msg_restart_body": "語言已變更。請重新啟動應用程式以套用語言設置。",
+        "dialog_select_wtf": "選擇您的魔獸世界遊戲目錄、WTF 或是帳號資料夾",
+        "lbl_language": "語言 / Language / Idioma:",
+        "week_both": "全部雙周",
+        "week_current": "僅限本周",
+        "week_last": "僅限上周"
+    },
     "es": {
         "header_title": "Importador RLM",
         "header_subtitle": " v{VERSION} • Centro de Automatización y Ajustes Mítica+ de Raider.IO",
@@ -235,6 +272,52 @@ CONSOLE_PHRASES = {
         "log_in_reload": "用官员角色登录游戏（或执行 /reload），并打开史诗+选项卡。",
         "parse_failed_warn": "[警告] 无法解析位于 {} 的 SavedVariables"
     },
+    "zh_tw": {
+        "start_importer": "--- 啟動史詩+導入程序 ---",
+        "executing": "正在執行: ",
+        "importer_finished": "導入器完成，退出代碼為 ",
+        "importer_success": "史詩+數據已更新！登入 WoW 並打開 /rlm UI 以套用變更。",
+        "start_auto_sync": "--- 正在運行 Discord 自動同步 ---",
+        "sync_finished": "同步完成，退出代碼為 ",
+        "process_crashed": "程序崩潰: ",
+        "start_sync": "--- 啟動 Discord 同步程序 ---",
+        "shortcut_success": "桌面快捷方式建立成功。",
+        "tasks_updated": "計劃任務已在任務計劃程序中更新！",
+        "tasks_removed": "RaidLootMatrix 計劃任務已刪除。",
+        "lang_changed": "語言變更為: ",
+        "settings_saved": "設置成功儲存到配置 JSON。",
+        "discovered_accts": "發現 {} 個要處理的帳號:",
+        "running_rio": "正在為名冊運行 Raider.IO API 查詢...",
+        "roster_complete": "名冊獲取完成。",
+        "uploading_standings": "正在上傳積分榜數據至 ",
+        "sync_success": "🚀 同步成功！EPGP 積分榜與名冊已更新。",
+        "sync_failed": "❌ 同步失敗，狀態代碼: ",
+        "reading_db": "正在讀取資料庫檔案: ",
+        "parsing_epgp": "正在解析 EPGP 與名冊數據...",
+        "wow_running": "魔獸世界目前正在運行。推遲導入直到遊戲關閉...",
+        "wow_exit": "檢測到魔獸世界退出。恢復導入...",
+        "deferring": "推遲導入直到遊戲關閉...",
+        "control_panel_loaded": "RLM 導入器控制面板已載入。",
+        "working_directory": "工作目錄:",
+        "sync_client_header": "RaidLootMatrix 桌面同步用戶端 (方法 2)",
+        "successfully_parsed": "成功解析了 {} 個資料庫配置表。",
+        "profile_characters": " - 配置表 '{}' ({} 個角色)",
+        "wow_running_warn": "[警告] 魔獸世界正在運行。",
+        "corrupt_warn_1": "          當 WoW 打開時寫入 M+ 數據可能會損壞 SavedVariables。",
+        "corrupt_warn_2": "          請先關閉 WoW，或者在此腳本完成後執行 /reload。",
+        "no_active_players": "在任何名冊中均未發現活躍玩家。退出中。",
+        "fetching_rio_data": "正在為 {} 位唯一玩家獲取 Raider.IO 數據",
+        "requesting_runs": "(請求最近 20 次大米運行以覆蓋 {})",
+        "runs_found": "總共找到 {} 次運行記錄",
+        "account_hdr": "帳號: {}",
+        "processing_week": "-- 正在處理周 {} [{}] -------",
+        "players_runs_pool": "  {} / {} 位有運行記錄的玩家 | EP 預覽點數: {}",
+        "dry_run_no_file": "[模擬運行] 未寫入任何檔案。",
+        "wrote_file": "寫入檔案: {}",
+        "ep_calculated": "EP 將在游戏內的 設置 -> 史詩+ 中進行計算。",
+        "log_in_reload": "用官員角色登入遊戲（或執行 /reload），並打開史詩+索引標籤。",
+        "parse_failed_warn": "[警告] 無法解析位於 {} 的 SavedVariables"
+    },
     "es": {
         "start_importer": "--- Iniciando el Proceso de Importador Mítica+ ---",
         "executing": "Ejecutando: ",
@@ -306,9 +389,13 @@ def translate_line(line, old_lang, new_lang):
                     for g in groups:
                         # Translate inner keywords if matched (e.g. both weeks / this week)
                         if g == "both weeks":
-                            g = "双周" if new_lang == "zh" else ("ambas semanas" if new_lang == "es" else g)
+                            if new_lang == "zh": g = "双周"
+                            elif new_lang == "zh_tw": g = "全部雙周"
+                            elif new_lang == "es": g = "ambas semanas"
                         elif g == "this week":
-                            g = "本周" if new_lang == "zh" else ("esta semana" if new_lang == "es" else g)
+                            if new_lang == "zh": g = "本周"
+                            elif new_lang == "zh_tw": g = "本周"
+                            elif new_lang == "es": g = "esta semana"
                         result = result.replace("{}", g, 1)
                     return result
             except Exception:
@@ -385,6 +472,8 @@ def auto_detect_language():
         if sys_lang:
             sys_lang = sys_lang.lower()
             if sys_lang.startswith("zh") or "chinese" in sys_lang:
+                if any(x in sys_lang for x in ["tw", "hk", "mo", "taiwan", "hong kong", "macau", "traditional"]):
+                    return "zh_tw"
                 return "zh"
             elif sys_lang.startswith("es") or "spanish" in sys_lang:
                 return "es"
@@ -396,7 +485,10 @@ def auto_detect_language():
         windll = ctypes.windll.kernel32
         lang_id = windll.GetUserDefaultUILanguage()
         primary_lang = lang_id & 0x3ff
+        sub_lang = (lang_id >> 10) & 0x3f
         if primary_lang == 0x04:
+            if sub_lang in [0x02, 0x03, 0x05]: # TW, HK, MO
+                return "zh_tw"
             return "zh"
         elif primary_lang == 0x0a:
             return "es"
@@ -543,6 +635,8 @@ class RLMImporterApp:
             lang_val = self.cb_language.get()
             if lang_val == "简体中文":
                 new_lang = "zh"
+            elif lang_val == "繁體中文":
+                new_lang = "zh_tw"
             elif lang_val == "Español":
                 new_lang = "es"
             else:
@@ -790,12 +884,14 @@ class RLMImporterApp:
         # Language Selection
         self.lbl_language = ttk.Label(grid, text=self.L("lbl_language"), style="Panel.TLabel")
         self.lbl_language.grid(row=0, column=0, sticky="w", pady=4)
-        self.cb_language = ttk.Combobox(grid, values=["English", "简体中文", "Español"], state="readonly", width=15)
+        self.cb_language = ttk.Combobox(grid, values=["English", "简体中文", "繁體中文", "Español"], state="readonly", width=15)
         self.cb_language.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=4)
         
         lang = self.settings.get("language", "en")
         if lang == "zh":
             self.cb_language.set("简体中文")
+        elif lang == "zh_tw":
+            self.cb_language.set("繁體中文")
         elif lang == "es":
             self.cb_language.set("Español")
         else:
