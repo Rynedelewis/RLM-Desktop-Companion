@@ -26,7 +26,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 
 LOCALES = {
     "en": {
@@ -1573,8 +1573,17 @@ class RLMImporterApp:
                         "del \"%~f0\"\n"
                     )
                 
+                # Clean environment to prevent PyInstaller PATH pollution DLL load errors
+                clean_env = os.environ.copy()
+                if sys.platform == "win32":
+                    path_parts = clean_env.get("PATH", "").split(os.pathsep)
+                    clean_path_parts = [p for p in path_parts if "_MEI" not in p]
+                    clean_env["PATH"] = os.pathsep.join(clean_path_parts)
+                for var in ["_MEIPASS", "MEIPASS2"]:
+                    clean_env.pop(var, None)
+
                 # Detached run
-                subprocess.Popen([str(bat_path)], creationflags=0x08000000)
+                subprocess.Popen([str(bat_path)], env=clean_env, creationflags=0x08000000)
                 self.root.after(0, self.root.quit)
             else:
                 # 2. Python script mode
