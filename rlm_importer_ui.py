@@ -26,7 +26,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 LOCALES = {
     "en": {
@@ -1522,8 +1522,110 @@ class RLMImporterApp:
         lbl_update = ttk.Label(update_frame, text=f"Update Available: {remote_version}", foreground="#ffcc00", font=("Segoe UI", 10, "bold"))
         lbl_update.pack(side="left", padx=5)
         
-        btn_update = ttk.Button(update_frame, text="Download", width=12, command=lambda: self.open_url(release_url))
+        btn_update = ttk.Button(update_frame, text="Update Now", width=12, command=lambda: self.start_auto_update(remote_version))
         btn_update.pack(side="left", padx=5)
+
+    def start_auto_update(self, tag_name):
+        # Open a loading/status pop-up
+        self.update_win = tk.Toplevel(self.root)
+        self.update_win.title("App Update")
+        self.update_win.geometry("400x150")
+        self.update_win.configure(bg=BG_DARK)
+        self.update_win.transient(self.root)
+        self.update_win.grab_set()
+
+        lbl = ttk.Label(self.update_win, text=f"Updating to {tag_name}...\nPlease do not close the app.", style="Panel.TLabel", font=("Segoe UI", 11))
+        lbl.pack(pady=20)
+        
+        self.update_progress = ttk.Progressbar(self.update_win, mode="indeterminate", length=300)
+        self.update_progress.pack(pady=10)
+        self.update_progress.start(10)
+
+        threading.Thread(target=self.run_auto_update_thread, args=(tag_name,), daemon=True).start()
+
+    def run_auto_update_thread(self, tag_name):
+        import urllib.request
+        import zipfile
+        import shutil
+
+        try:
+            is_frozen = getattr(sys, 'frozen', False)
+            
+            if is_frozen:
+                # 1. Standalone executable mode
+                exe_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/{tag_name}/RLM_Companion.exe"
+                new_exe = self.addon_dir / "RLM_Companion_new.exe"
+                
+                req = urllib.request.Request(exe_url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    with open(new_exe, "wb") as f:
+                        f.write(response.read())
+                
+                # Create bat updater
+                bat_path = self.addon_dir / "apply_update.bat"
+                with open(bat_path, "w", encoding="utf-8") as f:
+                    f.write(
+                        "@echo off\n"
+                        "timeout /t 2 /nobreak > nul\n"
+                        f"del \"{self.addon_dir / 'RLM_Companion.exe'}\"\n"
+                        f"rename \"{new_exe}\" \"RLM_Companion.exe\"\n"
+                        f"start \"\" \"{self.addon_dir / 'RLM_Companion.exe'}\"\n"
+                        "del \"%~f0\"\n"
+                    )
+                
+                # Detached run
+                subprocess.Popen([str(bat_path)], creationflags=0x08000000)
+                self.root.after(0, self.root.quit)
+            else:
+                # 2. Python script mode
+                zip_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/archive/refs/tags/{tag_name}.zip"
+                temp_zip = self.addon_dir / "temp_update.zip"
+                
+                req = urllib.request.Request(zip_url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    with open(temp_zip, "wb") as f:
+                        f.write(response.read())
+                
+                # Unzip
+                extract_dir = self.addon_dir / "temp_extract"
+                if extract_dir.exists():
+                    shutil.rmtree(extract_dir)
+                
+                with zipfile.ZipFile(temp_zip, 'r') as zip_ref:
+                    zip_ref.extractall(extract_dir)
+                
+                # Copy files over
+                extracted_folders = list(extract_dir.glob("*"))
+                if extracted_folders:
+                    source_dir = extracted_folders[0]
+                    for item in source_dir.iterdir():
+                        if item.name in [".git", "rlm_importer_config.json", "rlm_bot_db.json", ".env"]:
+                            continue
+                        dest = self.addon_dir / item.name
+                        if item.is_dir():
+                            if dest.exists():
+                                shutil.rmtree(dest)
+                            shutil.copytree(item, dest)
+                        else:
+                            shutil.copy2(item, dest)
+                
+                # Cleanup
+                if temp_zip.exists():
+                    os.remove(temp_zip)
+                if extract_dir.exists():
+                    shutil.rmtree(extract_dir)
+                
+                self.root.after(0, self.show_update_success_restart)
+        except Exception as e:
+            self.root.after(0, lambda: self.show_update_failed_error(e))
+
+    def show_update_success_restart(self):
+        self.update_win.destroy()
+        messagebox.showinfo("Update Complete", "The application has been updated to the latest version.\nPlease restart the application to apply the update.")
+
+    def show_update_failed_error(self, err):
+        self.update_win.destroy()
+        messagebox.showerror("Update Failed", f"Could not perform automatic update:\n{err}\n\nYou can download the update manually from GitHub.")
 
     def open_url(self, url):
         import webbrowser
