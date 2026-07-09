@@ -26,7 +26,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.4"
+VERSION = "1.1.5"
 
 LOCALES = {
     "en": {
@@ -1569,7 +1569,7 @@ class RLMImporterApp:
                         "timeout /t 2 /nobreak > nul\n"
                         f"del \"{self.addon_dir / 'RLM_Companion.exe'}\"\n"
                         f"rename \"{new_exe}\" \"RLM_Companion.exe\"\n"
-                        f"start \"\" \"{self.addon_dir / 'RLM_Companion.exe'}\"\n"
+                        f"start \"\" explorer.exe \"{self.addon_dir / 'RLM_Companion.exe'}\"\n"
                         "del \"%~f0\"\n"
                     )
                 
