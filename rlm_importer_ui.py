@@ -26,7 +26,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 LOCALES = {
     "en": {
@@ -496,6 +496,18 @@ def auto_detect_language():
         pass
         
     return "en"
+
+# Resolve pythonw path and subprocess flags for silent background execution
+sub_kwargs = {}
+if sys.platform == "win32":
+    sub_kwargs["creationflags"] = 0x08000000
+
+def get_pythonw_path():
+    python_dir = os.path.dirname(sys.executable)
+    pythonw_exe = os.path.join(python_dir, "pythonw.exe")
+    if os.path.exists(pythonw_exe):
+        return pythonw_exe
+    return "pythonw"
 
 class RLMImporterApp:
     def __init__(self, root):
@@ -1084,7 +1096,7 @@ class RLMImporterApp:
             if getattr(sys, 'frozen', False):
                 cmd = [sys.executable, "--run-mplus", "--week", week_mode]
             else:
-                cmd = ["python", str(script_file), "--week", week_mode]
+                cmd = [get_pythonw_path(), str(script_file), "--week", week_mode]
             self.log_message(f"Executing: {' '.join(cmd)}")
             try:
                 # Set stdout / stderr flags to read directly
@@ -1115,7 +1127,7 @@ class RLMImporterApp:
                         if getattr(sys, 'frozen', False):
                             sync_cmd = [sys.executable, "--run-sync", "--non-interactive"]
                         else:
-                            sync_cmd = ["python", str(sync_script), "--non-interactive"]
+                            sync_cmd = [get_pythonw_path(), str(sync_script), "--non-interactive"]
                         self.log_message(f"Executing: {' '.join(sync_cmd)}")
                         sync_proc = subprocess.Popen(
                             sync_cmd,
@@ -1164,7 +1176,7 @@ class RLMImporterApp:
             if getattr(sys, 'frozen', False):
                 cmd = [sys.executable, "--run-sync", "--non-interactive"]
             else:
-                cmd = ["python", str(script_file), "--non-interactive"]
+                cmd = [get_pythonw_path(), str(script_file), "--non-interactive"]
             self.log_message(f"Executing: {' '.join(cmd)}")
             try:
                 process = subprocess.Popen(
@@ -1218,9 +1230,9 @@ class RLMImporterApp:
                     if self.var_sync_on_import.get():
                         f.write(f'"{sys.executable}" --run-sync --non-interactive >> "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
                 else:
-                    f.write(f'python "{mplus_py}" --week both > "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
+                    f.write(f'"{get_pythonw_path()}" "{mplus_py}" --week both > "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
                     if self.var_sync_on_import.get():
-                        f.write(f'python "{sync_py}" --non-interactive >> "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
+                        f.write(f'"{get_pythonw_path()}" "{sync_py}" --non-interactive >> "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
         except Exception as e:
             self.log_message(f"Failed to generate silent runner: {e}")
             return
@@ -1272,7 +1284,7 @@ class RLMImporterApp:
                 "If fso.FileExists(scriptDir & \"\\RLM_Companion.exe\") Then\n"
                 "    exe = \"\"\"\" & scriptDir & \"\\RLM_Companion.exe\"\" --watch-wow\"\n"
                 "Else\n"
-                "    exe = \"python \"\"\" & scriptDir & \"\\rlm_importer_ui.py\"\" --watch-wow\"\n"
+                "    exe = \"pythonw \"\"\" & scriptDir & \"\\rlm_importer_ui.py\"\" --watch-wow\"\n"
                 "End If\n\n"
                 "shell.Run exe, 0, False\n"
                 "Set shell = Nothing\n"
