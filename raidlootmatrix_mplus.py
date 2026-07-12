@@ -500,6 +500,18 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
         rc_text = rc_text[:idx] + "\n" + lua_block + "\n"
     rc_path.write_text(rc_text, encoding="utf-8")
 
+    # Write to static addon sync data file to allow direct updates via /reload without logout!
+    try:
+        retail_dir = sv_path.parents[4]
+        addon_mplus_file = retail_dir / "Interface" / "AddOns" / "RaidLootMatrix" / "sync" / "mplus_data.lua"
+        addon_mplus_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        static_lua_block = lua_block.replace("RaidLootMatrixMplusImport =", "RaidLootMatrixMplusImportStatic =")
+        addon_mplus_file.write_text(static_lua_block + "\n", encoding="utf-8")
+        print(f"[SUCCESS] Addon M+ sync data file written to {addon_mplus_file} (allows /reload updates!)")
+    except Exception as e:
+        print(f"[WARNING] Failed to write addon folder M+ sync file: {e}")
+
     return rc_path
 
 # ─────────────────────────────────────────────────────────────────────────────
