@@ -377,7 +377,7 @@ def main():
                         except Exception:
                             continue
                             
-                    print(f"  Found {len(raid_list)} upcoming raid events (syncing {len(filtered_raids)} within -7/+14 days).")
+                    print(f"  WoW Audit API returned {len(raid_list)} total events. Syncing {len(filtered_raids)} events within the -7 to +14 days range.")
                     for rd in filtered_raids:
                         r_id = rd.get("id")
                         r_date = rd.get("date")
@@ -468,7 +468,7 @@ def main():
             addon_sync_file = retail_dir / "Interface" / "AddOns" / "RaidLootMatrix" / "sync" / "wowaudit_data.lua"
             addon_sync_file.parent.mkdir(parents=True, exist_ok=True)
             
-            addon_sync_file.write_text(f"RaidLootMatrixWoWAuditSync = {lua_sync_table}\n", encoding="utf-8")
+            addon_sync_file.write_text(f"RaidLootMatrixWoWAuditSyncStatic = {lua_sync_table}\n", encoding="utf-8")
             print(f"[SUCCESS] Addon sync data file written to {addon_sync_file} (allows /reload updates!)")
         except Exception as e:
             print(f"[WARNING] Failed to write addon folder sync file: {e}")
