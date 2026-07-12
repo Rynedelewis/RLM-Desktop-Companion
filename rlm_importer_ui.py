@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.5"
+VERSION = "1.1.6"
 
 LOCALES = {
     "en": {
@@ -120,7 +120,10 @@ LOCALES = {
         "btn_wowaudit_add": "添加团队映射",
         "btn_wowaudit_del": "删除所选团队",
         "wowaudit_err_invalid_key": "需要 API 密钥。",
-        "wowaudit_err_fetch_failed": "获取团队信息失败。请检查密钥和连接。"
+        "wowaudit_err_fetch_failed": "获取团队信息失败。请检查密钥和连接。",
+        "btn_run_mplus": "导入 M+ 装备",
+        "btn_run_wowaudit": "同步 WoW Audit",
+        "btn_run_discord": "同步 Discord 机器人"
     },
     "zh_tw": {
         "header_title": "RLM 導入器",
@@ -164,7 +167,10 @@ LOCALES = {
         "btn_wowaudit_add": "新增團隊映射",
         "btn_wowaudit_del": "刪除所選團隊",
         "wowaudit_err_invalid_key": "需要 API 金鑰。",
-        "wowaudit_err_fetch_failed": "獲取團隊信息失敗。請檢查金鑰和連接。"
+        "wowaudit_err_fetch_failed": "獲取團隊信息失敗。請檢查金鑰和連接。",
+        "btn_run_mplus": "匯入 M+ 裝備",
+        "btn_run_wowaudit": "同步 WoW Audit",
+        "btn_run_discord": "同步 Discord 機器人"
     },
     "es": {
         "header_title": "Importador RLM",
@@ -208,7 +214,10 @@ LOCALES = {
         "btn_wowaudit_add": "Añadir Asignación de Equipo",
         "btn_wowaudit_del": "Eliminar Equipo Seleccionado",
         "wowaudit_err_invalid_key": "Se requiere la clave API.",
-        "wowaudit_err_fetch_failed": "Error al obtener los detalles del equipo. Compruebe la clave y la conexión."
+        "wowaudit_err_fetch_failed": "Error al obtener los detalles del equipo. Compruebe la clave y la conexión.",
+        "btn_run_mplus": "Importar Botín de Mítica+",
+        "btn_run_wowaudit": "Sincronizar WoW Audit",
+        "btn_run_discord": "Sincronizar Bot de Discord"
     }
 }
 
@@ -546,9 +555,9 @@ class RLMImporterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("RLM Importer — Desktop Control Panel")
-        self.root.geometry("1160x600")
+        self.root.geometry("1624x600")
         self.root.configure(bg=BG_DARK)
-        self.root.minsize(1050, 560)
+        self.root.minsize(1400, 560)
 
         # Configure Combobox dropdown listbox popup styling
         self.root.option_add("*TCombobox*Listbox.background", BG_ENTRY)
@@ -784,7 +793,9 @@ class RLMImporterApp:
 
         # 5. Card 4 (Console control bar)
         self.lbl_week_mode.configure(text=self.L("lbl_week_mode"))
-        self.btn_run.configure(text=self.L("btn_run"))
+        self.btn_run_mplus.configure(text=self.L("btn_run_mplus"))
+        self.btn_run_wowaudit.configure(text=self.L("btn_run_wowaudit"))
+        self.btn_run_discord.configure(text=self.L("btn_run_discord"))
 
         # Update week mode Combobox options and preserve selection
         current_code = self.get_week_code()
