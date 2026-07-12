@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.6"
+VERSION = "1.1.7"
 
 LOCALES = {
     "en": {
