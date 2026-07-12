@@ -10,11 +10,13 @@ import subprocess
 import pystray
 from PIL import Image, ImageDraw
 import ctypes
+import requests
 
 # Import background tasks to package them into the standalone executable
 try:
     import raidlootmatrix_mplus
     import rlm_discord_sync
+    import rlm_wowaudit_sync
 except ImportError as e:
     # Fallback/logging if running locally and missing dependencies
     print(f"Warning: Failed to import background task modules: {e}")
@@ -64,7 +66,17 @@ LOCALES = {
         "lbl_language": "Language / 语言 / Idioma:",
         "week_both": "Both Weeks",
         "week_current": "Current Week",
-        "week_last": "Last Week"
+        "week_last": "Last Week",
+        "card_wowaudit_hdr": " WoW Audit Integration Settings",
+        "lbl_wowaudit_key": "WoW Audit API Key:",
+        "lbl_wowaudit_profile": "RLM Profile:",
+        "btn_wowaudit_add": "Add Team Mapping",
+        "btn_wowaudit_del": "Remove Selected Team",
+        "wowaudit_err_invalid_key": "API Key is required.",
+        "wowaudit_err_fetch_failed": "Failed to fetch team details. Check your key and connection.",
+        "btn_run_mplus": "Import M+ Loot",
+        "btn_run_wowaudit": "Sync WoW Audit",
+        "btn_run_discord": "Sync Discord Bot"
     },
     "zh": {
         "header_title": "RLM 导入器",
@@ -101,7 +113,14 @@ LOCALES = {
         "lbl_language": "语言 / Language / Idioma:",
         "week_both": "全部双周",
         "week_current": "仅限本周",
-        "week_last": "仅限上周"
+        "week_last": "仅限上周",
+        "card_wowaudit_hdr": " WoW Audit 集成设置",
+        "lbl_wowaudit_key": "WoW Audit API 密钥:",
+        "lbl_wowaudit_profile": "RLM 配置文件:",
+        "btn_wowaudit_add": "添加团队映射",
+        "btn_wowaudit_del": "删除所选团队",
+        "wowaudit_err_invalid_key": "需要 API 密钥。",
+        "wowaudit_err_fetch_failed": "获取团队信息失败。请检查密钥和连接。"
     },
     "zh_tw": {
         "header_title": "RLM 導入器",
@@ -138,7 +157,14 @@ LOCALES = {
         "lbl_language": "語言 / Language / Idioma:",
         "week_both": "全部雙周",
         "week_current": "僅限本周",
-        "week_last": "僅限上周"
+        "week_last": "僅限上周",
+        "card_wowaudit_hdr": " WoW Audit 整合設置",
+        "lbl_wowaudit_key": "WoW Audit API 金鑰:",
+        "lbl_wowaudit_profile": "RLM 設定檔:",
+        "btn_wowaudit_add": "新增團隊映射",
+        "btn_wowaudit_del": "刪除所選團隊",
+        "wowaudit_err_invalid_key": "需要 API 金鑰。",
+        "wowaudit_err_fetch_failed": "獲取團隊信息失敗。請檢查金鑰和連接。"
     },
     "es": {
         "header_title": "Importador RLM",
@@ -175,7 +201,14 @@ LOCALES = {
         "lbl_language": "Idioma / Language / 语言:",
         "week_both": "Ambas Semanas",
         "week_current": "Semana Actual",
-        "week_last": "Semana Anterior"
+        "week_last": "Semana Anterior",
+        "card_wowaudit_hdr": " Configuración de Integración de WoW Audit",
+        "lbl_wowaudit_key": "Clave API de WoW Audit:",
+        "lbl_wowaudit_profile": "Perfil RLM:",
+        "btn_wowaudit_add": "Añadir Asignación de Equipo",
+        "btn_wowaudit_del": "Eliminar Equipo Seleccionado",
+        "wowaudit_err_invalid_key": "Se requiere la clave API.",
+        "wowaudit_err_fetch_failed": "Error al obtener los detalles del equipo. Compruebe la clave y la conexión."
     }
 }
 
@@ -513,9 +546,9 @@ class RLMImporterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("RLM Importer — Desktop Control Panel")
-        self.root.geometry("840x760")
+        self.root.geometry("1160x600")
         self.root.configure(bg=BG_DARK)
-        self.root.minsize(750, 680)
+        self.root.minsize(1050, 560)
 
         # Configure Combobox dropdown listbox popup styling
         self.root.option_add("*TCombobox*Listbox.background", BG_ENTRY)
@@ -719,6 +752,12 @@ class RLMImporterApp:
         self.lbl_card_wow_hdr.configure(text=self.L("card_wow_hdr"))
         self.lbl_card_sched_hdr.configure(text=self.L("card_sched_hdr"))
         self.lbl_card_discord_hdr.configure(text=self.L("card_discord_hdr"))
+        if hasattr(self, "lbl_card_wowaudit_hdr"):
+            self.lbl_card_wowaudit_hdr.configure(text=self.L("card_wowaudit_hdr"))
+            self.lbl_wowaudit_key.configure(text=self.L("lbl_wowaudit_key"))
+            self.lbl_wowaudit_profile.configure(text=self.L("lbl_wowaudit_profile"))
+            self.btn_wowaudit_add.configure(text=self.L("btn_wowaudit_add"))
+            self.btn_wowaudit_del.configure(text=self.L("btn_wowaudit_del"))
         self.lbl_console_hdr.configure(text=self.L("lbl_console_hdr"))
         self.btn_save.configure(text=self.L("btn_save_settings"))
 
@@ -842,12 +881,12 @@ class RLMImporterApp:
         main_pane = ttk.Frame(self.root)
         main_pane.pack(fill="both", expand=True, padx=15, pady=5)
 
-        # Left Column: Configuration Cards
-        left_col = ttk.Frame(main_pane)
-        left_col.pack(side="left", fill="both", padx=(0, 10))
+        # Column 1 (Left): WoW Settings & Scheduler
+        col1 = ttk.Frame(main_pane)
+        col1.pack(side="left", fill="both", padx=(0, 10))
 
         # Card 1: WoW & Account Config
-        card_wow = ttk.Frame(left_col, style="Panel.TFrame")
+        card_wow = ttk.Frame(col1, style="Panel.TFrame")
         card_wow.pack(fill="x", pady=(0, 10))
         
         self.lbl_card_wow_hdr = ttk.Label(card_wow, text=self.L("card_wow_hdr"), style="Header.TLabel")
@@ -856,7 +895,7 @@ class RLMImporterApp:
         self.create_wow_settings_fields(card_wow)
 
         # Card 2: Background Task Scheduler Automation
-        card_sched = ttk.Frame(left_col, style="Panel.TFrame")
+        card_sched = ttk.Frame(col1, style="Panel.TFrame")
         card_sched.pack(fill="x", pady=(0, 10))
         
         self.lbl_card_sched_hdr = ttk.Label(card_sched, text=self.L("card_sched_hdr"), style="Header.TLabel")
@@ -864,8 +903,19 @@ class RLMImporterApp:
         
         self.create_scheduler_fields(card_sched)
 
+        # Save Button Card
+        card_save = ttk.Frame(col1, style="Panel.TFrame")
+        card_save.pack(fill="x")
+        
+        self.btn_save = ttk.Button(card_save, text=self.L("btn_save_settings"), command=self.save_settings, width=30)
+        self.btn_save.pack(padx=10, pady=10, fill="x")
+
+        # Column 2 (Middle): Discord & WoW Audit
+        col2 = ttk.Frame(main_pane)
+        col2.pack(side="left", fill="both", padx=(0, 10))
+
         # Card 3: Discord Bot Sync Settings
-        card_discord = ttk.Frame(left_col, style="Panel.TFrame")
+        card_discord = ttk.Frame(col2, style="Panel.TFrame")
         card_discord.pack(fill="x", pady=(0, 10))
         
         self.lbl_card_discord_hdr = ttk.Label(card_discord, text=self.L("card_discord_hdr"), style="Header.TLabel")
@@ -873,14 +923,16 @@ class RLMImporterApp:
         
         self.create_discord_sync_fields(card_discord)
 
-        # Save Button Card
-        card_save = ttk.Frame(left_col, style="Panel.TFrame")
-        card_save.pack(fill="x")
+        # Card 4: WoW Audit Integration Settings
+        card_wowaudit = ttk.Frame(col2, style="Panel.TFrame")
+        card_wowaudit.pack(fill="x", pady=(0, 10))
         
-        self.btn_save = ttk.Button(card_save, text=self.L("btn_save_settings"), command=self.save_settings, width=30)
-        self.btn_save.pack(padx=10, pady=10, fill="x")
+        self.lbl_card_wowaudit_hdr = ttk.Label(card_wowaudit, text=self.L("card_wowaudit_hdr"), style="Header.TLabel")
+        self.lbl_card_wowaudit_hdr.pack(fill="x", padx=10, pady=(10, 5))
+        
+        self.create_wowaudit_sync_fields(card_wowaudit)
 
-        # Right Column: Console/Console Log Card
+        # Column 3 (Right): Console/Console Log Card
         right_col = ttk.Frame(main_pane, style="Panel.TFrame")
         right_col.pack(side="right", fill="both", expand=True)
 
@@ -1006,6 +1058,155 @@ class RLMImporterApp:
         self.btn_sync_now = ttk.Button(parent, text=self.L("btn_sync_now"), command=self.trigger_discord_sync)
         self.btn_sync_now.pack(padx=10, pady=(5, 10), fill="x")
 
+    def load_profile_choices(self):
+        wow_path = self.ent_wow_path.get().strip()
+        if not wow_path:
+            return []
+        try:
+            return rlm_wowaudit_sync.locate_sv_path(wow_path) and rlm_wowaudit_sync.get_rlm_profiles(wow_path) or []
+        except Exception:
+            return []
+
+    def refresh_profile_dropdown(self, event=None):
+        raw_choices = self.load_profile_choices()
+        self.profile_display_map = {}
+        display_choices = []
+        for raw in raw_choices:
+            # Drop the account prefix if present in the raw choice
+            key = raw.split(" / ", 1)[1] if " / " in raw else raw
+            
+            if "::" in key:
+                realm, profile = key.split("::", 1)
+                parts = profile.rsplit("-", 1)
+                if len(parts) == 2:
+                    display = f"{parts[0]} - {parts[1]}"
+                else:
+                    display = profile
+            else:
+                display = key
+            
+            self.profile_display_map[display] = raw
+            display_choices.append(display)
+            
+        self.cb_wowaudit_profile.configure(values=display_choices)
+        if display_choices:
+            self.cb_wowaudit_profile.set(display_choices[0])
+        else:
+            self.cb_wowaudit_profile.set("")
+
+    def create_wowaudit_sync_fields(self, parent):
+        grid = ttk.Frame(parent, style="Panel.TFrame")
+        grid.pack(fill="x", padx=10, pady=5)
+
+        # API Key Input
+        self.lbl_wowaudit_key = ttk.Label(grid, text=self.L("lbl_wowaudit_key"), style="Panel.TLabel")
+        self.lbl_wowaudit_key.grid(row=0, column=0, sticky="w", pady=4)
+        self.ent_wowaudit_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, relief="flat", highlightbackground=BORDER_COLOR, highlightthickness=1)
+        self.ent_wowaudit_key.grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=4)
+
+        # RLM Profile Selection Dropdown
+        self.lbl_wowaudit_profile = ttk.Label(grid, text=self.L("lbl_wowaudit_profile"), style="Panel.TLabel")
+        self.lbl_wowaudit_profile.grid(row=1, column=0, sticky="w", pady=4)
+        
+        self.cb_wowaudit_profile = ttk.Combobox(grid, state="readonly")
+        self.cb_wowaudit_profile.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=4)
+
+        grid.columnconfigure(1, weight=1)
+
+        # Binding WoW Path edit box changes to refresh the dropdown choices
+        self.ent_wow_path.bind("<FocusOut>", self.refresh_profile_dropdown)
+
+        # Buttons Frame
+        btn_frame = ttk.Frame(parent, style="Panel.TFrame")
+        btn_frame.pack(fill="x", padx=10, pady=(5, 5))
+
+        self.btn_wowaudit_add = ttk.Button(btn_frame, text=self.L("btn_wowaudit_add"), command=self.add_wowaudit_mapping)
+        self.btn_wowaudit_add.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        self.btn_wowaudit_del = ttk.Button(btn_frame, text=self.L("btn_wowaudit_del"), command=self.del_wowaudit_mapping)
+        self.btn_wowaudit_del.pack(side="right", fill="x", expand=True, padx=(5, 0))
+
+        # Mappings Listbox
+        self.lst_wowaudit_teams = tk.Listbox(parent, bg=BG_ENTRY, fg=FG_TEXT, selectbackground=FG_ACCENT, selectforeground=BG_DARK, highlightbackground=BORDER_COLOR, relief="flat", height=4)
+        self.lst_wowaudit_teams.pack(fill="x", padx=10, pady=(5, 10))
+
+        # Load current mappings
+        self.update_wowaudit_listbox()
+        self.refresh_profile_dropdown()
+
+    def update_wowaudit_listbox(self):
+        self.lst_wowaudit_teams.delete(0, tk.END)
+        for t in self.settings.get("wowaudit_sync", []):
+            team_name = t.get("wowaudit_team_name", "Unknown")
+            raw_prof = t.get("rlm_profile_key", "")
+            profile = raw_prof.split("::")[-1]
+            parts = profile.rsplit("-", 1)
+            if len(parts) == 2:
+                profile_fmt = f"{parts[0]} - {parts[1]}"
+            else:
+                profile_fmt = profile
+            self.lst_wowaudit_teams.insert(tk.END, f"{team_name} ➔ {profile_fmt}")
+
+    def add_wowaudit_mapping(self):
+        api_key = self.ent_wowaudit_key.get().strip()
+        profile = self.cb_wowaudit_profile.get().strip()
+        
+        if not api_key:
+            messagebox.showerror("Error", self.L("wowaudit_err_invalid_key") if hasattr(self, "L") else "API Key is required.")
+            return
+        if not profile:
+            messagebox.showerror("Error", "RLM Profile is required.")
+            return
+            
+        self.log_message(f"Contacting WoW Audit to fetch team details...")
+        headers = {"Authorization": f"Bearer {api_key}"}
+        try:
+            r = requests.get("https://wowaudit.com/v1/team", headers=headers, timeout=5)
+            if r.status_code == 200:
+                team_data = r.json()
+                team_name = team_data.get("name", "Unknown")
+                realm = team_data.get("url", "").split("/")[-4] if "url" in team_data else ""
+                full_team_name = f"{team_name} ({realm.capitalize()})" if realm else team_name
+                
+                # Map back the display string to the raw profile key
+                raw_profile = getattr(self, "profile_display_map", {}).get(profile, profile)
+                
+                sync_list = self.settings.setdefault("wowaudit_sync", [])
+                for existing in sync_list:
+                    if existing.get("rlm_profile_key") == raw_profile:
+                        messagebox.showerror("Error", "This profile is already mapped to a team.")
+                        return
+                        
+                sync_list.append({
+                    "api_key": api_key,
+                    "wowaudit_team_name": full_team_name,
+                    "rlm_profile_key": raw_profile
+                })
+                self.update_wowaudit_listbox()
+                self.ent_wowaudit_key.delete(0, tk.END)
+                self.log_message(f"Mapped team '{full_team_name}' to profile '{raw_profile}' successfully.")
+            else:
+                messagebox.showerror("Error", self.L("wowaudit_err_fetch_failed") if hasattr(self, "L") else f"Failed to fetch team details (Status: {r.status_code})")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to connect to WoW Audit: {e}")
+
+    def del_wowaudit_mapping(self):
+        sel = self.lst_wowaudit_teams.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        sync_list = self.settings.get("wowaudit_sync", [])
+        if 0 <= idx < len(sync_list):
+            removed = sync_list.pop(idx)
+            self.update_wowaudit_listbox()
+            self.log_message(f"Removed mapping for team '{removed.get('wowaudit_team_name')}'")
+
+    def set_action_buttons_state(self, state):
+        for btn_name in ["btn_run_mplus", "btn_run_wowaudit", "btn_run_discord", "btn_sync_now"]:
+            btn = getattr(self, btn_name, None)
+            if btn:
+                btn.configure(state=state)
+
     def create_console_view(self, parent):
         action_bar = ttk.Frame(parent, style="Panel.TFrame")
         action_bar.pack(fill="x", padx=10, pady=5)
@@ -1014,12 +1215,18 @@ class RLMImporterApp:
         self.lbl_week_mode.pack(side="left", pady=4)
         
         vals = [self.L("week_both"), self.L("week_current"), self.L("week_last")]
-        self.cb_week_mode = ttk.Combobox(action_bar, values=vals, state="readonly", width=15)
+        self.cb_week_mode = ttk.Combobox(action_bar, values=vals, state="readonly", width=11)
         self.cb_week_mode.set(self.L("week_both"))
         self.cb_week_mode.pack(side="left", padx=5)
 
-        self.btn_run = ttk.Button(action_bar, text=self.L("btn_run"), style="Accent.TButton", command=self.trigger_live_import)
-        self.btn_run.pack(side="right", fill="x", expand=True, padx=(10, 0))
+        self.btn_run_mplus = ttk.Button(action_bar, text=self.L("btn_run_mplus"), style="Accent.TButton", command=self.trigger_live_import)
+        self.btn_run_mplus.pack(side="left", fill="x", expand=True, padx=4)
+
+        self.btn_run_wowaudit = ttk.Button(action_bar, text=self.L("btn_run_wowaudit"), command=self.trigger_wowaudit_sync)
+        self.btn_run_wowaudit.pack(side="left", fill="x", expand=True, padx=4)
+
+        self.btn_run_discord = ttk.Button(action_bar, text=self.L("btn_run_discord"), command=self.trigger_discord_sync)
+        self.btn_run_discord.pack(side="left", fill="x", expand=True, padx=4)
 
         # Console Text Box
         console_frame = ttk.Frame(parent, style="Panel.TFrame")
@@ -1079,14 +1286,14 @@ class RLMImporterApp:
 
     def trigger_live_import(self):
         # Concurrency check
-        if str(self.btn_run.cget("state")) == "disabled":
+        if str(self.btn_run_mplus.cget("state")) == "disabled":
             self.log_message("\n[INFO] An import/sync task is already active. Skipping request.")
             return
 
         # Save first before running to ensure python reads latest fields
         self.save_settings()
 
-        self.btn_run.configure(state="disabled")
+        self.set_action_buttons_state("disabled")
         self.log_message("\n--- Starting Mythic+ Importer Process ---")
         
         week_mode = self.get_week_code()
@@ -1099,7 +1306,6 @@ class RLMImporterApp:
                 cmd = [get_pythonw_path(), str(script_file), "--week", week_mode]
             self.log_message(f"Executing: {' '.join(cmd)}")
             try:
-                # Set stdout / stderr flags to read directly
                 process = subprocess.Popen(
                     cmd, 
                     stdout=subprocess.PIPE, 
@@ -1149,28 +1355,71 @@ class RLMImporterApp:
             except Exception as e:
                 self.log_message(f"Process crashed: {e}")
             finally:
-                self.root.after(0, lambda: self.btn_run.configure(state="normal"))
+                self.root.after(0, lambda: self.set_action_buttons_state("normal"))
 
         thread = threading.Thread(target=worker, daemon=True)
         thread.start()
 
-    def trigger_discord_sync(self):
+    def trigger_wowaudit_sync(self):
         # Concurrency check
-        if str(self.btn_run.cget("state")) == "disabled":
+        if str(self.btn_run_wowaudit.cget("state")) == "disabled":
             self.log_message("\n[INFO] An import/sync task is already active. Skipping request.")
             return
 
         # Save first before running to ensure python reads latest fields
         self.save_settings()
 
+        self.set_action_buttons_state("disabled")
+        self.log_message("\n--- Starting WoW Audit Sync ---")
+        
+        script_file = self.addon_dir / "rlm_wowaudit_sync.py"
+
+        def worker():
+            if getattr(sys, 'frozen', False):
+                cmd = [sys.executable, "--run-wowaudit"]
+            else:
+                cmd = [get_pythonw_path(), str(script_file)]
+            self.log_message(f"Executing: {' '.join(cmd)}")
+            try:
+                process = subprocess.Popen(
+                    cmd, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.STDOUT, 
+                    text=True, 
+                    bufsize=1,
+                    universal_newlines=True,
+                    encoding="utf-8",
+                    creationflags=0x08000000 if sys.platform == "win32" else 0
+                )
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    self.log_message(line.rstrip())
+                
+                process.wait()
+                self.log_message(f"WoW Audit Sync finished with exit code {process.returncode}")
+            except Exception as e:
+                self.log_message(f"Process crashed: {e}")
+            finally:
+                self.root.after(0, lambda: self.set_action_buttons_state("normal"))
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+
+    def trigger_discord_sync(self):
+        # Concurrency check
+        if str(self.btn_run_discord.cget("state")) == "disabled":
+            self.log_message("\n[INFO] An import/sync task is already active. Skipping request.")
+            return
+
+        # Save first before running to ensure python reads latest fields
+        self.save_settings()
+
+        self.set_action_buttons_state("disabled")
         self.log_message("\n--- Starting Discord RLM Sync Process ---")
         
         script_file = self.addon_dir / "rlm_discord_sync.py"
-
-        # Disable buttons while running
-        self.btn_run.configure(state="disabled")
-        if hasattr(self, "btn_sync_now"):
-            self.btn_sync_now.configure(state="disabled")
         
         def worker():
             if getattr(sys, 'frozen', False):
@@ -1200,9 +1449,7 @@ class RLMImporterApp:
             except Exception as e:
                 self.log_message(f"Process crashed: {e}")
             finally:
-                self.root.after(0, lambda: self.btn_run.configure(state="normal"))
-                if hasattr(self, "btn_sync_now"):
-                    self.root.after(0, lambda: self.btn_sync_now.configure(state="normal"))
+                self.root.after(0, lambda: self.set_action_buttons_state("normal"))
 
         thread = threading.Thread(target=worker, daemon=True)
         thread.start()
@@ -1222,6 +1469,7 @@ class RLMImporterApp:
         try:
             mplus_py = self.addon_dir / "raidlootmatrix_mplus.py"
             sync_py = self.addon_dir / "rlm_discord_sync.py"
+            wowaudit_py = self.addon_dir / "rlm_wowaudit_sync.py"
             with open(silent_bat, "w", encoding="utf-8") as f:
                 f.write('@echo off\n')
                 f.write('set RAIDLOOTMATRIX_SCHEDULED=1\n')
@@ -1229,10 +1477,12 @@ class RLMImporterApp:
                     f.write(f'"{sys.executable}" --run-mplus --week both > "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
                     if self.var_sync_on_import.get():
                         f.write(f'"{sys.executable}" --run-sync --non-interactive >> "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
+                    f.write(f'"{sys.executable}" --run-wowaudit >> "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
                 else:
                     f.write(f'"{get_pythonw_path()}" "{mplus_py}" --week both > "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
                     if self.var_sync_on_import.get():
                         f.write(f'"{get_pythonw_path()}" "{sync_py}" --non-interactive >> "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
+                    f.write(f'"{get_pythonw_path()}" "{wowaudit_py}" >> "{self.addon_dir / "raidlootmatrix_mplus_auto.log"}" 2>&1\n')
         except Exception as e:
             self.log_message(f"Failed to generate silent runner: {e}")
             return
@@ -1694,6 +1944,10 @@ def watch_wow_process():
                         lf.write("\n--- Running Discord Sync ---\n")
                         lf.flush()
                         subprocess.run(executable_args + ["--run-sync", "--non-interactive"], stdout=lf, stderr=lf, cwd=script_dir, creationflags=0x08000000)
+
+                        lf.write("\n--- Running WoW Audit Sync ---\n")
+                        lf.flush()
+                        subprocess.run(executable_args + ["--run-wowaudit"], stdout=lf, stderr=lf, cwd=script_dir, creationflags=0x08000000)
                     
                     log_msg("Synchronization completed.")
                     was_running = False
@@ -1722,6 +1976,15 @@ if __name__ == "__main__":
                 rlm_discord_sync.main()
             except Exception as e:
                 print(f"[ERROR] Discord sync failed: {e}")
+                sys.exit(1)
+            sys.exit(0)
+        elif arg1 == "--run-wowaudit":
+            sys.argv = [sys.argv[0]] + sys.argv[2:]
+            try:
+                import rlm_wowaudit_sync
+                rlm_wowaudit_sync.main()
+            except Exception as e:
+                print(f"[ERROR] WoW Audit sync failed: {e}")
                 sys.exit(1)
             sys.exit(0)
         elif arg1 == "--watch-wow":
