@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.8"
+VERSION = "1.1.9"
 
 LOCALES = {
     "en": {
@@ -76,7 +76,24 @@ LOCALES = {
         "wowaudit_err_fetch_failed": "Failed to fetch team details. Check your key and connection.",
         "btn_run_mplus": "Import M+ Loot",
         "btn_run_wowaudit": "Sync WoW Audit",
-        "btn_run_discord": "Sync Discord Bot"
+        "btn_run_discord": "Sync Discord Bot",
+        "lbl_update_available": "Update Available: {remote_version}",
+        "btn_update_now": "Update Now",
+        "title_app_update": "App Update",
+        "lbl_updating_status": "Updating to {tag_name}...\nPlease do not close the app.",
+        "wowaudit_err_profile_required": "RLM Profile is required.",
+        "wowaudit_err_already_mapped": "This profile is already mapped to a team.",
+        "automation_info_title": "Automation Task Info",
+        "automation_err_os": "Background task automation controls (schtasks) are only supported on Windows.\nOn macOS, you can configure plist or launchd actions.",
+        "automation_err_win_only": "Controls are only supported on Windows.",
+        "automation_success_title": "Tasks Updated",
+        "automation_success_msg": "Scheduled Tasks updated in Task Scheduler!",
+        "automation_removed_title": "Tasks Removed",
+        "automation_removed_msg": "RaidLootMatrix scheduled tasks removed.",
+        "update_complete_title": "Update Complete",
+        "update_complete_msg": "The application has been updated to the latest version.\nPlease restart the application to apply the update.",
+        "update_failed_title": "Update Failed",
+        "update_failed_msg": "Could not perform automatic update:\n{err}\n\nYou can download the update manually from GitHub."
     },
     "zh": {
         "header_title": "RLM 导入器",
@@ -123,7 +140,24 @@ LOCALES = {
         "wowaudit_err_fetch_failed": "获取团队信息失败。请检查密钥和连接。",
         "btn_run_mplus": "导入 M+ 装备",
         "btn_run_wowaudit": "同步 WoW Audit",
-        "btn_run_discord": "同步 Discord 机器人"
+        "btn_run_discord": "同步 Discord 机器人",
+        "lbl_update_available": "有可用更新: {remote_version}",
+        "btn_update_now": "立即更新",
+        "title_app_update": "应用程序更新",
+        "lbl_updating_status": "正在更新至 {tag_name}...\n请勿关闭应用程序。",
+        "wowaudit_err_profile_required": "需要 RLM 配置文件。",
+        "wowaudit_err_already_mapped": "此配置文件已映射到团队。",
+        "automation_info_title": "自动化任务信息",
+        "automation_err_os": "后台任务自动化控制 (schtasks) 仅在 Windows 上受支持。\n在 macOS 上，您可以配置 plist 或 launchd 操作。",
+        "automation_err_win_only": "控制项仅在 Windows 上受支持。",
+        "automation_success_title": "任务已更新",
+        "automation_success_msg": "计划任务已在任务计划程序中更新！",
+        "automation_removed_title": "任务已删除",
+        "automation_removed_msg": "RaidLootMatrix 计划任务已删除。",
+        "update_complete_title": "更新完成",
+        "update_complete_msg": "应用程序已更新至最新版本。\n请重新启动应用程序以应用更新。",
+        "update_failed_title": "更新失败",
+        "update_failed_msg": "无法执行自动更新:\n{err}\n\n您可以从 GitHub 手动下载更新。"
     },
     "zh_tw": {
         "header_title": "RLM 導入器",
@@ -170,7 +204,24 @@ LOCALES = {
         "wowaudit_err_fetch_failed": "獲取團隊信息失敗。請檢查金鑰和連接。",
         "btn_run_mplus": "匯入 M+ 裝備",
         "btn_run_wowaudit": "同步 WoW Audit",
-        "btn_run_discord": "同步 Discord 機器人"
+        "btn_run_discord": "同步 Discord 機器人",
+        "lbl_update_available": "有可用更新: {remote_version}",
+        "btn_update_now": "立即更新",
+        "title_app_update": "應用程式更新",
+        "lbl_updating_status": "正在更新至 {tag_name}...\n請勿關閉應用程式。",
+        "wowaudit_err_profile_required": "需要 RLM 設定檔。",
+        "wowaudit_err_already_mapped": "此設定檔已映射至團隊。",
+        "automation_info_title": "自動化任務資訊",
+        "automation_err_os": "後台任務自動化控制 (schtasks) 僅在 Windows 上受支援。\n在 macOS 上，您可以設定 plist 或 launchd 動作。",
+        "automation_err_win_only": "控制項僅在 Windows 上受支援。",
+        "automation_success_title": "任務已更新",
+        "automation_success_msg": "計劃任務已在任務計劃程序中更新！",
+        "automation_removed_title": "任務已刪除",
+        "automation_removed_msg": "RaidLootMatrix 計劃任務已刪除。",
+        "update_complete_title": "更新完成",
+        "update_complete_msg": "應用程式已更新至最新版本。\n請重新啟動應用程式以套用更新。",
+        "update_failed_title": "更新失敗",
+        "update_failed_msg": "無法執行自動更新:\n{err}\n\n您可以從 GitHub 手動下載更新。"
     },
     "es": {
         "header_title": "Importador RLM",
@@ -217,7 +268,24 @@ LOCALES = {
         "wowaudit_err_fetch_failed": "Error al obtener los detalles del equipo. Compruebe la clave y la conexión.",
         "btn_run_mplus": "Importar Botín de Mítica+",
         "btn_run_wowaudit": "Sincronizar WoW Audit",
-        "btn_run_discord": "Sincronizar Bot de Discord"
+        "btn_run_discord": "Sincronizar Bot de Discord",
+        "lbl_update_available": "Actualización Disponible: {remote_version}",
+        "btn_update_now": "Actualizar Ahora",
+        "title_app_update": "Actualización de la Aplicación",
+        "lbl_updating_status": "Actualizando a {tag_name}...\nPor favor, no cierre la aplicación.",
+        "wowaudit_err_profile_required": "Se requiere el perfil RLM.",
+        "wowaudit_err_already_mapped": "Este perfil ya está asignado a un equipo.",
+        "automation_info_title": "Información de Tareas Automáticas",
+        "automation_err_os": "Los controles de automatización de tareas en segundo plano (schtasks) solo son compatibles con Windows.\nEn macOS, ya que se pueden configurar acciones plist o launchd.",
+        "automation_err_win_only": "Los controles solo son compatibles con Windows.",
+        "automation_success_title": "Tareas Actualizadas",
+        "automation_success_msg": "¡Tareas programadas actualizadas en el Programador de tareas!",
+        "automation_removed_title": "Tareas Eliminadas",
+        "automation_removed_msg": "Tareas programadas de RaidLootMatrix eliminadas.",
+        "update_complete_title": "Actualización Completada",
+        "update_complete_msg": "La aplicación se ha actualizado a la última versión.\nPor favor, reinicie la aplicación para aplicar la actualización.",
+        "update_failed_title": "Actualización Fallida",
+        "update_failed_msg": "No se pudo realizar la actualización automática:\n{err}\n\nPuede descargar la actualización manualmente desde GitHub."
     }
 }
 
@@ -266,7 +334,29 @@ CONSOLE_PHRASES = {
         "wrote_file": "Wrote: {}",
         "ep_calculated": "EP will be calculated in-game from Settings -> Mythic+.",
         "log_in_reload": "Log in (or /reload) with an officer and open the Mythic+ tab.",
-        "parse_failed_warn": "[WARNING] Failed to parse SavedVariables at {}"
+        "parse_failed_warn": "[WARNING] Failed to parse SavedVariables at {}",
+        "wowaudit_contacting": "Contacting WoW Audit to fetch team details...",
+        "wowaudit_sync_finished": "WoW Audit Sync finished with exit code {}",
+        "wowaudit_start_sync": "--- Starting WoW Audit Sync ---",
+        "tray_minimized_info": "Minimized to system tray. Double-click the tray icon to reopen.",
+        "task_already_active": "[INFO] An import/sync task is already active. Skipping request.",
+        "tasks_register_start": "--- Registering Scheduled Tasks ---",
+        "tasks_remove_start": "--- Removing Scheduled Tasks ---",
+        "task_create_success": "SUCCESS: Created task: {}",
+        "task_delete_success": "SUCCESS: Deleted task: {}",
+        "task_create_failed": "FAILED: Task: {}\nError: {}",
+        "task_not_found": "INFO: Task {} was not found or already deleted.",
+        "startup_shortcut_success": "Windows startup shortcut registered successfully.",
+        "startup_shortcut_removed": "Windows startup shortcut removed.",
+        "err_desktop_shortcut": "Could not create desktop shortcut: {}",
+        "err_create_startup": "Error creating startup shortcut: {}",
+        "err_remove_startup": "Error removing startup shortcut: {}",
+        "err_save_settings": "Error saving settings: {}",
+        "err_execution": "Execution Error: {}",
+        "err_silent_runner": "Failed to generate silent runner: {}",
+        "err_watcher_vbs": "Failed to generate watcher VBS: {}",
+        "err_tray_start": "[ERROR] Failed to start system tray icon: {}",
+        "discord_sync_finished": "Discord sync finished with exit code {}"
     },
     "zh": {
         "start_importer": "--- 启动史诗+导入程序 ---",
@@ -312,7 +402,29 @@ CONSOLE_PHRASES = {
         "wrote_file": "写入文件: {}",
         "ep_calculated": "EP 将在游戏内的 设置 -> 史诗+ 中进行计算。",
         "log_in_reload": "用官员角色登录游戏（或执行 /reload），并打开史诗+选项卡。",
-        "parse_failed_warn": "[警告] 无法解析位于 {} 的 SavedVariables"
+        "parse_failed_warn": "[警告] 无法解析位于 {} 的 SavedVariables",
+        "wowaudit_contacting": "正在联系 WoW Audit 获取团队详情...",
+        "wowaudit_sync_finished": "WoW Audit 同步完成，退出代码为 {}",
+        "wowaudit_start_sync": "--- 开始同步 WoW Audit ---",
+        "tray_minimized_info": "已最小化到系统托盘。双击托盘图标重新打开。",
+        "task_already_active": "[信息] 导入/同步任务已在运行中。跳过当前请求。",
+        "tasks_register_start": "--- 正在注册计划任务 ---",
+        "tasks_remove_start": "--- 正在删除计划任务 ---",
+        "task_create_success": "成功: 已创建任务: {}",
+        "task_delete_success": "成功: 已删除任务: {}",
+        "task_create_failed": "失败: 任务: {}\n错误: {}",
+        "task_not_found": "提示: 计划任务 {} 未找到或已被删除。",
+        "startup_shortcut_success": "Windows 开机自启快捷方式注册成功。",
+        "startup_shortcut_removed": "Windows 开机自启快捷方式已删除。",
+        "err_desktop_shortcut": "无法创建桌面快捷方式: {}",
+        "err_create_startup": "创建自启快捷方式时出错: {}",
+        "err_remove_startup": "删除自启快捷方式时出错: {}",
+        "err_save_settings": "保存设置时出错: {}",
+        "err_execution": "执行错误: {}",
+        "err_silent_runner": "生成静默运行器失败: {}",
+        "err_watcher_vbs": "生成监视器 VBS 失败: {}",
+        "err_tray_start": "[错误] 启动系统托盘图标失败: {}",
+        "discord_sync_finished": "Discord 同步完成，退出代码为 {}"
     },
     "zh_tw": {
         "start_importer": "--- 啟動史詩+導入程序 ---",
@@ -347,18 +459,40 @@ CONSOLE_PHRASES = {
         "wow_running_warn": "[警告] 魔獸世界正在運行。",
         "corrupt_warn_1": "          當 WoW 打開時寫入 M+ 數據可能會損壞 SavedVariables。",
         "corrupt_warn_2": "          請先關閉 WoW，或者在此腳本完成後執行 /reload。",
-        "no_active_players": "在任何名冊中均未發現活躍玩家。退出中。",
+        "no_active_players": "在 any 名冊中均未發現活躍玩家。退出中。",
         "fetching_rio_data": "正在為 {} 位唯一玩家獲取 Raider.IO 數據",
         "requesting_runs": "(請求最近 20 次大米運行以覆蓋 {})",
         "runs_found": "總共找到 {} 次運行記錄",
         "account_hdr": "帳號: {}",
         "processing_week": "-- 正在處理周 {} [{}] -------",
         "players_runs_pool": "  {} / {} 位有運行記錄的玩家 | EP 預覽點數: {}",
-        "dry_run_no_file": "[模擬運行] 未寫入任何檔案。",
+        "dry_run_no_file": "[模擬運行] 未寫入 any 檔案。",
         "wrote_file": "寫入檔案: {}",
         "ep_calculated": "EP 將在游戏內的 設置 -> 史詩+ 中進行計算。",
         "log_in_reload": "用官員角色登入遊戲（或執行 /reload），並打開史詩+索引標籤。",
-        "parse_failed_warn": "[警告] 無法解析位於 {} 的 SavedVariables"
+        "parse_failed_warn": "[警告] 無法解析位於 {} 的 SavedVariables",
+        "wowaudit_contacting": "正在聯繫 WoW Audit 獲取團隊詳情...",
+        "wowaudit_sync_finished": "WoW Audit 同步完成，退出代碼為 {}",
+        "wowaudit_start_sync": "--- 開始同步 WoW Audit ---",
+        "tray_minimized_info": "已最小化到系統托盤。雙擊托盤圖標重新打開。",
+        "task_already_active": "[資訊] 匯入/同步任務已在執行中。跳過當前請求。",
+        "tasks_register_start": "--- 正在註冊計劃任務 ---",
+        "tasks_remove_start": "--- 正在刪除計劃任務 ---",
+        "task_create_success": "成功: 已建立任務: {}",
+        "task_delete_success": "成功: 已刪除任務: {}",
+        "task_create_failed": "失敗: 任務: {}\n錯誤: {}",
+        "task_not_found": "提示: 計劃任務 {} 未找到或已被刪除。",
+        "startup_shortcut_success": "Windows 開機自啟捷徑註冊成功。",
+        "startup_shortcut_removed": "Windows 開機自啟捷徑已刪除。",
+        "err_desktop_shortcut": "無法建立桌面捷徑: {}",
+        "err_create_startup": "建立自啟捷徑時出錯: {}",
+        "err_remove_startup": "刪除自啟捷徑時出錯: {}",
+        "err_save_settings": "儲存設置時出錯: {}",
+        "err_execution": "執行錯誤: {}",
+        "err_silent_runner": "生成靜默運行器失敗: {}",
+        "err_watcher_vbs": "生成監視器 VBS 失敗: {}",
+        "err_tray_start": "[錯誤] 啟動系統托盤圖標失敗: {}",
+        "discord_sync_finished": "Discord 同步完成，退出代碼為 {}"
     },
     "es": {
         "start_importer": "--- Iniciando el Proceso de Importador Mítica+ ---",
@@ -404,7 +538,29 @@ CONSOLE_PHRASES = {
         "wrote_file": "Escrito: {}",
         "ep_calculated": "El EP se calculará dentro del juego desde Ajustes -> Mítica+.",
         "log_in_reload": "Inicie sesión (o haga /reload) con un oficial y abra la pestaña de Mítica+.",
-        "parse_failed_warn": "[ADVERTENCIA] Error al analizar SavedVariables en {}"
+        "parse_failed_warn": "[ADVERTENCIA] Error al analizar SavedVariables en {}",
+        "wowaudit_contacting": "Contactando con WoW Audit para obtener detalles del equipo...",
+        "wowaudit_sync_finished": "Sincronización de WoW Audit finalizada con código de salida {}",
+        "wowaudit_start_sync": "--- Iniciando Sincronización de WoW Audit ---",
+        "tray_minimized_info": "Minimizado en la bandeja del sistema. Doble clic para volver a abrir.",
+        "task_already_active": "[INFO] Ya hay una tarea de importación/sincronización activa. Omitiendo solicitud.",
+        "tasks_register_start": "--- Registrando Tareas Programadas ---",
+        "tasks_remove_start": "--- Eliminando Tareas Programadas ---",
+        "task_create_success": "ÉXITO: Tarea creada: {}",
+        "task_delete_success": "ÉXITO: Tarea eliminada: {}",
+        "task_create_failed": "ERROR: Tarea: {}\nError: {}",
+        "task_not_found": "INFO: La tarea {} no fue encontrada o ya fue eliminada.",
+        "startup_shortcut_success": "Acceso directo de inicio de Windows registrado con éxito.",
+        "startup_shortcut_removed": "Acceso directo de inicio de Windows de RLM Companion al iniciar Windows eliminado.",
+        "err_desktop_shortcut": "No se pudo crear el acceso directo del escritorio: {}",
+        "err_create_startup": "Error al crear el acceso directo de inicio: {}",
+        "err_remove_startup": "Error al eliminar el acceso directo de inicio: {}",
+        "err_save_settings": "Error al guardar los ajustes: {}",
+        "err_execution": "Error de ejecución: {}",
+        "err_silent_runner": "Error al generar el ejecutor silencioso: {}",
+        "err_watcher_vbs": "Error al generar el VBS del watcher: {}",
+        "err_tray_start": "[ERROR] Error al iniciar el icono de la bandeja del sistema: {}",
+        "discord_sync_finished": "Sincronización de Discord finalizada con código de salida {}"
     }
 }
 
@@ -417,17 +573,21 @@ def translate_line(line, old_lang, new_lang):
     
     import re
     
+    stripped_line = line.strip()
+    
     for key, old_text in old_phrases.items():
         new_text = new_phrases[key]
+        old_text_stripped = old_text.strip()
+        new_text_stripped = new_text.strip()
         
         # Case A: Templated strings with {}
-        if "{}" in old_text:
-            pattern_str = "^" + re.escape(old_text).replace(r"\{\}", r"(.*?)") + "$"
+        if "{}" in old_text_stripped:
+            pattern_str = "^" + re.escape(old_text_stripped).replace(r"\{\}", r"(.*?)") + "$"
             try:
-                match = re.match(pattern_str, line)
+                match = re.match(pattern_str, stripped_line)
                 if match:
                     groups = match.groups()
-                    result = new_text
+                    result = new_text_stripped
                     for g in groups:
                         # Translate inner keywords if matched (e.g. both weeks / this week)
                         if g == "both weeks":
@@ -439,23 +599,35 @@ def translate_line(line, old_lang, new_lang):
                             elif new_lang == "zh_tw": g = "本周"
                             elif new_lang == "es": g = "esta semana"
                         result = result.replace("{}", g, 1)
-                    return result
+                    
+                    # Restore original leading/trailing whitespace
+                    leading = line[:len(line) - len(line.lstrip())]
+                    trailing = line[len(line.rstrip()):]
+                    return leading + result + trailing
             except Exception:
                 pass
                 
         # Case B: Prefix match
-        elif old_text.endswith(" ") or old_text.endswith(": ") or old_text.endswith("...") or old_text.endswith(":") or old_text.endswith("/"):
-            if line.startswith(old_text):
-                suffix = line[len(old_text):]
-                return new_text + suffix
+        elif old_text_stripped.endswith(" ") or old_text_stripped.endswith(":") or old_text_stripped.endswith("...") or old_text_stripped.endswith("/"):
+            if stripped_line.startswith(old_text_stripped):
+                suffix = stripped_line[len(old_text_stripped):]
+                result = new_text_stripped + suffix
+                leading = line[:len(line) - len(line.lstrip())]
+                trailing = line[len(line.rstrip()):]
+                return leading + result + trailing
                 
         # Case C: Exact match
-        elif line.strip() == old_text.strip():
-            return new_text
+        elif stripped_line == old_text_stripped:
+            leading = line[:len(line) - len(line.lstrip())]
+            trailing = line[len(line.rstrip()):]
+            return leading + new_text_stripped + trailing
             
         # Case D: Substring match
-        elif old_text in line:
-            return line.replace(old_text, new_text)
+        elif old_text_stripped in stripped_line:
+            result = stripped_line.replace(old_text_stripped, new_text_stripped)
+            leading = line[:len(line) - len(line.lstrip())]
+            trailing = line[len(line.rstrip()):]
+            return leading + result + trailing
             
     return line
 
@@ -1163,10 +1335,10 @@ class RLMImporterApp:
         profile = self.cb_wowaudit_profile.get().strip()
         
         if not api_key:
-            messagebox.showerror("Error", self.L("wowaudit_err_invalid_key") if hasattr(self, "L") else "API Key is required.")
+            messagebox.showerror("Error", self.L("wowaudit_err_invalid_key"))
             return
         if not profile:
-            messagebox.showerror("Error", "RLM Profile is required.")
+            messagebox.showerror("Error", self.L("wowaudit_err_profile_required"))
             return
             
         self.log_message(f"Contacting WoW Audit to fetch team details...")
@@ -1185,7 +1357,7 @@ class RLMImporterApp:
                 sync_list = self.settings.setdefault("wowaudit_sync", [])
                 for existing in sync_list:
                     if existing.get("rlm_profile_key") == raw_profile:
-                        messagebox.showerror("Error", "This profile is already mapped to a team.")
+                        messagebox.showerror("Error", self.L("wowaudit_err_already_mapped"))
                         return
                         
                 sync_list.append({
@@ -1197,7 +1369,7 @@ class RLMImporterApp:
                 self.ent_wowaudit_key.delete(0, tk.END)
                 self.log_message(f"Mapped team '{full_team_name}' to profile '{raw_profile}' successfully.")
             else:
-                messagebox.showerror("Error", self.L("wowaudit_err_fetch_failed") if hasattr(self, "L") else f"Failed to fetch team details (Status: {r.status_code})")
+                messagebox.showerror("Error", self.L("wowaudit_err_fetch_failed"))
         except Exception as e:
             messagebox.showerror("Error", f"Failed to connect to WoW Audit: {e}")
 
@@ -1467,7 +1639,7 @@ class RLMImporterApp:
 
     def register_background_tasks(self):
         if platform.system() != "Windows":
-            messagebox.showinfo("Automation Task Info", "Background task automation controls (schtasks) are only supported on Windows.\nOn macOS, you can configure plist or launchd actions.")
+            messagebox.showinfo(self.L("automation_info_title"), self.L("automation_err_os"))
             return
 
         # Setup variables
@@ -1573,11 +1745,11 @@ class RLMImporterApp:
                 except Exception:
                     pass
 
-        messagebox.showinfo("Tasks Updated", "Scheduled Tasks updated in Task Scheduler!")
+        messagebox.showinfo(self.L("automation_success_title"), self.L("automation_success_msg"))
 
     def unregister_background_tasks(self):
         if platform.system() != "Windows":
-            messagebox.showinfo("Automation Task Info", "Controls are only supported on Windows.")
+            messagebox.showinfo(self.L("automation_info_title"), self.L("automation_err_win_only"))
             return
 
         self.log_message("\n--- Removing Scheduled Tasks ---")
@@ -1609,7 +1781,7 @@ class RLMImporterApp:
             except Exception:
                 pass
 
-        messagebox.showinfo("Tasks Removed", "RaidLootMatrix scheduled tasks removed.")
+        messagebox.showinfo(self.L("automation_removed_title"), self.L("automation_removed_msg"))
 
     def create_tray_image(self):
         # Generate a clean 64x64 transparent icon
@@ -1780,22 +1952,22 @@ class RLMImporterApp:
         update_frame = ttk.Frame(self.header_frame)
         update_frame.pack(side="right", padx=5, pady=4)
         
-        lbl_update = ttk.Label(update_frame, text=f"Update Available: {remote_version}", foreground="#ffcc00", font=("Segoe UI", 10, "bold"))
+        lbl_update = ttk.Label(update_frame, text=self.L("lbl_update_available").format(remote_version=remote_version), foreground="#ffcc00", font=("Segoe UI", 10, "bold"))
         lbl_update.pack(side="left", padx=5)
         
-        btn_update = ttk.Button(update_frame, text="Update Now", width=12, command=lambda: self.start_auto_update(remote_version))
+        btn_update = ttk.Button(update_frame, text=self.L("btn_update_now"), width=12, command=lambda: self.start_auto_update(remote_version))
         btn_update.pack(side="left", padx=5)
 
     def start_auto_update(self, tag_name):
         # Open a loading/status pop-up
         self.update_win = tk.Toplevel(self.root)
-        self.update_win.title("App Update")
+        self.update_win.title(self.L("title_app_update"))
         self.update_win.geometry("400x150")
         self.update_win.configure(bg=BG_DARK)
         self.update_win.transient(self.root)
         self.update_win.grab_set()
 
-        lbl = ttk.Label(self.update_win, text=f"Updating to {tag_name}...\nPlease do not close the app.", style="Panel.TLabel", font=("Segoe UI", 11))
+        lbl = ttk.Label(self.update_win, text=self.L("lbl_updating_status").format(tag_name=tag_name), style="Panel.TLabel", font=("Segoe UI", 11))
         lbl.pack(pady=20)
         
         self.update_progress = ttk.Progressbar(self.update_win, mode="indeterminate", length=300)
@@ -1891,11 +2063,11 @@ class RLMImporterApp:
 
     def show_update_success_restart(self):
         self.update_win.destroy()
-        messagebox.showinfo("Update Complete", "The application has been updated to the latest version.\nPlease restart the application to apply the update.")
+        messagebox.showinfo(self.L("update_complete_title"), self.L("update_complete_msg"))
 
     def show_update_failed_error(self, err):
         self.update_win.destroy()
-        messagebox.showerror("Update Failed", f"Could not perform automatic update:\n{err}\n\nYou can download the update manually from GitHub.")
+        messagebox.showerror(self.L("update_failed_title"), self.L("update_failed_msg").format(err=err))
 
     def open_url(self, url):
         import webbrowser
