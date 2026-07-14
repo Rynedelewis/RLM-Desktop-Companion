@@ -53,3 +53,33 @@ These tools allow guild officers to:
 * `!standings [team]` — Displays EPGP priority ratios and standings for the top 25 main characters.
 * `!roster [team]` — Lists active characters, classes, and main/alt relationships.
 * `!synckey` — *(Admins Only)* Sends the server's unique sync key via DM.
+
+---
+
+## 📊 Data Flow & SavedVariables Injection
+
+The companion app acts as a bridge between web APIs and your local World of Warcraft client.
+
+### 1. Mythic+ Data (`raidlootmatrix_mplus.py`)
+* **Grabs**: Character run profiles from the **Raider.IO API** for all active roster members. It extracts the dungeon name, key level, timed status, and completion timestamp.
+* **Injects**: Writes this raw run data into `RaidLootMatrixMplusImport` inside your WoW SavedVariables file:
+  `WTF\Account\<AccountName>\SavedVariables\RaidLootMatrix.lua`.
+* *Note*: The companion app does *not* modify EPGP values directly. Point calculations are performed in-game by the addon using the imported run log.
+
+### 2. WoW Audit Data (`rlm_wowaudit_sync.py`)
+* **Grabs**: Roster additions/reductions, wishlists, and upcoming raid event schedules (dates, start/end times, difficulty, signups, and RSVP statuses) from the **WoW Audit API**.
+* **Injects**: Writes this data into `RaidLootMatrixWoWAuditSync` inside your local SavedVariables, and also saves it to `Interface\AddOns\RaidLootMatrix\sync\wowaudit_data.lua` as `RaidLootMatrixWoWAuditSyncStatic`. This second write enables loading the data in-game with a simple `/reload` command, bypassing WoW logout requirements.
+
+---
+
+## 📅 WoW Audit & In-Game Calendar Sync Guide
+
+You can easily commit your WoW Audit and Discord calendar events directly into the Blizzard in-game calendar using the RaidLootMatrix addon UI:
+
+1. **Perform a Desktop Sync**: Launch the companion app and perform a WoW Audit sync (or let the automated scheduler handle it). This fetches upcoming raids and sign-ups.
+2. **Load the Addon**: Log in to World of Warcraft (or type `/reload` if you are already logged in).
+3. **Open the Calendar Tab**: Type `/rlm` in chat and click the **Calendar** tab. You will see a list of upcoming WoW Audit events (within a -7 to +14 day window).
+4. **Create or Sync Events**:
+   * **If the event does not exist in-game**: Select the event and click **Sync Event** (or **Create Event**). The addon will open the WoW Calendar, create a Player Event, set the correct title/description, and sequentially invite all players who signed up on WoW Audit (with a 2.2s delay to prevent connection rate-limiting).
+   * **If the event already exists**: Select it and click **Sync RSVPs**. The addon will scan the in-game invite list, automatically invite any missing players, and set their in-game RSVPs (Accepted, Declined, Tentative) to match their WoW Audit signup status.
+

@@ -112,24 +112,8 @@ class RLMHelperBot(commands.Bot):
             payload = await request.json()
             update_guild_data(guild_id, payload)
             
-            # Notify in the server channel
-            guild = self.get_guild(int(guild_id))
-            if guild:
-                channel = discord.utils.get(guild.text_channels, name="announcements")
-                if not channel:
-                    channel = discord.utils.get(guild.text_channels, name="general")
-                
-                if channel:
-                    embed = discord.Embed(
-                        title="🔄 RaidLootMatrix Standing Synced",
-                        description=(
-                            "The guild's EPGP standings and rosters have been successfully "
-                            "updated via the desktop sync client."
-                        ),
-                        color=discord.Color.green()
-                    )
-                    embed.set_footer(text="Use !standings or !roster to view the live data.")
-                    await channel.send(embed=embed)
+            # Notify block removed to prevent channel spam on sync.
+            pass
             
             return web.json_response({"success": True, "message": "EPGP data synced successfully!"})
         except Exception as e:

@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.10"
+VERSION = "1.1.11"
 
 LOCALES = {
     "en": {
@@ -74,6 +74,10 @@ LOCALES = {
         "btn_wowaudit_del": "Remove Selected Team",
         "wowaudit_err_invalid_key": "API Key is required.",
         "wowaudit_err_fetch_failed": "Failed to fetch team details. Check your key and connection.",
+        "wowaudit_err_unauthorized": "Invalid or expired API key. Double check that you copied the key correctly.",
+        "wowaudit_err_forbidden": "Access Forbidden. Make sure you are using a 'Team API Key' (from Team Settings > Exports), not a 'Personal API Key'.",
+        "wowaudit_err_not_found": "Team not found. Please verify your WoW Audit configuration.",
+        "wowaudit_err_http_generic": "WoW Audit returned an unexpected HTTP error ({code}).",
         "btn_run_mplus": "Import M+ Loot",
         "btn_run_wowaudit": "Sync WoW Audit",
         "btn_run_discord": "Sync Discord Bot",
@@ -138,6 +142,10 @@ LOCALES = {
         "btn_wowaudit_del": "删除所选团队",
         "wowaudit_err_invalid_key": "需要 API 密钥。",
         "wowaudit_err_fetch_failed": "获取团队信息失败。请检查密钥和连接。",
+        "wowaudit_err_unauthorized": "无效或过期的 API 密钥。请仔细检查您的密钥是否正确。",
+        "wowaudit_err_forbidden": "拒绝访问。请确保使用的是“团队 API 密钥”（在团队设置 > 导出中生成），而非“个人 API 密钥”。",
+        "wowaudit_err_not_found": "未找到团队。请验证您的 WoW Audit 配置。",
+        "wowaudit_err_http_generic": "WoW Audit 返回了异常的 HTTP 错误 ({code})。",
         "btn_run_mplus": "导入 M+ 装备",
         "btn_run_wowaudit": "同步 WoW Audit",
         "btn_run_discord": "同步 Discord 机器人",
@@ -202,6 +210,10 @@ LOCALES = {
         "btn_wowaudit_del": "刪除所選團隊",
         "wowaudit_err_invalid_key": "需要 API 金鑰。",
         "wowaudit_err_fetch_failed": "獲取團隊信息失敗。請檢查金鑰和連接。",
+        "wowaudit_err_unauthorized": "無效或過期的 API 金鑰。請仔細檢查您的金鑰是否正確。",
+        "wowaudit_err_forbidden": "拒絕存取。請確保使用的是「團隊 API 金鑰」（在團隊設定 > 匯出中生成），而非「個人 API 金鑰」。",
+        "wowaudit_err_not_found": "未找到團隊。請驗證您的 WoW Audit 配置。",
+        "wowaudit_err_http_generic": "WoW Audit 返回了異常的 HTTP 錯誤 ({code})。",
         "btn_run_mplus": "匯入 M+ 裝備",
         "btn_run_wowaudit": "同步 WoW Audit",
         "btn_run_discord": "同步 Discord 機器人",
@@ -266,6 +278,10 @@ LOCALES = {
         "btn_wowaudit_del": "Eliminar Equipo Seleccionado",
         "wowaudit_err_invalid_key": "Se requiere la clave API.",
         "wowaudit_err_fetch_failed": "Error al obtener los detalles del equipo. Compruebe la clave y la conexión.",
+        "wowaudit_err_unauthorized": "Clave API inválida o expirada. Compruebe que copió la clave correctamente.",
+        "wowaudit_err_forbidden": "Acceso Prohibido. Asegúrese de estar usando una 'Clave API de Equipo' (en Ajustes de Equipo > Exportaciones), no una 'Clave API Personal'.",
+        "wowaudit_err_not_found": "Equipo no encontrado. Verifique la configuración de su WoW Audit.",
+        "wowaudit_err_http_generic": "WoW Audit devolvió un error HTTP inesperado ({code}).",
         "btn_run_mplus": "Importar Botín de Mítica+",
         "btn_run_wowaudit": "Sincronizar WoW Audit",
         "btn_run_discord": "Sincronizar Bot de Discord",
@@ -1368,8 +1384,14 @@ class RLMImporterApp:
                 self.update_wowaudit_listbox()
                 self.ent_wowaudit_key.delete(0, tk.END)
                 self.log_message(f"Mapped team '{full_team_name}' to profile '{raw_profile}' successfully.")
+            elif r.status_code == 401:
+                messagebox.showerror("Error", self.L("wowaudit_err_unauthorized"))
+            elif r.status_code == 403:
+                messagebox.showerror("Error", self.L("wowaudit_err_forbidden"))
+            elif r.status_code == 404:
+                messagebox.showerror("Error", self.L("wowaudit_err_not_found"))
             else:
-                messagebox.showerror("Error", self.L("wowaudit_err_fetch_failed"))
+                messagebox.showerror("Error", self.L("wowaudit_err_http_generic").format(code=r.status_code))
         except Exception as e:
             messagebox.showerror("Error", f"Failed to connect to WoW Audit: {e}")
 
