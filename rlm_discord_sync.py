@@ -199,25 +199,24 @@ def main():
         except Exception as e:
             print(f"[WARNING] Failed to load config from {config_path}: {e}")
 
-    # 2. Resolve SavedVariables path
-    sv_file = None
+    # 2. Resolve SavedVariables paths
+    sv_files = []
     if wow_path:
         p = pathlib.Path(wow_path)
         if p.exists():
             if p.name == "SavedVariables" and (p / "RaidLootMatrix.lua").exists():
-                sv_file = p / "RaidLootMatrix.lua"
+                sv_files = [p / "RaidLootMatrix.lua"]
             elif (p / "SavedVariables" / "RaidLootMatrix.lua").exists():
-                sv_file = p / "SavedVariables" / "RaidLootMatrix.lua"
+                sv_files = [p / "SavedVariables" / "RaidLootMatrix.lua"]
             else:
                 try:
                     for match in p.glob("**/SavedVariables/RaidLootMatrix.lua"):
                         if match.is_file():
-                            sv_file = match
-                            break
+                            sv_files.append(match)
                 except Exception as e:
                     print(f"[WARNING] Recursive search error: {e}")
 
-    if not sv_file or not sv_file.exists():
+    if not sv_files:
         # Fallback to default WoW installations if nothing found yet
         system = platform.system()
         default_dir = None
@@ -230,26 +229,33 @@ def main():
             try:
                 for match in default_dir.glob("**/SavedVariables/RaidLootMatrix.lua"):
                     if match.is_file():
-                        sv_file = match
-                        break
+                        sv_files.append(match)
             except Exception:
                 pass
 
-    if not sv_file or not sv_file.exists():
+    if not sv_files:
         print("❌ Error: Could not locate your 'RaidLootMatrix.lua' SavedVariables file.")
         print("To fix this, please run 'Run RLM Importer UI.bat' first and configure your")
         print("World of Warcraft directory or WTF Path in the settings.")
         prompt_exit(1)
 
-    # 3. Parse EPGP and Roster data
+    # 3. Parse EPGP and Roster data across all accounts
+    all_profiles = {}
     try:
-        profiles = parse_lua_saved_variables(sv_file)
-        if not profiles:
-            print("❌ Error: No EPGP profiles or rosters found in the file.")
+        for sv_file in sv_files:
+            profiles = parse_lua_saved_variables(sv_file)
+            for p_key, roster in profiles.items():
+                if p_key not in all_profiles:
+                    all_profiles[p_key] = {}
+                for char_name, char_data in roster.items():
+                    all_profiles[p_key][char_name] = char_data
+                    
+        if not all_profiles:
+            print("❌ Error: No EPGP profiles or rosters found in the file(s).")
             prompt_exit(1)
             
-        print(f"Successfully parsed {len(profiles)} database profiles.")
-        for p_key, roster in profiles.items():
+        print(f"Successfully parsed {len(all_profiles)} database profiles across all accounts.")
+        for p_key, roster in all_profiles.items():
             print(f" - Profile '{p_key.split('::')[-1]}' ({len(roster)} characters)")
             
     except Exception as e:
@@ -272,7 +278,7 @@ def main():
 
     payload = {
         "timestamp": int(time.time()),
-        "profiles": profiles
+        "profiles": all_profiles
     }
     
     headers = {

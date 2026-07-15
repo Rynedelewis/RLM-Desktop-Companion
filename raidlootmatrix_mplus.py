@@ -190,7 +190,7 @@ def parse_sv(sv_path):
     # ── Active roster (non-deleted entries with ep/gp) ────────────────────
     roster = []
     entry_pattern = re.compile(
-        r'\["([A-Z][^"]*-[A-Za-z][^"]+)"\]\s*=\s*\{([^{}]*?)\},',
+        r'\["([^"]+-[^"]+)"\]\s*=\s*\{([^{}]*?)\},',
         re.DOTALL
     )
     for m in entry_pattern.finditer(text):
@@ -616,7 +616,7 @@ def main():
 
     player_all_runs = {}
     for player_key in sorted(combined_roster):
-        m = re.match(r"^([A-Za-z\xf8\xe6\xe5\xc3-\xfa]+)-(.+)$", player_key)
+        m = re.match(r"^([^-]+)-(.+)$", player_key)
         if not m:
             print(f"  ? Cannot parse: {player_key}")
             continue
@@ -781,6 +781,6 @@ if __name__ == "__main__":
         # isatty() alone is unreliable under Task Scheduler (stdin stays a tty even in hidden windows).
         # The batch file sets RAIDLOOTMATRIX_SCHEDULED=1 for all automated runs.
         is_scheduled = os.environ.get("RAIDLOOTMATRIX_SCHEDULED") == "1"
-        if sys.stdin.isatty() and not is_scheduled:
+        if sys.stdin and sys.stdin.isatty() and not is_scheduled:
             input("Press Enter to close...")
 
