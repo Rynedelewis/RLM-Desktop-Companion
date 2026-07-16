@@ -135,10 +135,18 @@ def get_sv_path(account=None, override=None):
     return base / acct / "SavedVariables"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Week calculation (M+ resets Tuesday 09:00 US Eastern = 15:00 UTC)
+# Week calculation (dynamic based on Raider.IO region)
 # ─────────────────────────────────────────────────────────────────────────────
-RESET_WEEKDAY  = 1   # Tuesday (Monday=0)
-RESET_HOUR_UTC = 15  # 15:00 UTC
+_reg_lower = str(REGION).lower()
+if _reg_lower == "eu":
+    RESET_WEEKDAY  = 2   # Wednesday (Monday=0)
+    RESET_HOUR_UTC = 7   # 07:00 UTC (08:00 CET)
+elif _reg_lower in ["tw", "kr", "cn"]:
+    RESET_WEEKDAY  = 2   # Wednesday (Monday=0)
+    RESET_HOUR_UTC = 23  # Wednesday 23:00 UTC (Thursday 07:00/08:00 local time)
+else:
+    RESET_WEEKDAY  = 1   # Tuesday (Monday=0)
+    RESET_HOUR_UTC = 15  # 15:00 UTC
 
 def last_reset_utc():
     """Return the UTC datetime of the most recently completed reset."""
