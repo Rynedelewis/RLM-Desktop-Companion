@@ -184,7 +184,7 @@ def parse_sv(sv_path):
     if not lua_file.exists():
         raise FileNotFoundError(f"RaidLootMatrix.lua not found at: {lua_file}")
 
-    with open(lua_file, encoding="utf-8") as f:
+    with open(lua_file, encoding="utf-8", errors="replace") as f:
         text = f.read()
 
     # ── Active roster (non-deleted entries with ep/gp) ────────────────────
@@ -371,7 +371,7 @@ def load_history(sv_path):
     json_path = sv_path / "RaidLootMatrixMplusHistory.json"
     if json_path.exists():
         try:
-            with open(json_path, encoding="utf-8") as f:
+            with open(json_path, encoding="utf-8", errors="replace") as f:
                 return json.load(f)
         except Exception:
             pass
@@ -518,6 +518,8 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
+    if sys.stdout:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="RaidLootMatrix Mythic+ Weekly Run Import")
     parser.add_argument("--week",       choices=["last", "current", "both", "all"], default="all",
                         help="Which week(s): all (default, auto-detects from data), current, last, both")

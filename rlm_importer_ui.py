@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.12"
+VERSION = "1.1.13"
 
 LOCALES = {
     "en": {
@@ -1519,6 +1519,7 @@ class RLMImporterApp:
                     bufsize=1,
                     universal_newlines=True,
                     encoding="utf-8",
+                    errors="replace",
                     creationflags=0x08000000 if sys.platform == "win32" else 0
                 )
                 while True:
@@ -1548,6 +1549,7 @@ class RLMImporterApp:
                             bufsize=1,
                             universal_newlines=True,
                             encoding="utf-8",
+                            errors="replace",
                             creationflags=0x08000000 if sys.platform == "win32" else 0
                         )
                         while True:
@@ -1594,6 +1596,7 @@ class RLMImporterApp:
                     bufsize=1,
                     universal_newlines=True,
                     encoding="utf-8",
+                    errors="replace",
                     creationflags=0x08000000 if sys.platform == "win32" else 0
                 )
                 while True:
@@ -1641,6 +1644,7 @@ class RLMImporterApp:
                     bufsize=1,
                     universal_newlines=True,
                     encoding="utf-8",
+                    errors="replace",
                     creationflags=0x08000000 if sys.platform == "win32" else 0
                 )
                 while True:

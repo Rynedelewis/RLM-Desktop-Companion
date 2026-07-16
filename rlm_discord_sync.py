@@ -57,7 +57,7 @@ def parse_lua_saved_variables(file_path):
         raise FileNotFoundError(f"RaidLootMatrix.lua file not found at: {file_path}")
         
     print(f"Reading database file: {file_path}")
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         content = f.read()
         
     # Remove single line comments
@@ -192,7 +192,7 @@ def main():
     
     if config_path.exists():
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, "r", encoding="utf-8", errors="replace") as f:
                 cfg = json.load(f)
                 wow_path = cfg.get("wow_path", "")
                 account = cfg.get("account", "")

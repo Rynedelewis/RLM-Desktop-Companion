@@ -155,6 +155,9 @@ def build_lua_table(data, indent=0):
     return "nil"
 
 def main():
+    import sys
+    if sys.stdout:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print("--- Starting WoW Audit Sync ---")
     
     # 1. Load config
@@ -170,7 +173,7 @@ def main():
         return
         
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, "r", encoding="utf-8", errors="replace") as f:
             config = json.load(f)
     except Exception as e:
         print(f"[ERROR] Failed to read config: {e}")
