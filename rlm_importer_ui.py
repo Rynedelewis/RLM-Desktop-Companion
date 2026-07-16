@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.14"
+VERSION = "1.1.15"
 
 LOCALES = {
     "en": {
@@ -78,7 +78,7 @@ LOCALES = {
         "wowaudit_err_forbidden": "Access Forbidden. Make sure you are using a 'Team API Key' (from Team Settings > Exports), not a 'Personal API Key'.",
         "wowaudit_err_not_found": "Team not found. Please verify your WoW Audit configuration.",
         "wowaudit_err_http_generic": "WoW Audit returned an unexpected HTTP error ({code}).",
-        "btn_run_mplus": "Import M+ Loot",
+        "btn_run_mplus": "Import M+ Data",
         "btn_run_wowaudit": "Sync WoW Audit",
         "btn_run_discord": "Sync Discord Bot",
         "lbl_update_available": "Update Available: {remote_version}",
@@ -146,7 +146,7 @@ LOCALES = {
         "wowaudit_err_forbidden": "拒绝访问。请确保使用的是“团队 API 密钥”（在团队设置 > 导出中生成），而非“个人 API 密钥”。",
         "wowaudit_err_not_found": "未找到团队。请验证您的 WoW Audit 配置。",
         "wowaudit_err_http_generic": "WoW Audit 返回了异常的 HTTP 错误 ({code})。",
-        "btn_run_mplus": "导入 M+ 装备",
+        "btn_run_mplus": "导入 M+ 数据",
         "btn_run_wowaudit": "同步 WoW Audit",
         "btn_run_discord": "同步 Discord 机器人",
         "lbl_update_available": "有可用更新: {remote_version}",
@@ -214,7 +214,7 @@ LOCALES = {
         "wowaudit_err_forbidden": "拒絕存取。請確保使用的是「團隊 API 金鑰」（在團隊設定 > 匯出中生成），而非「個人 API 金鑰」。",
         "wowaudit_err_not_found": "未找到團隊。請驗證您的 WoW Audit 配置。",
         "wowaudit_err_http_generic": "WoW Audit 返回了異常的 HTTP 錯誤 ({code})。",
-        "btn_run_mplus": "匯入 M+ 裝備",
+        "btn_run_mplus": "匯入 M+ 數據",
         "btn_run_wowaudit": "同步 WoW Audit",
         "btn_run_discord": "同步 Discord 機器人",
         "lbl_update_available": "有可用更新: {remote_version}",
@@ -282,7 +282,7 @@ LOCALES = {
         "wowaudit_err_forbidden": "Acceso Prohibido. Asegúrese de estar usando una 'Clave API de Equipo' (en Ajustes de Equipo > Exportaciones), no una 'Clave API Personal'.",
         "wowaudit_err_not_found": "Equipo no encontrado. Verifique la configuración de su WoW Audit.",
         "wowaudit_err_http_generic": "WoW Audit devolvió un error HTTP inesperado ({code}).",
-        "btn_run_mplus": "Importar Botín de Mítica+",
+        "btn_run_mplus": "Importar Datos de Mítica+",
         "btn_run_wowaudit": "Sincronizar WoW Audit",
         "btn_run_discord": "Sincronizar Bot de Discord",
         "lbl_update_available": "Actualización Disponible: {remote_version}",
