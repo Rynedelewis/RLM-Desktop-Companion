@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.1.15"
+VERSION = "1.1.16"
 
 LOCALES = {
     "en": {
@@ -97,7 +97,8 @@ LOCALES = {
         "update_complete_title": "Update Complete",
         "update_complete_msg": "The application has been updated to the latest version.\nPlease restart the application to apply the update.",
         "update_failed_title": "Update Failed",
-        "update_failed_msg": "Could not perform automatic update:\n{err}\n\nYou can download the update manually from GitHub."
+        "update_failed_msg": "Could not perform automatic update:\n{err}\n\nYou can download the update manually from GitHub.",
+        "chk_minimize_on_close": "Minimize to system tray on window close (instead of exiting)"
     },
     "zh": {
         "header_title": "RLM 导入器",
@@ -165,7 +166,8 @@ LOCALES = {
         "update_complete_title": "更新完成",
         "update_complete_msg": "应用程序已更新至最新版本。\n请重新启动应用程序以应用更新。",
         "update_failed_title": "更新失败",
-        "update_failed_msg": "无法执行自动更新:\n{err}\n\n您可以从 GitHub 手动下载更新。"
+        "update_failed_msg": "无法执行自动更新:\n{err}\n\n您可以从 GitHub 手动下载更新。",
+        "chk_minimize_on_close": "关闭主窗口时最小化到系统托盘 (而非退出)"
     },
     "zh_tw": {
         "header_title": "RLM 導入器",
@@ -233,7 +235,8 @@ LOCALES = {
         "update_complete_title": "更新完成",
         "update_complete_msg": "應用程式已更新至最新版本。\n請重新啟動應用程式以套用更新。",
         "update_failed_title": "更新失敗",
-        "update_failed_msg": "無法執行自動更新:\n{err}\n\n您可以從 GitHub 手動下載更新。"
+        "update_failed_msg": "無法執行自動更新:\n{err}\n\n您可以從 GitHub 手動下載更新。",
+        "chk_minimize_on_close": "關閉主視窗時最小化到系統托盤 (而非退出)"
     },
     "es": {
         "header_title": "Importador RLM",
@@ -301,7 +304,8 @@ LOCALES = {
         "update_complete_title": "Actualización Completada",
         "update_complete_msg": "La aplicación se ha actualizado a la última versión.\nPor favor, reinicie la aplicación para aplicar la actualización.",
         "update_failed_title": "Actualización Fallida",
-        "update_failed_msg": "No se pudo realizar la actualización automática:\n{err}\n\nPuede descargar la actualización manualmente desde GitHub."
+        "update_failed_msg": "No se pudo realizar la actualización automática:\n{err}\n\nPuede descargar la actualización manualmente desde GitHub.",
+        "chk_minimize_on_close": "Minimizar a la bandeja del sistema al cerrar la ventana (en lugar de salir)"
     }
 }
 
@@ -861,7 +865,9 @@ class RLMImporterApp:
             "discord_sync_key": "",
             "discord_sync_url": "https://rlm-desktop-companion-production.up.railway.app/api/sync",
             "sync_on_import": True,
-            "sync_on_wow_exit": True
+            "sync_on_wow_exit": True,
+            "run_on_startup": True,
+            "minimize_on_close": True
         }
         if self.config_path.exists():
             try:
@@ -971,6 +977,7 @@ class RLMImporterApp:
         self.chk_logon.configure(text=self.L("chk_logon"))
         self.chk_startup.configure(text=self.L("chk_startup"))
         self.chk_wow_exit.configure(text=self.L("chk_wow_exit"))
+        self.chk_minimize_on_close.configure(text=self.L("chk_minimize_on_close"))
         self.btn_register.configure(text=self.L("btn_register"))
         self.btn_unregister.configure(text=self.L("btn_unregister"))
 
@@ -1012,6 +1019,9 @@ class RLMImporterApp:
         # self.settings["discord_sync_url"] is preserved from loaded settings, not read from widget
         self.settings["sync_on_import"] = self.var_sync_on_import.get()
         self.settings["sync_on_wow_exit"] = self.var_sync_on_wow_exit.get()
+        self.settings["run_on_startup"] = self.var_run_on_startup.get()
+        self.settings["minimize_on_close"] = self.var_minimize_on_close.get()
+        self.update_startup_shortcut()
 
         try:
             with open(self.config_path, "w", encoding="utf-8") as f:
@@ -1224,6 +1234,11 @@ class RLMImporterApp:
         self.var_sync_on_wow_exit = tk.BooleanVar(value=self.settings.get("sync_on_wow_exit", True))
         self.chk_wow_exit = ttk.Checkbutton(grid, text=self.L("chk_wow_exit"), variable=self.var_sync_on_wow_exit)
         self.chk_wow_exit.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
+
+        # Minimize on Close Option
+        self.var_minimize_on_close = tk.BooleanVar(value=self.settings.get("minimize_on_close", True))
+        self.chk_minimize_on_close = ttk.Checkbutton(grid, text=self.L("chk_minimize_on_close"), variable=self.var_minimize_on_close)
+        self.chk_minimize_on_close.grid(row=5, column=0, columnspan=2, sticky="w", pady=6)
 
         # OS Task Register Actions
         task_action_frame = ttk.Frame(parent, style="Panel.TFrame")
@@ -1848,9 +1863,12 @@ class RLMImporterApp:
         self.tray_thread.start()
 
     def hide_window(self):
-        # Hide the main Tkinter window
-        self.root.withdraw()
-        self.log_message("Minimized to system tray. Double-click the tray icon to reopen.")
+        if self.settings.get("minimize_on_close", True):
+            # Hide the main Tkinter window
+            self.root.withdraw()
+            self.log_message("Minimized to system tray. Double-click the tray icon to reopen.")
+        else:
+            self.quit_app()
 
     def show_window(self, icon=None, item=None):
         # Restore the Tkinter window safely from tray thread
