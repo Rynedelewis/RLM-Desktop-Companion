@@ -47,7 +47,7 @@ Unlike old EPGP addons, **RaidLootMatrix** includes a powerful desktop applicati
 
 ### 2. Mythic+ Weekly Import Setup
 Officers can automate Mythic+ EP awards using the companion Python desktop application:
-1. Clone or download the companion tools repository from GitHub: `https://github.com/yourusername/RaidLootMatrix`
+1. Clone or download the companion tools repository from GitHub: `https://github.com/Rynedelewis/RLM-Desktop-Companion`
 2. Run `Run RLM Importer UI.bat` inside the downloaded companion folder.
 3. Select your WoW install path, your active region, and the current WoW season.
 4. Configure your automated weekly runs import using the built-in task scheduler helper.

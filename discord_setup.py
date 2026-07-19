@@ -134,16 +134,21 @@ class RLMSetupBot(discord.Client):
         # --- DOWNLOAD LINK ---
         download_embed = discord.Embed(
             title="Download RaidLootMatrix (RLM)",
-            description="Keep your addon updated to the latest version to ensure smooth database syncing and encounter tracking.",
+            description="Keep your addon and companion app updated to the latest versions to ensure smooth database syncing and encounter tracking.",
             color=discord.Color.gold()
         )
         download_embed.add_field(
-            name="CurseForge (Recommended)",
+            name="1. WoW Addon - CurseForge (Recommended)",
             value="[Download via CurseForge App or Web](https://www.curseforge.com/wow/addons/raidlootmatrix)",
             inline=False
         )
         download_embed.add_field(
-            name="Manual Installation",
+            name="2. Desktop Companion (GitHub Releases)",
+            value="[Download Latest RLM Companion (RLM_Companion.exe)](https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/latest)\\n*Enables Mythic+ weekly run imports and real-time EPGP standings syncing to Discord.*",
+            inline=False
+        )
+        download_embed.add_field(
+            name="Manual Addon Installation",
             value="1. Download the zip file.\\n2. Extract it into your `World of Warcraft\\_retail_\\Interface\\AddOns` folder.\\n3. Type `/reload` in-game.",
             inline=False
         )
