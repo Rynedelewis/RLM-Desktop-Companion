@@ -87,6 +87,15 @@ ACCOUNT = config_data.get("account", DEFAULT_ACCOUNT)
 REGION = config_data.get("region", DEFAULT_REGION)
 SEASON = config_data.get("season", DEFAULT_SEASON)
 RIO_DELAY = float(config_data.get("rio_delay", DEFAULT_RIO_DELAY))
+SEASON_START_DATE = config_data.get("season_start_date", "")
+SEASON_START_TS = 0
+if SEASON_START_DATE:
+    try:
+        dt_start = datetime.datetime.strptime(SEASON_START_DATE, "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc)
+        SEASON_START_TS = int(dt_start.timestamp())
+    except Exception as e:
+        print(f"[WARNING] Invalid season_start_date format '{SEASON_START_DATE}' in config. Expected YYYY-MM-DD. Error: {e}")
+
 
 # Realm slug mapping: WoW format → Raider.IO slug
 REALM_SLUGS = {
@@ -321,6 +330,8 @@ def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
                 dt = datetime.datetime.fromisoformat(completed_str.replace("Z", "+00:00"))
                 ts = dt.timestamp()
             except Exception:
+                continue
+            if SEASON_START_TS > 0 and ts < SEASON_START_TS:
                 continue
             key = (completed_str, dungeon_id, run.get("mythic_level", 0))
             if key in seen:
@@ -622,7 +633,7 @@ def main():
 
     # 2. Fetch all recent runs once per player in the combined roster
     print(f"\nFetching Raider.IO data for {len(combined_roster)} unique players")
-    print(f"(requesting 20 recent runs to cover {'both weeks' if args.week == 'both' else 'this week'})...\n")
+    print(f"(requesting 50 recent runs to cover {'both weeks' if args.week == 'both' else 'this week'})...\n")
 
     player_all_runs = {}
     for player_key in sorted(combined_roster):
@@ -632,7 +643,7 @@ def main():
             continue
         name, realm = m.group(1), m.group(2)
         print(f"  {name}-{realm}...", end=" ", flush=True)
-        all_runs = fetch_runs(name, realm, max_recent=20)
+        all_runs = fetch_runs(name, realm, max_recent=50)
         player_all_runs[player_key] = (name, realm, all_runs)
         print(f"{len(all_runs)} total runs found")
         time.sleep(RIO_DELAY)
