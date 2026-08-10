@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.2.2"
+VERSION = "1.2.4"
 
 LOCALES = {
     "en": {
@@ -868,8 +868,8 @@ class RLMImporterApp:
             "sync_on_wow_exit": True,
             "run_on_startup": True,
             "minimize_on_close": True,
-            "season": "season-tww-2",
-            "season_start_date": "2026-08-01"
+            "season": "season-midnight-1",
+            "season_start_date": "2026-02-17"
         }
         if self.config_path.exists():
             try:
@@ -1215,7 +1215,7 @@ class RLMImporterApp:
         # Expansion Selector
         self.lbl_expansion = ttk.Label(grid, text="WoW Expansion:", style="Panel.TLabel")
         self.lbl_expansion.grid(row=4, column=0, sticky="w", pady=4)
-        self.cb_expansion = ttk.Combobox(grid, values=["The War Within", "Dragonflight", "Shadowlands"], state="readonly", width=15)
+        self.cb_expansion = ttk.Combobox(grid, values=["Midnight", "The War Within", "Dragonflight", "Shadowlands"], state="readonly", width=15)
         self.cb_expansion.grid(row=4, column=1, sticky="w", padx=(10, 0), pady=4)
         self.cb_expansion.bind("<<ComboboxSelected>>", self.on_expansion_changed)
         
@@ -1232,8 +1232,10 @@ class RLMImporterApp:
 
         # Initialize values
         self.loaded_seasons = []
-        active_slug = self.settings.get("season", "season-tww-2")
-        if "df" in active_slug:
+        active_slug = self.settings.get("season", "season-midnight-1")
+        if "midnight" in active_slug:
+            self.cb_expansion.set("Midnight")
+        elif "df" in active_slug:
             self.cb_expansion.set("Dragonflight")
         elif "sl" in active_slug:
             self.cb_expansion.set("Shadowlands")
@@ -2175,6 +2177,10 @@ class RLMImporterApp:
                         valid_seasons.append(s)
             if not valid_seasons:
                 fallbacks = {
+                    11: [
+                        {"slug": "season-midnight-2", "name": "Midnight Season 2", "starts": {"us": "2026-08-11T15:00:00Z", "eu": "2026-08-12T04:00:00Z"}},
+                        {"slug": "season-midnight-1", "name": "Midnight Season 1", "starts": {"us": "2026-02-17T15:00:00Z", "eu": "2026-02-18T04:00:00Z"}},
+                    ],
                     10: [
                         {"slug": "season-tww-3", "name": "TWW Season 3", "starts": {"us": "2025-08-20T15:00:00Z"}},
                         {"slug": "season-tww-2", "name": "TWW Season 2", "starts": {"us": "2025-01-07T15:00:00Z"}},
@@ -2201,7 +2207,7 @@ class RLMImporterApp:
         self.loaded_seasons = seasons
         names = [s.get("name") or s.get("slug") for s in seasons]
         self.cb_season_dropdown.configure(values=names)
-        active_slug = self.settings.get("season", "season-tww-2")
+        active_slug = self.settings.get("season", "season-midnight-1")
         match_index = None
         for idx, s in enumerate(seasons):
             if s.get("slug") == active_slug:
@@ -2238,8 +2244,8 @@ class RLMImporterApp:
 
     def on_expansion_changed(self, event=None):
         val = self.cb_expansion.get()
-        mapping = {"The War Within": 10, "Dragonflight": 9, "Shadowlands": 8}
-        exp_id = mapping.get(val, 10)
+        mapping = {"Midnight": 11, "The War Within": 10, "Dragonflight": 9, "Shadowlands": 8}
+        exp_id = mapping.get(val, 11)
         self.load_seasons_threaded(exp_id)
 
     def on_region_changed_ref(self, event=None):

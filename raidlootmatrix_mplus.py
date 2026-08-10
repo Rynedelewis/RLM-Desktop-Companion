@@ -65,7 +65,7 @@ def is_wow_running():
 # Default fallback configuration constants
 DEFAULT_ACCOUNT      = ""
 DEFAULT_REGION       = ""
-DEFAULT_SEASON       = "season-tww-2"
+DEFAULT_SEASON       = "season-midnight-1"
 DEFAULT_RIO_DELAY    = 0.35
 MAX_RUNS_PER_PLAYER  = 200    # Raider.IO supports up to ~250; grab as much history as possible
 
