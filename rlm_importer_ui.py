@@ -338,15 +338,20 @@ class RLMImporterApp:
         self.root.option_add('*TCombobox*Listbox.selectForeground', FG_HEADER)
         self.root.option_add('*TCombobox*Listbox.font', ('Segoe UI', 9))
 
+        if getattr(sys, "frozen", False):
+            self.app_dir = pathlib.Path(sys.executable).parent
+        else:
+            self.app_dir = pathlib.Path(__file__).parent
+
         # Load Icon if available
-        self.icon_path = pathlib.Path(__file__).parent / "rlm_icon.ico"
+        self.icon_path = self.app_dir / "rlm_icon.ico"
         if self.icon_path.exists():
             try:
                 self.root.iconbitmap(str(self.icon_path))
             except Exception:
                 pass
 
-        self.config_path = pathlib.Path(__file__).parent / "rlm_importer_config.json"
+        self.config_path = self.app_dir / "rlm_importer_config.json"
         self.settings = self.load_settings()
         self.ensure_provider_schema()
 
