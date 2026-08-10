@@ -11,6 +11,7 @@ import pystray
 from PIL import Image, ImageDraw
 import ctypes
 import requests
+import webbrowser
 
 # Import background tasks & provider engine
 try:
@@ -117,7 +118,7 @@ LOCALES = {
         "btn_run_mplus": "⚔️ Import M+ Data",
         "btn_run_guild": "🔄 Sync Guild Data",
         "btn_run_discord": "💬 Sync Discord Bot",
-        "lbl_update_available": "Update Available: {remote_version}",
+        "lbl_update_available": "Update Available: v{remote_version}",
         "btn_update_now": "Update Now",
         "gow_pending_note": "⚠️ Guilds of WoW is Pending API access. Please use WoW Audit or WoWUtils.",
         "gow_pending_title": "Provider Pending",
@@ -181,7 +182,7 @@ LOCALES = {
         "btn_run_mplus": "⚔️ 导入 M+ 数据",
         "btn_run_guild": "🔄 同步公会数据",
         "btn_run_discord": "💬 同步 Discord 机器人",
-        "lbl_update_available": "有可用更新: {remote_version}",
+        "lbl_update_available": "有可用更新: v{remote_version}",
         "btn_update_now": "立即更新",
         "gow_pending_note": "⚠️ Guilds of WoW 暂未开放 API。请使用 WoW Audit 或 WoWUtils。",
         "gow_pending_title": "数据源待定",
@@ -245,7 +246,7 @@ LOCALES = {
         "btn_run_mplus": "⚔️ 匯入 M+ 數據",
         "btn_run_guild": "🔄 同步公會數據",
         "btn_run_discord": "💬 同步 Discord 機器人",
-        "lbl_update_available": "有可用更新: {remote_version}",
+        "lbl_update_available": "有可用更新: v{remote_version}",
         "btn_update_now": "更新",
         "gow_pending_note": "⚠️ Guilds of WoW 暫未開放 API。請使用 WoW Audit 或 WoWUtils。",
         "gow_pending_title": "數據源待定",
@@ -309,7 +310,7 @@ LOCALES = {
         "btn_run_mplus": "⚔️ Importar Datos de Mítica+",
         "btn_run_guild": "🔄 Sincronizar Fuentes de Hermandad",
         "btn_run_discord": "💬 Sincronizar Bot de Discord",
-        "lbl_update_available": "Actualización Disponible: {remote_version}",
+        "lbl_update_available": "Update Available: v{remote_version}",
         "btn_update_now": "Actualizar Ahora",
         "gow_pending_note": "⚠️ Guilds of WoW está pendiente de API. Use WoW Audit o WoWUtils.",
         "gow_pending_title": "Proveedor Pendiente",
@@ -357,6 +358,7 @@ class RLMImporterApp:
         sys.stderr = StdoutRedirector(self.log_message)
 
         self.log_message(f"RaidLootMatrix Companion v{VERSION} (Gold Edition) initialized successfully.")
+        self.check_for_updates()
 
     def L(self, key):
         lang = self.settings.get("language", "en")
@@ -406,6 +408,36 @@ class RLMImporterApp:
                     "sync_calendar": True,
                     "sync_wishlists": True
                 })
+
+    def check_for_updates(self):
+        def task():
+            try:
+                headers = {
+                    "User-Agent": getattr(rlm_guild_providers, "DEFAULT_USER_AGENT", "RLMCompanion/1.3.3"),
+                    "Accept": "application/vnd.github.v3+json"
+                }
+                url = "https://api.github.com/repos/Rynedelewis/RLM-Desktop-Companion/releases/latest"
+                r = requests.get(url, headers=headers, timeout=6)
+                if r.status_code == 200:
+                    data = r.json()
+                    tag = data.get("tag_name", "").strip().lstrip("v")
+                    if tag and tag > VERSION:
+                        self.root.after(0, lambda: self.show_update_banner(tag, data.get("html_url")))
+            except Exception as e:
+                pass
+        threading.Thread(target=task, daemon=True).start()
+
+    def show_update_banner(self, remote_version, release_url):
+        if hasattr(self, "header_frame"):
+            update_frame = ttk.Frame(self.header_frame, style="Panel.TFrame")
+            update_frame.pack(side="right", padx=10, pady=10)
+            
+            lbl = ttk.Label(update_frame, text=self.L("lbl_update_available").format(remote_version=remote_version), font=("Segoe UI", 9, "bold"), foreground="#fbbf24", style="Panel.TLabel")
+            lbl.pack(side="left", padx=(5, 8))
+            
+            target_url = release_url or "https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/latest"
+            btn = ttk.Button(update_frame, text=self.L("btn_update_now"), style="GoldSave.TButton", command=lambda: webbrowser.open(target_url))
+            btn.pack(side="right", padx=5)
 
     def setup_styles(self):
         self.style = ttk.Style()
