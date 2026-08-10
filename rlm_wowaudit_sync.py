@@ -233,12 +233,13 @@ def main():
             sync_roster = target.get("sync_roster", True)
             sync_calendar = target.get("sync_calendar", True)
             sync_wishlists = target.get("sync_wishlists", False)
+            sync_alts = target.get("sync_alts", True)
             
             if not api_key or not rlm_profile:
                 continue
                 
             print(f"Processing mapping [{provider_type.upper()}]: {team_name} -> {rlm_profile}")
-            print(f"  Sync Scope: Roster={sync_roster}, Calendar={sync_calendar}, Wishlists={sync_wishlists}")
+            print(f"  Sync Scope: Roster={sync_roster}, Calendar={sync_calendar}, Alts={sync_alts}")
             
             provider_cls = PROVIDER_CLASSES.get(provider_type, rlm_guild_providers.WoWAuditProvider)
             
@@ -248,7 +249,8 @@ def main():
                 group_id=group_id,
                 sync_roster=sync_roster,
                 sync_calendar=sync_calendar,
-                sync_wishlists=sync_wishlists
+                sync_wishlists=sync_wishlists,
+                sync_alts=sync_alts
             )
             
             remote_roster = fetched.get("roster", [])

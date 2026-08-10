@@ -87,7 +87,7 @@ class WoWAuditProvider:
             return False, None, f"Connection error: {e}"
 
     @staticmethod
-    def fetch_data(api_key, group_id=None, sync_roster=True, sync_calendar=True, sync_wishlists=False):
+    def fetch_data(api_key, group_id=None, sync_roster=True, sync_calendar=True, sync_wishlists=False, sync_alts=True):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "User-Agent": DEFAULT_USER_AGENT,
@@ -118,6 +118,9 @@ class WoWAuditProvider:
                             rank_str = str(c.get("rank", "")).lower()
                             is_alt = (rank_str == "alt")
                             
+                            if is_alt and not sync_alts:
+                                continue
+
                             result["roster"].append({
                                 "name": c_name,
                                 "realm": c_realm,
@@ -272,7 +275,7 @@ class WoWUtilsProvider:
             return False, None, f"Connection error: {e}"
 
     @staticmethod
-    def fetch_data(api_key, group_id=None, sync_roster=True, sync_calendar=True, sync_wishlists=False):
+    def fetch_data(api_key, group_id=None, sync_roster=True, sync_calendar=True, sync_wishlists=False, sync_alts=True):
         headers = WoWUtilsProvider.get_headers(api_key)
         base_url = "https://api.wowutils.com/v1"
         result = {
@@ -339,6 +342,9 @@ class WoWUtilsProvider:
                                 fullName = f"{c_name}-{c_realm.replace(' ', '')}" if c_realm else c_name
                                 is_alt = (c.get("status") == "alt") or (main_full_name and fullName != main_full_name)
                                 
+                                if is_alt and not sync_alts:
+                                    continue
+
                                 if c_name:
                                     result["roster"].append({
                                         "name": c_name,

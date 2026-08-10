@@ -111,7 +111,7 @@ LOCALES = {
         "lbl_sync_options": "Data Sync Scope:",
         "chk_sync_roster": "Sync Roster (Default)",
         "chk_sync_calendar": "Sync Calendar Events & Raids (Default)",
-        "chk_sync_wishlists": "Sync Wishlists & Upgrades",
+        "chk_sync_alts": "Include Alt Characters (Default)",
         "btn_provider_add": "➕ Add / Link Source",
         "btn_provider_del": "🗑️ Remove Selected",
         "btn_provider_test": "⚡ Test Connection",
@@ -398,9 +398,12 @@ class RLMImporterApp:
         return defaults
 
     def ensure_provider_schema(self):
-        """Auto-migrate old wowaudit_sync entries into the new guild_providers schema."""
+        """Auto-migrate old wowaudit_sync entries into the new guild_providers schema once."""
         if "guild_providers" not in self.settings or not isinstance(self.settings["guild_providers"], list):
             self.settings["guild_providers"] = []
+
+        if self.settings.get("migrated_legacy_wowaudit"):
+            return
 
         if "wowaudit_sync" in self.settings:
             existing_pairs = {(p.get("provider", "wowaudit"), p.get("rlm_profile_key", "")) for p in self.settings["guild_providers"]}
@@ -414,9 +417,16 @@ class RLMImporterApp:
                         "rlm_profile_key": pkey,
                         "sync_roster": True,
                         "sync_calendar": True,
-                        "sync_wishlists": True
+                        "sync_alts": True
                     })
                     existing_pairs.add(("wowaudit", pkey))
+
+        self.settings["migrated_legacy_wowaudit"] = True
+        try:
+            with open(self.config_path, "w", encoding="utf-8") as f:
+                json.dump(self.settings, f, indent=2)
+        except Exception:
+            pass
 
     def check_for_updates(self):
         def task():
@@ -661,9 +671,9 @@ class RLMImporterApp:
         self.chk_sync_calendar = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_calendar"), variable=self.var_sync_calendar)
         self.chk_sync_calendar.pack(side="left", padx=(0, 10))
 
-        self.var_sync_wishlists = tk.BooleanVar(value=False)
-        self.chk_sync_wishlists = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_wishlists"), variable=self.var_sync_wishlists)
-        self.chk_sync_wishlists.pack(side="left")
+        self.var_sync_alts = tk.BooleanVar(value=True)
+        self.chk_sync_alts = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_alts"), variable=self.var_sync_alts)
+        self.chk_sync_alts.pack(side="left")
 
         grid.columnconfigure(1, weight=1)
 
@@ -846,7 +856,7 @@ class RLMImporterApp:
             scope = []
             if p.get("sync_roster", True): scope.append("Roster")
             if p.get("sync_calendar", True): scope.append("Calendar")
-            if p.get("sync_wishlists", False): scope.append("Wishlists")
+            if p.get("sync_alts", True): scope.append("Alts")
             scope_str = "+".join(scope) if scope else "None"
             self.lst_providers.insert(tk.END, f"[{ptype}] {name} ➔ {profile} ({scope_str})")
 
@@ -925,7 +935,7 @@ class RLMImporterApp:
             "rlm_profile_key": raw_profile,
             "sync_roster": self.var_sync_roster.get(),
             "sync_calendar": self.var_sync_calendar.get(),
-            "sync_wishlists": self.var_sync_wishlists.get()
+            "sync_alts": self.var_sync_alts.get()
         }
 
         if existing_idx is not None:
@@ -936,6 +946,7 @@ class RLMImporterApp:
             self.log_message(f"Mapped provider [{ptype.upper()}] '{name}' to profile '{raw_profile}'")
 
         self.update_providers_listbox()
+        self.save_settings()
         self.ent_provider_key.delete(0, tk.END)
         self.ent_group_id.delete(0, tk.END)
 
@@ -946,7 +957,18 @@ class RLMImporterApp:
         providers_list = self.settings.get("guild_providers", [])
         if 0 <= idx < len(providers_list):
             removed = providers_list.pop(idx)
+            removed_profile = removed.get("rlm_profile_key")
+            removed_provider = removed.get("provider")
+
+            # Clean up matching legacy wowaudit_sync entries so it never resurrects
+            if "wowaudit_sync" in self.settings and isinstance(self.settings["wowaudit_sync"], list):
+                self.settings["wowaudit_sync"] = [
+                    item for item in self.settings["wowaudit_sync"]
+                    if not (item.get("rlm_profile_key") == removed_profile and removed_provider == "wowaudit")
+                ]
+
             self.update_providers_listbox()
+            self.save_settings()
             self.log_message(f"Removed provider mapping: {removed.get('name')}")
 
     def save_settings(self):
