@@ -397,17 +397,21 @@ class RLMImporterApp:
         if "guild_providers" not in self.settings or not isinstance(self.settings["guild_providers"], list):
             self.settings["guild_providers"] = []
 
-        if not self.settings["guild_providers"] and "wowaudit_sync" in self.settings:
+        if "wowaudit_sync" in self.settings:
+            existing_pairs = {(p.get("provider", "wowaudit"), p.get("rlm_profile_key", "")) for p in self.settings["guild_providers"]}
             for item in self.settings.get("wowaudit_sync", []):
-                self.settings["guild_providers"].append({
-                    "provider": "wowaudit",
-                    "name": item.get("wowaudit_team_name", "WoW Audit Team"),
-                    "api_key": item.get("api_key", ""),
-                    "rlm_profile_key": item.get("rlm_profile_key", ""),
-                    "sync_roster": True,
-                    "sync_calendar": True,
-                    "sync_wishlists": True
-                })
+                pkey = item.get("rlm_profile_key", "")
+                if ("wowaudit", pkey) not in existing_pairs:
+                    self.settings["guild_providers"].append({
+                        "provider": "wowaudit",
+                        "name": item.get("wowaudit_team_name", "WoW Audit Team"),
+                        "api_key": item.get("api_key", ""),
+                        "rlm_profile_key": pkey,
+                        "sync_roster": True,
+                        "sync_calendar": True,
+                        "sync_wishlists": True
+                    })
+                    existing_pairs.add(("wowaudit", pkey))
 
     def check_for_updates(self):
         def task():
