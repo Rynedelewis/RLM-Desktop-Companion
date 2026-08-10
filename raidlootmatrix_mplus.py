@@ -521,7 +521,13 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
 
     # Write to static addon sync data file to allow direct updates via /reload without logout!
     try:
-        retail_dir = sv_path.parents[4]
+        retail_dir = None
+        for parent in sv_path.parents:
+            if parent.name in ["_retail_", "_classic_", "_beta_", "_ptr_", "_classic_era_"] or parent.name.startswith("_"):
+                retail_dir = parent
+                break
+        if not retail_dir:
+            retail_dir = sv_path.parents[3]
         addon_mplus_file = retail_dir / "Interface" / "AddOns" / "RaidLootMatrix" / "sync" / "mplus_data.lua"
         addon_mplus_file.parent.mkdir(parents=True, exist_ok=True)
         

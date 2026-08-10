@@ -465,9 +465,13 @@ def main():
             
         # Write to static addon sync data file to allow direct updates via /reload without logout!
         try:
-            # lua_file: _retail_/WTF/Account/<Account>/SavedVariables/RaidLootMatrix.lua
-            # parents[4] -> _retail_
-            retail_dir = lua_file.parents[4]
+            retail_dir = None
+            for parent in lua_file.parents:
+                if parent.name in ["_retail_", "_classic_", "_beta_", "_ptr_", "_classic_era_"] or parent.name.startswith("_"):
+                    retail_dir = parent
+                    break
+            if not retail_dir:
+                retail_dir = lua_file.parents[4]
             addon_sync_file = retail_dir / "Interface" / "AddOns" / "RaidLootMatrix" / "sync" / "wowaudit_data.lua"
             addon_sync_file.parent.mkdir(parents=True, exist_ok=True)
             
