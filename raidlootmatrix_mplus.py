@@ -280,6 +280,20 @@ def calc_ep_preview(level, timed, roster_extras, config):
 # ─────────────────────────────────────────────────────────────────────────────
 # Raider.IO API
 # ─────────────────────────────────────────────────────────────────────────────
+def fetch_seasons_for_expansion(expansion_id):
+    """Fetch Mythic+ seasons list for a specific expansion from Raider.IO static-data API."""
+    url = "https://raider.io/api/v1/mythic-plus/static-data"
+    params = {"expansion_id": expansion_id}
+    try:
+        import requests
+        r = requests.get(url, params=params, timeout=15)
+        if r.status_code == 200:
+            data = r.json()
+            return data.get("seasons") or []
+    except Exception as e:
+        print(f"[WARNING] Failed to fetch seasons for expansion {expansion_id}: {e}")
+    return []
+
 def realm_to_slug(realm):
     if realm in REALM_SLUGS:
         return REALM_SLUGS[realm]

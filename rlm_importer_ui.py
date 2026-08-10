@@ -867,7 +867,9 @@ class RLMImporterApp:
             "sync_on_import": True,
             "sync_on_wow_exit": True,
             "run_on_startup": True,
-            "minimize_on_close": True
+            "minimize_on_close": True,
+            "season": "season-tww-2",
+            "season_start_date": "2026-08-01"
         }
         if self.config_path.exists():
             try:
@@ -1006,6 +1008,16 @@ class RLMImporterApp:
         # Gather inputs
         self.settings["region"] = self.cb_region.get().strip().lower()
         self.settings["wow_path"] = self.ent_wow_path.get().strip()
+        
+        idx = self.cb_season_dropdown.current()
+        if idx >= 0 and getattr(self, "loaded_seasons", None) and idx < len(self.loaded_seasons):
+            s = self.loaded_seasons[idx]
+            self.settings["season"] = s.get("slug")
+            region_str = self.cb_region.get().strip().lower() or "us"
+            starts_dict = s.get("starts") or {}
+            start_str = starts_dict.get(region_str) or starts_dict.get("us") or ""
+            if start_str and len(start_str) >= 10:
+                self.settings["season_start_date"] = start_str[:10]
         
         try:
             self.settings["rio_delay"] = float(self.ent_rio_delay.get().strip())
@@ -1199,6 +1211,37 @@ class RLMImporterApp:
 
         self.btn_browse = ttk.Button(dir_frame, text=self.L("btn_browse"), command=self.browse_wow_directory, width=8)
         self.btn_browse.grid(row=0, column=1, padx=(5, 0))
+
+        # Expansion Selector
+        self.lbl_expansion = ttk.Label(grid, text="WoW Expansion:", style="Panel.TLabel")
+        self.lbl_expansion.grid(row=4, column=0, sticky="w", pady=4)
+        self.cb_expansion = ttk.Combobox(grid, values=["The War Within", "Dragonflight", "Shadowlands"], state="readonly", width=15)
+        self.cb_expansion.grid(row=4, column=1, sticky="w", padx=(10, 0), pady=4)
+        self.cb_expansion.bind("<<ComboboxSelected>>", self.on_expansion_changed)
+        
+        # Season Selector
+        self.lbl_season_sel = ttk.Label(grid, text="Mythic+ Season:", style="Panel.TLabel")
+        self.lbl_season_sel.grid(row=5, column=0, sticky="w", pady=4)
+        self.cb_season_dropdown = ttk.Combobox(grid, state="readonly", width=25)
+        self.cb_season_dropdown.grid(row=5, column=1, sticky="w", padx=(10, 0), pady=4)
+        self.cb_season_dropdown.bind("<<ComboboxSelected>>", self.on_season_selected)
+
+        # Dynamic Info Label
+        self.lbl_season_info = ttk.Label(grid, text="", style="Panel.TLabel", font=("Segoe UI", 9, "italic"), foreground="#888888")
+        self.lbl_season_info.grid(row=6, column=1, sticky="w", padx=(10, 0), pady=2)
+
+        # Initialize values
+        self.loaded_seasons = []
+        active_slug = self.settings.get("season", "season-tww-2")
+        if "df" in active_slug:
+            self.cb_expansion.set("Dragonflight")
+        elif "sl" in active_slug:
+            self.cb_expansion.set("Shadowlands")
+        else:
+            self.cb_expansion.set("The War Within")
+        self.on_expansion_changed(None)
+
+        self.cb_region.bind("<<ComboboxSelected>>", self.on_region_changed_ref)
 
         grid.columnconfigure(1, weight=1)
 
@@ -2116,6 +2159,93 @@ class RLMImporterApp:
     def open_url(self, url):
         import webbrowser
         webbrowser.open(url)
+
+    def load_seasons_threaded(self, expansion_id):
+        import threading
+        def run():
+            try:
+                from raidlootmatrix_mplus import fetch_seasons_for_expansion
+                seasons = fetch_seasons_for_expansion(expansion_id)
+            except Exception:
+                seasons = []
+            valid_seasons = []
+            if seasons:
+                for s in seasons:
+                    if s.get("is_main_season") or s.get("slug", "").startswith("season-"):
+                        valid_seasons.append(s)
+            if not valid_seasons:
+                fallbacks = {
+                    10: [
+                        {"slug": "season-tww-3", "name": "TWW Season 3", "starts": {"us": "2025-08-20T15:00:00Z"}},
+                        {"slug": "season-tww-2", "name": "TWW Season 2", "starts": {"us": "2025-01-07T15:00:00Z"}},
+                        {"slug": "season-tww-1", "name": "TWW Season 1", "starts": {"us": "2024-09-10T15:00:00Z"}},
+                    ],
+                    9: [
+                        {"slug": "season-df-4", "name": "DF Season 4", "starts": {"us": "2024-04-23T15:00:00Z"}},
+                        {"slug": "season-df-3", "name": "DF Season 3", "starts": {"us": "2023-11-14T15:00:00Z"}},
+                        {"slug": "season-df-2", "name": "DF Season 2", "starts": {"us": "2023-05-09T15:00:00Z"}},
+                        {"slug": "season-df-1", "name": "DF Season 1", "starts": {"us": "2022-12-13T15:00:00Z"}},
+                    ],
+                    8: [
+                        {"slug": "season-sl-4", "name": "SL Season 4", "starts": {"us": "2022-08-02T15:00:00Z"}},
+                        {"slug": "season-sl-3", "name": "SL Season 3", "starts": {"us": "2022-03-01T15:00:00Z"}},
+                        {"slug": "season-sl-2", "name": "SL Season 2", "starts": {"us": "2021-07-06T15:00:00Z"}},
+                        {"slug": "season-sl-1", "name": "SL Season 1", "starts": {"us": "2020-12-08T15:00:00Z"}},
+                    ]
+                }
+                valid_seasons = fallbacks.get(expansion_id, [])
+            self.root.after(0, lambda: self.apply_seasons_data(valid_seasons))
+        threading.Thread(target=run, daemon=True).start()
+
+    def apply_seasons_data(self, seasons):
+        self.loaded_seasons = seasons
+        names = [s.get("name") or s.get("slug") for s in seasons]
+        self.cb_season_dropdown.configure(values=names)
+        active_slug = self.settings.get("season", "season-tww-2")
+        match_index = None
+        for idx, s in enumerate(seasons):
+            if s.get("slug") == active_slug:
+                match_index = idx
+                break
+        if match_index is not None:
+            self.cb_season_dropdown.current(match_index)
+            self.update_season_display_details(seasons[match_index])
+        elif names:
+            self.cb_season_dropdown.current(0)
+            self.update_season_display_details(seasons[0])
+        else:
+            self.cb_season_dropdown.set("")
+            self.lbl_season_info.configure(text="")
+
+    def on_season_selected(self, event=None):
+        idx = self.cb_season_dropdown.current()
+        if idx >= 0 and getattr(self, "loaded_seasons", None) and idx < len(self.loaded_seasons):
+            s = self.loaded_seasons[idx]
+            self.update_season_display_details(s)
+
+    def update_season_display_details(self, s):
+        slug = s.get("slug")
+        region = self.cb_region.get().strip().lower() or "us"
+        starts_dict = s.get("starts") or {}
+        start_str = starts_dict.get(region) or starts_dict.get("us") or ""
+        start_date = ""
+        if start_str and len(start_str) >= 10:
+            start_date = start_str[:10]
+        info_text = f"Slug: {slug}\nStarts: {start_date} ({region.upper()})"
+        self.lbl_season_info.configure(text=info_text)
+        self.settings["season"] = slug
+        self.settings["season_start_date"] = start_date
+
+    def on_expansion_changed(self, event=None):
+        val = self.cb_expansion.get()
+        mapping = {"The War Within": 10, "Dragonflight": 9, "Shadowlands": 8}
+        exp_id = mapping.get(val, 10)
+        self.load_seasons_threaded(exp_id)
+
+    def on_region_changed_ref(self, event=None):
+        idx = self.cb_season_dropdown.current()
+        if idx >= 0 and getattr(self, "loaded_seasons", None) and idx < len(self.loaded_seasons):
+            self.update_season_display_details(self.loaded_seasons[idx])
 
 def watch_wow_process():
     import time
