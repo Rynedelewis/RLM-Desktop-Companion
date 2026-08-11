@@ -176,10 +176,14 @@ def main():
     if sys.platform == "win32" and sys.stdout is not None:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-    def prompt_exit(code=1):
-        if "--non-interactive" not in sys.argv:
-            input("\nPress Enter to exit...")
-        sys.exit(code)
+    def prompt_exit(code=0):
+        if "--non-interactive" not in sys.argv and sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty():
+            try:
+                input("\nPress Enter to exit...")
+            except Exception:
+                pass
+        if code != 0:
+            sys.exit(code)
 
     # 1. Load config file from the workspace directory
     if getattr(sys, 'frozen', False):

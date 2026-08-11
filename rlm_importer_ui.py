@@ -363,6 +363,7 @@ class RLMImporterApp:
         sys.stderr = StdoutRedirector(self.log_message)
 
         self.log_message(f"RaidLootMatrix Companion v{VERSION} (Gold Edition) initialized successfully.")
+        self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
         self.check_for_updates()
 
     def L(self, key):
@@ -1057,6 +1058,56 @@ class RLMImporterApp:
 
     def unregister_background_tasks(self):
         self.log_message("Removing background Windows scheduled tasks...")
+
+    def create_tray_icon(self):
+        try:
+            image = None
+            if hasattr(self, "icon_path") and self.icon_path and self.icon_path.exists():
+                image = Image.open(str(self.icon_path))
+            else:
+                image = Image.new('RGB', (64, 64), color=(245, 158, 11))
+                draw = ImageDraw.Draw(image)
+                draw.rectangle([16, 16, 48, 48], fill=(120, 53, 15))
+
+            menu = pystray.Menu(
+                pystray.MenuItem("Open RLM Companion", lambda icon, item: self.root.after(0, self.show_window), default=True),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("⚔️ Import M+ Data", lambda icon, item: self.root.after(0, self.trigger_live_import)),
+                pystray.MenuItem("🔄 Sync Guild Data", lambda icon, item: self.root.after(0, self.trigger_wowaudit_sync)),
+                pystray.MenuItem("💬 Sync Discord Bot", lambda icon, item: self.root.after(0, self.trigger_discord_sync)),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Exit RLM Companion", lambda icon, item: self.root.after(0, self.exit_app))
+            )
+            self.tray_icon = pystray.Icon("RLMCompanion", image, "RaidLootMatrix Companion", menu)
+            threading.Thread(target=self.tray_icon.run, daemon=True).start()
+        except Exception as e:
+            print(f"Tray icon error: {e}")
+
+    def on_window_close(self):
+        if self.settings.get("minimize_on_close", True):
+            self.hide_to_tray()
+        else:
+            self.exit_app()
+
+    def hide_to_tray(self):
+        self.root.withdraw()
+        if not hasattr(self, "tray_icon") or self.tray_icon is None:
+            self.create_tray_icon()
+        self.log_message("Minimized to system tray. Double-click the tray icon to reopen.")
+
+    def show_window(self):
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+
+    def exit_app(self):
+        if hasattr(self, "tray_icon") and self.tray_icon:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
+        self.root.destroy()
+        sys.exit(0)
 
 if __name__ == "__main__":
     root = tk.Tk()
