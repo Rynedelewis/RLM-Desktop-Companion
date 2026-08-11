@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.3.3"
+VERSION = "1.3.4"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -442,22 +442,147 @@ class RLMImporterApp:
                     data = r.json()
                     tag = data.get("tag_name", "").strip().lstrip("v")
                     if tag and tag > VERSION:
-                        self.root.after(0, lambda: self.show_update_banner(tag, data.get("html_url")))
+                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion.exe"
+                        for asset in data.get("assets", []):
+                            if asset.get("name", "").endswith(".exe"):
+                                download_url = asset.get("browser_download_url")
+                                break
+                        self.root.after(0, lambda: self.show_update_banner(tag, download_url))
+                        self.root.after(500, lambda: self.show_update_popup(tag, download_url))
             except Exception as e:
                 pass
         threading.Thread(target=task, daemon=True).start()
 
-    def show_update_banner(self, remote_version, release_url):
-        if hasattr(self, "header_frame"):
-            update_frame = ttk.Frame(self.header_frame, style="Panel.TFrame")
-            update_frame.pack(side="right", padx=10, pady=10)
+    def show_update_banner(self, remote_version, download_url):
+        if hasattr(self, "header_action_frame"):
+            if hasattr(self, "btn_update_header") and self.btn_update_header:
+                try:
+                    self.btn_update_header.destroy()
+                except Exception:
+                    pass
             
-            lbl = ttk.Label(update_frame, text=self.L("lbl_update_available").format(remote_version=remote_version), font=("Segoe UI", 9, "bold"), foreground="#fbbf24", style="Panel.TLabel")
-            lbl.pack(side="left", padx=(5, 8))
-            
-            target_url = release_url or "https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/latest"
-            btn = ttk.Button(update_frame, text=self.L("btn_update_now"), style="GoldSave.TButton", command=lambda: webbrowser.open(target_url))
-            btn.pack(side="right", padx=5)
+            self.btn_update_header = ttk.Button(
+                self.header_action_frame, 
+                text=f"🚀 Update to v{remote_version}", 
+                style="Accent.TButton", 
+                command=lambda: self.download_and_apply_update(download_url, remote_version)
+            )
+            self.btn_update_header.pack(side="right", padx=(0, 10))
+
+    def show_update_popup(self, remote_version, download_url):
+        try:
+            win = tk.Toplevel(self.root)
+            win.title("🚀 Update Available")
+            win.geometry("480x240")
+            win.resizable(False, False)
+            win.configure(bg=BG_DARK)
+            win.transient(self.root)
+            win.grab_set()
+
+            card = ttk.Frame(win, style="Panel.TFrame")
+            card.pack(fill="both", expand=True, padx=12, pady=12)
+
+            lbl_hdr = ttk.Label(card, text=f"🚀 RaidLootMatrix Companion v{remote_version} Available!", style="Header.TLabel", foreground=FG_GOLD_BRIGHT)
+            lbl_hdr.pack(anchor="w", padx=15, pady=(15, 8))
+
+            lbl_msg = ttk.Label(
+                card, 
+                text=f"A new version of RaidLootMatrix Companion (v{remote_version}) is ready!\n\n"
+                     f"Current Version: v{VERSION}\n"
+                     f"Latest Version:  v{remote_version}\n\n"
+                     f"Clicking 'Update & Restart Now' will automatically download\n"
+                     f"the update directly to your PC and restart the application.",
+                style="Panel.TLabel",
+                justify="left"
+            )
+            lbl_msg.pack(anchor="w", padx=15, pady=5)
+
+            btn_bar = ttk.Frame(card, style="Panel.TFrame")
+            btn_bar.pack(fill="x", padx=15, pady=15)
+
+            btn_apply = ttk.Button(
+                btn_bar, 
+                text="⚡ Update & Restart Now", 
+                style="GoldSave.TButton", 
+                command=lambda: [win.destroy(), self.download_and_apply_update(download_url, remote_version)]
+            )
+            btn_apply.pack(side="right", padx=(8, 0))
+
+            btn_later = ttk.Button(btn_bar, text="Later", command=win.destroy)
+            btn_later.pack(side="right")
+        except Exception as e:
+            print(f"Error showing update popup: {e}")
+
+    def download_and_apply_update(self, download_url, remote_version):
+        progress_win = tk.Toplevel(self.root)
+        progress_win.title("Downloading Update...")
+        progress_win.geometry("460x170")
+        progress_win.resizable(False, False)
+        progress_win.configure(bg=BG_DARK)
+        progress_win.transient(self.root)
+        progress_win.grab_set()
+
+        card = ttk.Frame(progress_win, style="Panel.TFrame")
+        card.pack(fill="both", expand=True, padx=12, pady=12)
+
+        lbl_title = ttk.Label(card, text=f"⚡ Downloading Update v{remote_version}...", style="Header.TLabel", foreground=FG_GOLD_BRIGHT)
+        lbl_title.pack(anchor="w", padx=15, pady=(15, 8))
+
+        progress_var = tk.DoubleVar(value=0.0)
+        progress_bar = ttk.Progressbar(card, variable=progress_var, maximum=100.0)
+        progress_bar.pack(fill="x", padx=15, pady=8)
+
+        lbl_status = ttk.Label(card, text="Starting download...", style="Panel.TLabel")
+        lbl_status.pack(anchor="w", padx=15, pady=4)
+
+        def worker():
+            try:
+                headers = {"User-Agent": getattr(rlm_guild_providers, "DEFAULT_USER_AGENT", "RLMCompanion/1.3.3")}
+                r = requests.get(download_url, headers=headers, stream=True, timeout=30)
+                total_size = int(r.headers.get('content-length', 0))
+                
+                target_new_exe = self.app_dir / "RLM_Companion_update.exe"
+                downloaded = 0
+
+                with open(target_new_exe, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=65536):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            if total_size > 0:
+                                pct = (downloaded / total_size) * 100.0
+                                mb_down = downloaded / (1024 * 1024)
+                                mb_tot = total_size / (1024 * 1024)
+                                progress_win.after(0, lambda p=pct, d=mb_down, t=mb_tot: [
+                                    progress_var.set(p),
+                                    lbl_status.configure(text=f"Downloaded {d:.1f} MB / {t:.1f} MB ({p:.0f}%)")
+                                ])
+
+                progress_win.after(0, lambda: lbl_status.configure(text="Download complete! Restarting application..."))
+                time.sleep(1)
+
+                # Create self-replacer batch script
+                batch_path = self.app_dir / "apply_update.bat"
+                target_exe_name = pathlib.Path(sys.executable).name if getattr(sys, "frozen", False) else "RLM_Companion.exe"
+                
+                batch_content = f"""@echo off
+timeout /t 2 /nobreak > NUL
+copy /y "RLM_Companion_update.exe" "{target_exe_name}" > NUL
+del /f "RLM_Companion_update.exe" > NUL
+start "" "{target_exe_name}"
+del /f "%~f0" > NUL
+"""
+                batch_path.write_text(batch_content, encoding="utf-8")
+                
+                # Launch batch updater detached and exit current app
+                subprocess.Popen(["cmd.exe", "/c", str(batch_path)], cwd=str(self.app_dir))
+                progress_win.after(0, self.exit_app)
+
+            except Exception as e:
+                progress_win.after(0, lambda err=e: messagebox.showerror("Update Error", f"Failed to download update: {err}"))
+                progress_win.after(0, progress_win.destroy)
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def setup_styles(self):
         self.style = ttk.Style()
@@ -530,9 +655,13 @@ class RLMImporterApp:
         self.lbl_subtitle = ttk.Label(title_inner, text=self.L("header_subtitle").format(VERSION=VERSION), font=("Segoe UI", 10, "italic"), foreground=FG_HEADER, style="Panel.TLabel")
         self.lbl_subtitle.pack(side="left", padx=6, pady=4)
 
+        # Header Action Buttons Frame
+        self.header_action_frame = ttk.Frame(self.header_frame, style="Panel.TFrame")
+        self.header_action_frame.pack(side="right", padx=12, pady=10)
+
         # Gold Save Button on Header Banner
-        self.btn_save = ttk.Button(self.header_frame, text=self.L("btn_save_settings"), style="GoldSave.TButton", command=self.save_settings, width=22)
-        self.btn_save.pack(side="right", padx=12, pady=10)
+        self.btn_save = ttk.Button(self.header_action_frame, text=self.L("btn_save_settings"), style="GoldSave.TButton", command=self.save_settings, width=18)
+        self.btn_save.pack(side="right")
 
         # Main Notebook Tabs
         self.notebook = ttk.Notebook(self.root)
