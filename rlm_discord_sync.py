@@ -194,12 +194,17 @@ def main():
     wow_path = ""
     account = ""
     
+    sync_key = _sync_key
+    sync_url = _sync_url
+    
     if config_path.exists():
         try:
             with open(config_path, "r", encoding="utf-8", errors="replace") as f:
                 cfg = json.load(f)
                 wow_path = cfg.get("wow_path", "")
                 account = cfg.get("account", "")
+                sync_key = cfg.get("discord_sync_key", sync_key)
+                sync_url = cfg.get("discord_sync_url", sync_url)
         except Exception as e:
             print(f"[WARNING] Failed to load config from {config_path}: {e}")
 
@@ -267,8 +272,8 @@ def main():
         prompt_exit(1)
 
     # 4. Check Sync Key configuration
-    if SYNC_KEY == "YOUR_SYNC_KEY_HERE" or not SYNC_KEY:
-        print("❌ Error: You must set your secure SYNC_KEY in this script.")
+    if sync_key == "YOUR_SYNC_KEY_HERE" or not sync_key:
+        print("❌ Error: You must set your secure SYNC_KEY in the Discord Bot tab settings.")
         print("To get your sync key, type '!synckey' in your Discord server.")
         prompt_exit(1)
 
@@ -286,13 +291,13 @@ def main():
     }
     
     headers = {
-        "Authorization": SYNC_KEY,
+        "Authorization": sync_key,
         "Content-Type": "application/json"
     }
 
-    print(f"\nUploading standings data to {SYNC_URL}...")
+    print(f"\nUploading standings data to {sync_url}...")
     try:
-        response = requests.post(SYNC_URL, json=payload, headers=headers, timeout=10)
+        response = requests.post(sync_url, json=payload, headers=headers, timeout=10)
         if response.status_code == 200:
             res_data = response.json()
             print("============================================================")

@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.3.4"
+VERSION = "1.3.5"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -1152,7 +1152,9 @@ del /f "%~f0" > NUL
         def task():
             self.log_message("--- Starting Mythic+ Import ---")
             try:
+                import importlib
                 import raidlootmatrix_mplus
+                importlib.reload(raidlootmatrix_mplus)
                 raidlootmatrix_mplus.main()
                 self.log_message("--- Mythic+ Import Completed ---")
             except Exception as e:
@@ -1163,7 +1165,9 @@ del /f "%~f0" > NUL
         def task():
             self.log_message("--- Starting Guild Data Sync (All Sources) ---")
             try:
+                import importlib
                 import rlm_wowaudit_sync
+                importlib.reload(rlm_wowaudit_sync)
                 rlm_wowaudit_sync.main()
                 self.log_message("--- Guild Data Sync Task Finished ---")
             except Exception as e:
@@ -1174,7 +1178,9 @@ del /f "%~f0" > NUL
         def task():
             self.log_message("--- Starting Discord Sync ---")
             try:
+                import importlib
                 import rlm_discord_sync
+                importlib.reload(rlm_discord_sync)
                 rlm_discord_sync.main()
                 self.log_message("--- Discord Sync Finished ---")
             except Exception as e:
