@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.3.5"
+VERSION = "1.3.6"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -902,10 +902,21 @@ del /f "%~f0" > NUL
         self.chk_sync_on_import = ttk.Checkbutton(grid, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
         self.chk_sync_on_import.grid(row=1, column=0, columnspan=2, sticky="w", pady=6)
 
-        grid.columnconfigure(1, weight=1)
-
         self.btn_sync_now = ttk.Button(card, text=self.L("btn_sync_now"), style="Accent.TButton", command=self.trigger_discord_sync)
-        self.btn_sync_now.pack(padx=15, pady=15, fill="x")
+        self.btn_sync_now.pack(padx=15, pady=(15, 5), fill="x")
+
+        status_frame = ttk.Frame(card, style="Panel.TFrame")
+        status_frame.pack(fill="x", padx=15, pady=5)
+
+        self.lbl_discord_status = ttk.Label(status_frame, text="", font=("Segoe UI", 9, "bold"), style="Panel.TLabel")
+        self.lbl_discord_status.pack(side="left", padx=5)
+
+        btn_view_logs = ttk.Button(
+            status_frame, 
+            text="📋 View Live Console Log", 
+            command=lambda: self.notebook.select(self.tab_console)
+        )
+        btn_view_logs.pack(side="right", padx=5)
 
     def build_tab_console(self, parent):
         card = ttk.Frame(parent, style="Panel.TFrame")
@@ -1150,7 +1161,10 @@ del /f "%~f0" > NUL
 
     def trigger_live_import(self):
         def task():
+            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
+                self.root.after(0, lambda: self.btn_run_mplus.configure(text="⌛ Importing M+ Data...", state="disabled"))
             self.log_message("--- Starting Mythic+ Import ---")
+            error_occurred = None
             try:
                 import importlib
                 import raidlootmatrix_mplus
@@ -1158,7 +1172,12 @@ del /f "%~f0" > NUL
                 raidlootmatrix_mplus.main()
                 self.log_message("--- Mythic+ Import Completed ---")
             except Exception as e:
+                error_occurred = str(e)
                 self.log_message(f"Import Error: {e}")
+
+            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
+                self.root.after(0, lambda: self.btn_run_mplus.configure(text=self.L("btn_run_mplus"), state="normal"))
+
         threading.Thread(target=task, daemon=True).start()
 
     def trigger_wowaudit_sync(self):
@@ -1176,7 +1195,13 @@ del /f "%~f0" > NUL
 
     def trigger_discord_sync(self):
         def task():
+            if hasattr(self, "btn_sync_now") and self.btn_sync_now:
+                self.root.after(0, lambda: [
+                    self.btn_sync_now.configure(text="⌛ Syncing Discord Bot...", state="disabled"),
+                    self.lbl_discord_status.configure(text="🟢 Uploading EPGP standings and rosters to Discord Bot...", foreground="#34d399")
+                ])
             self.log_message("--- Starting Discord Sync ---")
+            error_occurred = None
             try:
                 import importlib
                 import rlm_discord_sync
@@ -1184,7 +1209,21 @@ del /f "%~f0" > NUL
                 rlm_discord_sync.main()
                 self.log_message("--- Discord Sync Finished ---")
             except Exception as e:
+                error_occurred = str(e)
                 self.log_message(f"Discord Sync Error: {e}")
+
+            if hasattr(self, "btn_sync_now") and self.btn_sync_now:
+                if error_occurred:
+                    self.root.after(0, lambda: [
+                        self.btn_sync_now.configure(text=self.L("btn_sync_now"), state="normal"),
+                        self.lbl_discord_status.configure(text=f"❌ Sync Error: {error_occurred}", foreground="#ef4444")
+                    ])
+                else:
+                    self.root.after(0, lambda: [
+                        self.btn_sync_now.configure(text=self.L("btn_sync_now"), state="normal"),
+                        self.lbl_discord_status.configure(text="✅ Discord Sync Completed Successfully!", foreground="#fbbf24")
+                    ])
+
         threading.Thread(target=task, daemon=True).start()
 
     def register_background_tasks(self):
