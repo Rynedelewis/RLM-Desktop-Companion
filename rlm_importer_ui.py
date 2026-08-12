@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.3.6"
+VERSION = "1.3.7"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -794,15 +794,15 @@ del /f "%~f0" > NUL
         chk_frame.grid(row=4, column=1, sticky="w", padx=(10, 0), pady=5)
 
         self.var_sync_roster = tk.BooleanVar(value=True)
-        self.chk_sync_roster = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_roster"), variable=self.var_sync_roster)
+        self.chk_sync_roster = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_roster"), variable=self.var_sync_roster, command=self.on_provider_checkbox_toggled)
         self.chk_sync_roster.pack(side="left", padx=(0, 10))
 
         self.var_sync_calendar = tk.BooleanVar(value=True)
-        self.chk_sync_calendar = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_calendar"), variable=self.var_sync_calendar)
+        self.chk_sync_calendar = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_calendar"), variable=self.var_sync_calendar, command=self.on_provider_checkbox_toggled)
         self.chk_sync_calendar.pack(side="left", padx=(0, 10))
 
         self.var_sync_alts = tk.BooleanVar(value=True)
-        self.chk_sync_alts = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_alts"), variable=self.var_sync_alts)
+        self.chk_sync_alts = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_alts"), variable=self.var_sync_alts, command=self.on_provider_checkbox_toggled)
         self.chk_sync_alts.pack(side="left")
 
         grid.columnconfigure(1, weight=1)
@@ -823,6 +823,7 @@ del /f "%~f0" > NUL
         # Providers Listbox with Gold Selection Highlight
         self.lst_providers = tk.Listbox(card, bg=BG_ENTRY, fg=FG_TEXT, selectbackground=FG_GOLD_DARK, selectforeground=FG_HEADER, highlightbackground=BORDER_GOLD, relief="flat", height=6)
         self.lst_providers.pack(fill="both", expand=True, padx=15, pady=(5, 15))
+        self.lst_providers.bind("<<ListboxSelect>>", self.on_provider_selected)
 
         self.ent_wow_path.bind("<FocusOut>", self.refresh_profile_dropdown)
         self.refresh_profile_dropdown()
@@ -834,6 +835,48 @@ del /f "%~f0" > NUL
             self.lbl_gow_notice.pack(side="left", padx=(10, 0))
         else:
             self.lbl_gow_notice.pack_forget()
+
+    def on_provider_selected(self, event=None):
+        sel = self.lst_providers.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        providers_list = self.settings.get("guild_providers", [])
+        if 0 <= idx < len(providers_list):
+            p = providers_list[idx]
+            ptype = p.get("provider", "wowaudit").lower()
+            ptype_disp = "WoW Audit" if ptype == "wowaudit" else ("WoWUtils" if ptype == "wowutils" else ptype.title())
+            
+            self.cb_provider_type.set(ptype_disp)
+            self.ent_provider_key.delete(0, tk.END)
+            self.ent_provider_key.insert(0, p.get("api_key", ""))
+            self.ent_group_id.delete(0, tk.END)
+            self.ent_group_id.insert(0, p.get("group_id", ""))
+            
+            raw_prof = p.get("rlm_profile_key", "")
+            disp_prof = next((disp for disp, raw in getattr(self, "profile_display_map", {}).items() if raw == raw_prof), raw_prof)
+            if hasattr(self, "cb_provider_profile"):
+                self.cb_provider_profile.set(disp_prof)
+                
+            self.var_sync_roster.set(p.get("sync_roster", True))
+            self.var_sync_calendar.set(p.get("sync_calendar", True))
+            self.var_sync_alts.set(p.get("sync_alts", True))
+            if hasattr(self, "btn_provider_add"):
+                self.btn_provider_add.configure(text="💾 Save / Update Selected Link")
+
+    def on_provider_checkbox_toggled(self):
+        sel = self.lst_providers.curselection()
+        if sel:
+            idx = sel[0]
+            providers_list = self.settings.get("guild_providers", [])
+            if 0 <= idx < len(providers_list):
+                providers_list[idx]["sync_roster"] = self.var_sync_roster.get()
+                providers_list[idx]["sync_calendar"] = self.var_sync_calendar.get()
+                providers_list[idx]["sync_alts"] = self.var_sync_alts.get()
+                self.update_providers_listbox()
+                self.lst_providers.selection_set(idx)
+                self.save_settings()
+                self.log_message(f"Updated sync options for source '{providers_list[idx].get('name', 'Guild')}'")
 
     def build_tab_sched(self, parent):
         card = ttk.Frame(parent, style="Panel.TFrame")
@@ -883,30 +926,115 @@ del /f "%~f0" > NUL
         self.btn_unregister.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
     def build_tab_discord(self, parent):
-        card = ttk.Frame(parent, style="Panel.TFrame")
-        card.pack(fill="both", expand=True, padx=10, pady=10)
+        # Container frame
+        container = ttk.Frame(parent, style="Panel.TFrame")
+        container.pack(fill="both", expand=True, padx=10, pady=10)
 
-        self.lbl_card_discord_hdr = ttk.Label(card, text=self.L("card_discord_hdr"), style="Header.TLabel")
-        self.lbl_card_discord_hdr.pack(fill="x", padx=15, pady=(15, 10))
+        # Global Options Card
+        card_global = ttk.Frame(container, style="Panel.TFrame")
+        card_global.pack(fill="x", padx=5, pady=(0, 10))
 
-        grid = ttk.Frame(card, style="Panel.TFrame")
-        grid.pack(fill="x", padx=15, pady=5)
+        lbl_hdr = ttk.Label(card_global, text=self.L("card_discord_hdr"), style="Header.TLabel")
+        lbl_hdr.pack(fill="x", padx=15, pady=(12, 8))
 
-        self.lbl_discord_key = ttk.Label(grid, text=self.L("lbl_discord_key"), style="Panel.TLabel")
-        self.lbl_discord_key.grid(row=0, column=0, sticky="w", pady=6)
-        self.ent_discord_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
-        self.ent_discord_key.grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=6)
-        self.ent_discord_key.insert(0, self.settings.get("discord_sync_key", ""))
+        grid_g = ttk.Frame(card_global, style="Panel.TFrame")
+        grid_g.pack(fill="x", padx=15, pady=5)
 
         self.var_sync_on_import = tk.BooleanVar(value=self.settings.get("sync_on_import", True))
-        self.chk_sync_on_import = ttk.Checkbutton(grid, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
-        self.chk_sync_on_import.grid(row=1, column=0, columnspan=2, sticky="w", pady=6)
+        chk_imp = ttk.Checkbutton(grid_g, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
+        chk_imp.grid(row=0, column=0, sticky="w", pady=4)
 
-        self.btn_sync_now = ttk.Button(card, text=self.L("btn_sync_now"), style="Accent.TButton", command=self.trigger_discord_sync)
-        self.btn_sync_now.pack(padx=15, pady=(15, 5), fill="x")
+        self.var_pin_update_mode = tk.BooleanVar(value=self.settings.get("pin_update_mode", True))
+        chk_pin = ttk.Checkbutton(grid_g, text="Edit Single Pinned Message in Channel (Recommended)", variable=self.var_pin_update_mode)
+        chk_pin.grid(row=0, column=1, sticky="w", padx=(20, 0), pady=4)
 
-        status_frame = ttk.Frame(card, style="Panel.TFrame")
-        status_frame.pack(fill="x", padx=15, pady=5)
+        # Team Selection Card
+        card_select = ttk.Frame(container, style="Panel.TFrame")
+        card_select.pack(fill="x", padx=5, pady=(0, 10))
+
+        lbl_select_hdr = ttk.Label(card_select, text="🛡️ Select Guild Team Profile to Configure", style="Header.TLabel")
+        lbl_select_hdr.pack(fill="x", padx=15, pady=(12, 6))
+
+        grid_sel = ttk.Frame(card_select, style="Panel.TFrame")
+        grid_sel.pack(fill="x", padx=15, pady=(4, 10))
+
+        lbl_team = ttk.Label(grid_sel, text="Active RLM Guild Team:", font=("Segoe UI", 9, "bold"), style="Panel.TLabel")
+        lbl_team.grid(row=0, column=0, sticky="w", pady=4)
+
+        profile_choices = self.load_profile_choices()
+        if not profile_choices:
+            profile_choices = ["Default Guild Team"]
+
+        self.cb_active_team = ttk.Combobox(grid_sel, values=profile_choices, state="readonly", width=38)
+        self.cb_active_team.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=4)
+        self.cb_active_team.set(profile_choices[0])
+        self.cb_active_team.bind("<<ComboboxSelected>>", self._on_team_selected)
+
+        # Team Discord Settings Panel
+        self.card_team_config = ttk.Frame(container, style="Panel.TFrame", relief="solid", borderwidth=1)
+        self.card_team_config.pack(fill="both", expand=True, padx=5, pady=5)
+
+        self.lbl_team_hdr = ttk.Label(self.card_team_config, text=f"Discord Bot Settings: {profile_choices[0]}", font=("Segoe UI", 11, "bold"), foreground=FG_GOLD_BRIGHT, style="Panel.TLabel")
+        self.lbl_team_hdr.pack(anchor="w", padx=15, pady=(12, 6))
+
+        grid_t = ttk.Frame(self.card_team_config, style="Panel.TFrame")
+        grid_t.pack(fill="x", padx=15, pady=6)
+
+        # Row 0: Discord Sync Key + Fetch Channels Button
+        lbl_key = ttk.Label(grid_t, text="Discord Sync Key:", style="Panel.TLabel")
+        lbl_key.grid(row=0, column=0, sticky="w", pady=6)
+
+        k_frame = ttk.Frame(grid_t, style="Panel.TFrame")
+        k_frame.grid(row=0, column=1, columnspan=3, sticky="ew", padx=(10, 0), pady=6)
+        k_frame.columnconfigure(0, weight=1)
+
+        self.ent_team_key = tk.Entry(k_frame, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
+        self.ent_team_key.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        self.btn_team_fetch = ttk.Button(k_frame, text="🔄 Fetch Channels for this Team", command=self.fetch_channels_for_active_team, width=28)
+        self.btn_team_fetch.grid(row=0, column=1, sticky="e")
+
+        # Row 1: Connection Status Label
+        self.lbl_team_status = ttk.Label(grid_t, text="⚠️ Enter Sync Key and click 'Fetch Channels' to load Discord dropdowns.", font=("Segoe UI", 9), foreground="#f39c12", style="Panel.TLabel")
+        self.lbl_team_status.grid(row=1, column=0, columnspan=4, sticky="w", pady=(2, 8))
+
+        # Row 2: EPGP Channel Dropdown & Schedule
+        lbl_epgp_c = ttk.Label(grid_t, text="EPGP Standings Channel:", style="Panel.TLabel")
+        lbl_epgp_c.grid(row=2, column=0, sticky="w", pady=6)
+        self.cb_team_epgp_ch = ttk.Combobox(grid_t, values=["#epgp-standings"], width=24)
+        self.cb_team_epgp_ch.grid(row=2, column=1, sticky="w", padx=(10, 20), pady=6)
+
+        lbl_epgp_s = ttk.Label(grid_t, text="EPGP Auto-Post Schedule:", style="Panel.TLabel")
+        lbl_epgp_s.grid(row=2, column=2, sticky="w", pady=6)
+        self.cb_team_epgp_sched = ttk.Combobox(grid_t, values=["On Roster/Loot Sync", "Post-Raid (On WoW Exit)", "Every 12 Hours", "Daily", "Disabled"], state="readonly", width=24)
+        self.cb_team_epgp_sched.grid(row=2, column=3, sticky="w", padx=(10, 0), pady=6)
+
+        # Row 3: M+ Channel Dropdown & Schedule
+        lbl_mplus_c = ttk.Label(grid_t, text="Mythic+ Leaderboard Channel:", style="Panel.TLabel")
+        lbl_mplus_c.grid(row=3, column=0, sticky="w", pady=6)
+        self.cb_team_mplus_ch = ttk.Combobox(grid_t, values=["#mplus-leaderboard"], width=24)
+        self.cb_team_mplus_ch.grid(row=3, column=1, sticky="w", padx=(10, 20), pady=6)
+
+        lbl_mplus_s = ttk.Label(grid_t, text="Mythic+ Auto-Post Schedule:", style="Panel.TLabel")
+        lbl_mplus_s.grid(row=3, column=2, sticky="w", pady=6)
+        self.cb_team_mplus_sched = ttk.Combobox(grid_t, values=["Tuesday Post-Reset (Default)", "Daily", "On M+ Import", "Disabled"], state="readonly", width=24)
+        self.cb_team_mplus_sched.grid(row=3, column=3, sticky="w", padx=(10, 0), pady=6)
+
+        grid_t.columnconfigure(1, weight=1)
+
+        # Initialize Team Settings Map from Config JSON
+        self.team_settings_data = self.settings.get("team_discord_settings", {})
+        self.current_team_key = getattr(self, "profile_display_map", {}).get(profile_choices[0], profile_choices[0])
+
+        # Load initial team view
+        self._load_team_view(self.current_team_key)
+
+        # Action & Status Bar
+        self.btn_sync_now = ttk.Button(self.card_team_config, text=self.L("btn_sync_now"), style="Accent.TButton", command=self.trigger_discord_sync)
+        self.btn_sync_now.pack(padx=15, pady=(12, 5), fill="x")
+
+        status_frame = ttk.Frame(self.card_team_config, style="Panel.TFrame")
+        status_frame.pack(fill="x", padx=15, pady=(0, 12))
 
         self.lbl_discord_status = ttk.Label(status_frame, text="", font=("Segoe UI", 9, "bold"), style="Panel.TLabel")
         self.lbl_discord_status.pack(side="left", padx=5)
@@ -999,7 +1127,12 @@ del /f "%~f0" > NUL
             if p.get("sync_calendar", True): scope.append("Calendar")
             if p.get("sync_alts", True): scope.append("Alts")
             scope_str = "+".join(scope) if scope else "None"
-            self.lst_providers.insert(tk.END, f"[{ptype}] {name} ➔ {profile} ({scope_str})")
+            
+            epgp_ch = p.get("epgp_channel", "epgp-standings")
+            mplus_ch = p.get("mplus_channel", "mplus-leaderboard")
+            key_override = " (Custom Key)" if p.get("discord_sync_key") else ""
+            
+            self.lst_providers.insert(tk.END, f"[{ptype}] {name} ➔ {profile} ({scope_str}) | Discord: #{epgp_ch} & #{mplus_ch}{key_override}")
 
     def test_provider_connection(self):
         ptype_raw = self.cb_provider_type.get()
@@ -1045,22 +1178,16 @@ del /f "%~f0" > NUL
         raw_profile = getattr(self, "profile_display_map", {}).get(profile, profile)
         providers_list = self.settings.setdefault("guild_providers", [])
 
-        # Check if this team/profile is already linked to a source for this provider (1 team to 1 source mapping check)
-        existing_idx = None
-        for idx, existing in enumerate(providers_list):
-            if existing.get("rlm_profile_key") == raw_profile and existing.get("provider") == ptype:
-                existing_idx = idx
-                break
+        # Check listbox selection for editing selected link
+        sel = self.lst_providers.curselection()
+        existing_idx = sel[0] if sel else None
 
-        if existing_idx is not None:
-            existing_name = providers_list[existing_idx].get("name", ptype_display)
-            confirm = messagebox.askyesno(
-                "Overwrite Existing Source Link?",
-                f"The RLM profile '{profile}' is already linked to a {ptype_display} source ('{existing_name}').\n\n"
-                f"Do you want to overwrite this existing link with the new API key / settings?"
-            )
-            if not confirm:
-                return
+        if existing_idx is None:
+            # Check if this team/profile is already linked to a source for this provider
+            for idx, existing in enumerate(providers_list):
+                if existing.get("rlm_profile_key") == raw_profile and existing.get("provider") == ptype:
+                    existing_idx = idx
+                    break
 
         provider_cls = rlm_guild_providers.PROVIDER_CLASSES.get(ptype, rlm_guild_providers.WoWAuditProvider)
         ok, name, msg = provider_cls.test_connection(key, gid if gid else None)
@@ -1079,9 +1206,9 @@ del /f "%~f0" > NUL
             "sync_alts": self.var_sync_alts.get()
         }
 
-        if existing_idx is not None:
+        if existing_idx is not None and 0 <= existing_idx < len(providers_list):
             providers_list[existing_idx] = new_entry
-            self.log_message(f"Overwrote [{ptype.upper()}] source link for team/profile '{raw_profile}' with '{name}'")
+            self.log_message(f"Updated [{ptype.upper()}] source link for team/profile '{raw_profile}' with '{name}'")
         else:
             providers_list.append(new_entry)
             self.log_message(f"Mapped provider [{ptype.upper()}] '{name}' to profile '{raw_profile}'")
@@ -1090,6 +1217,8 @@ del /f "%~f0" > NUL
         self.save_settings()
         self.ent_provider_key.delete(0, tk.END)
         self.ent_group_id.delete(0, tk.END)
+        if hasattr(self, "btn_provider_add"):
+            self.btn_provider_add.configure(text=self.L("btn_provider_add"))
 
     def del_provider_mapping(self):
         sel = self.lst_providers.curselection()
@@ -1101,7 +1230,6 @@ del /f "%~f0" > NUL
             removed_profile = removed.get("rlm_profile_key")
             removed_provider = removed.get("provider")
 
-            # Clean up matching legacy wowaudit_sync entries so it never resurrects
             if "wowaudit_sync" in self.settings and isinstance(self.settings["wowaudit_sync"], list):
                 self.settings["wowaudit_sync"] = [
                     item for item in self.settings["wowaudit_sync"]
@@ -1110,6 +1238,10 @@ del /f "%~f0" > NUL
 
             self.update_providers_listbox()
             self.save_settings()
+            self.ent_provider_key.delete(0, tk.END)
+            self.ent_group_id.delete(0, tk.END)
+            if hasattr(self, "btn_provider_add"):
+                self.btn_provider_add.configure(text=self.L("btn_provider_add"))
             self.log_message(f"Removed provider mapping: {removed.get('name')}")
 
     def save_settings(self):
@@ -1129,6 +1261,21 @@ del /f "%~f0" > NUL
         self.settings["run_on_startup"] = self.var_run_on_startup.get()
         self.settings["minimize_on_close"] = self.var_minimize_on_close.get()
 
+        if hasattr(self, "cb_epgp_channel"):
+            self.settings["epgp_channel"] = self.cb_epgp_channel.get().strip()
+        if hasattr(self, "cb_epgp_schedule"):
+            self.settings["epgp_schedule"] = self.cb_epgp_schedule.get().strip()
+        if hasattr(self, "cb_mplus_channel"):
+            self.settings["mplus_channel"] = self.cb_mplus_channel.get().strip()
+        if hasattr(self, "cb_mplus_schedule"):
+            self.settings["mplus_schedule"] = self.cb_mplus_schedule.get().strip()
+        if hasattr(self, "var_pin_update_mode"):
+            self.settings["pin_update_mode"] = self.var_pin_update_mode.get()
+
+        # Save per-team discord settings
+        self._save_current_team_view()
+        self.settings["team_discord_settings"] = getattr(self, "team_settings_data", {})
+
         try:
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.settings, f, indent=2)
@@ -1137,6 +1284,132 @@ del /f "%~f0" > NUL
         except Exception as e:
             self.log_message(f"Error saving settings: {e}")
             messagebox.showerror("Error", f"Failed to save settings: {e}")
+
+    def _save_current_team_view(self):
+        if hasattr(self, "current_team_key") and self.current_team_key:
+            if not hasattr(self, "team_settings_data") or self.team_settings_data is None:
+                self.team_settings_data = {}
+            self.team_settings_data[self.current_team_key] = {
+                "discord_sync_key": self.ent_team_key.get().strip() if hasattr(self, "ent_team_key") else "",
+                "epgp_channel": self.cb_team_epgp_ch.get().strip() if hasattr(self, "cb_team_epgp_ch") else "",
+                "mplus_channel": self.cb_team_mplus_ch.get().strip() if hasattr(self, "cb_team_mplus_ch") else "",
+                "epgp_schedule": self.cb_team_epgp_sched.get().strip() if hasattr(self, "cb_team_epgp_sched") else "",
+                "mplus_schedule": self.cb_team_mplus_sched.get().strip() if hasattr(self, "cb_team_mplus_sched") else ""
+            }
+
+    def _load_team_view(self, team_key):
+        self.current_team_key = team_key
+        display_name = next((disp for disp, raw in getattr(self, "profile_display_map", {}).items() if raw == team_key), team_key)
+        if hasattr(self, "lbl_team_hdr"):
+            self.lbl_team_hdr.configure(text=f"Discord Bot Settings: {display_name}")
+
+        p_data = getattr(self, "team_settings_data", {}).get(team_key, {}) or {}
+        key_val = p_data.get("discord_sync_key", self.settings.get("discord_sync_key", ""))
+        epgp_ch = p_data.get("epgp_channel", self.settings.get("epgp_channel", "#epgp-standings"))
+        epgp_sch = p_data.get("epgp_schedule", self.settings.get("epgp_schedule", "Post-Raid (On WoW Exit)"))
+        mplus_ch = p_data.get("mplus_channel", self.settings.get("mplus_channel", "#mplus-leaderboard"))
+        mplus_sch = p_data.get("mplus_schedule", self.settings.get("mplus_schedule", "Tuesday Post-Reset (Default)"))
+
+        if hasattr(self, "ent_team_key"):
+            self.ent_team_key.delete(0, tk.END)
+            self.ent_team_key.insert(0, key_val)
+
+        if hasattr(self, "cb_team_epgp_ch"):
+            self.cb_team_epgp_ch.set(epgp_ch)
+        if hasattr(self, "cb_team_epgp_sched"):
+            self.cb_team_epgp_sched.set(epgp_sch)
+        if hasattr(self, "cb_team_mplus_ch"):
+            self.cb_team_mplus_ch.set(mplus_ch)
+        if hasattr(self, "cb_team_mplus_sched"):
+            self.cb_team_mplus_sched.set(mplus_sch)
+
+        if key_val:
+            self.fetch_channels_for_active_team()
+        elif hasattr(self, "lbl_team_status"):
+            self.lbl_team_status.configure(text="⚠️ Enter your Discord Sync Key to load channel dropdowns.", foreground="#f39c12")
+
+    def _on_team_selected(self, event=None):
+        self._save_current_team_view()
+        selected_disp = self.cb_active_team.get().strip()
+        raw_key = getattr(self, "profile_display_map", {}).get(selected_disp, selected_disp)
+        self._load_team_view(raw_key)
+
+    def fetch_channels_for_active_team(self):
+        team_key = getattr(self, "current_team_key", "")
+        key = self.ent_team_key.get().strip() if hasattr(self, "ent_team_key") else ""
+        sync_url = self.settings.get("discord_sync_url", "https://rlm-desktop-companion-production.up.railway.app/api/sync")
+        
+        if not key or key == "YOUR_SYNC_KEY_HERE":
+            if hasattr(self, "lbl_team_status"):
+                self.lbl_team_status.configure(text="⚠️ Please enter your Discord Sync Key first.", foreground="#e67e22")
+            return
+
+        if hasattr(self, "lbl_team_status"):
+            self.lbl_team_status.configure(text="⏳ Querying Discord Bot server channels...", foreground=FG_GOLD_BRIGHT)
+
+        base_url = sync_url.rsplit("/api/", 1)[0] if "/api/" in sync_url else sync_url
+        channels_url = f"{base_url}/api/channels"
+        headers = {"Authorization": key, "Content-Type": "application/json", "User-Agent": getattr(rlm_guild_providers, "DEFAULT_USER_AGENT", "RLMCompanion/1.3.7")}
+        
+        def task():
+            try:
+                r = requests.get(channels_url, headers=headers, timeout=5)
+                if r.status_code == 200:
+                    data = r.json()
+                    channels_list = [item.get("name") for item in data.get("channels", []) if item.get("name")]
+                    guild_name = data.get("guild_name", "Discord Server")
+                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, True, channels_list, f"🟢 Connected to '{guild_name}' ({len(channels_list)} real channels accessible)"))
+                else:
+                    channels_list = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
+                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, channels_list, "🟢 Channel selection active. Select from dropdown or type your channel name."))
+            except Exception as e:
+                channels_list = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
+                self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, channels_list, "🟢 Channel selection active. Select from dropdown or type your channel name."))
+                
+        threading.Thread(target=task, daemon=True).start()
+
+    def _on_active_team_channels_fetched(self, target_team_key, success, channels_list, status_msg):
+        if getattr(self, "current_team_key", "") != target_team_key:
+            return
+
+        if hasattr(self, "lbl_team_status"):
+            fg = FG_GOLD_BRIGHT if success else "#f39c12"
+            self.lbl_team_status.configure(text=status_msg, foreground=fg)
+            
+        if channels_list:
+            if hasattr(self, "cb_team_epgp_ch"):
+                self.cb_team_epgp_ch.configure(values=channels_list)
+                current_e = self.cb_team_epgp_ch.get()
+                if not current_e:
+                    match_e = next((c for c in channels_list if "epgp" in c.lower() or "standings" in c.lower()), channels_list[0])
+                    self.cb_team_epgp_ch.set(match_e)
+                
+            if hasattr(self, "cb_team_mplus_ch"):
+                self.cb_team_mplus_ch.configure(values=channels_list)
+                current_m = self.cb_team_mplus_ch.get()
+                if not current_m:
+                    match_m = next((c for c in channels_list if "mplus" in c.lower() or "leaderboard" in c.lower() or "keys" in c.lower()), channels_list[0])
+                    self.cb_team_mplus_ch.set(match_m)
+
+    def _on_channels_fetched(self, success, channels_list, status_msg):
+        if hasattr(self, "lbl_channel_status"):
+            fg = FG_GOLD_BRIGHT if success else "#e74c3c"
+            self.lbl_channel_status.configure(text=status_msg, foreground=fg)
+            
+        if success and channels_list:
+            if hasattr(self, "cb_epgp_channel"):
+                self.cb_epgp_channel.configure(values=channels_list)
+                current = self.cb_epgp_channel.get()
+                if not current or current not in channels_list:
+                    match = next((c for c in channels_list if "epgp" in c.lower() or "standings" in c.lower()), channels_list[0])
+                    self.cb_epgp_channel.set(match)
+                    
+            if hasattr(self, "cb_mplus_channel"):
+                self.cb_mplus_channel.configure(values=channels_list)
+                current = self.cb_mplus_channel.get()
+                if not current or current not in channels_list:
+                    match = next((c for c in channels_list if "mplus" in c.lower() or "leaderboard" in c.lower() or "keys" in c.lower()), channels_list[0])
+                    self.cb_mplus_channel.set(match)
 
     def browse_wow_directory(self):
         dir_selected = filedialog.askdirectory(title=self.L("dialog_select_wtf"), initialdir=r"C:\Program Files (x86)\World of Warcraft")

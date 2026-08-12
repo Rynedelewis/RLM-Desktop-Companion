@@ -5,6 +5,7 @@ import json
 import time
 import platform
 import pathlib
+import requests
 
 # Default config fallback path
 if getattr(sys, 'frozen', False):
@@ -164,6 +165,39 @@ def parse_lua_saved_variables(file_path):
             
     return profiles
 
+def extract_raid_end_timestamps(file_path):
+    """Extract highest 'Raid End' timestamp for each profile from RaidLootMatrix.lua."""
+    timestamps = {}
+    if not os.path.exists(file_path):
+        return timestamps
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+
+        profile_pattern = re.compile(r'\["([^"]+::[^"]+)"\]\s*=')
+        for pm in profile_pattern.finditer(content):
+            profile_key = pm.group(1)
+            profile_text, _ = extract_block(content, pm.end())
+            if not profile_text:
+                continue
+
+            max_ts = 0
+            for match in re.finditer(r'\["reason"\]\s*=\s*"Raid End".*?\["timestamp"\]\s*=\s*(\d+)', profile_text, re.DOTALL):
+                ts = int(match.group(1))
+                if ts > max_ts:
+                    max_ts = ts
+            
+            for match in re.finditer(r'\["raidend"\]\s*=\s*true.*?\["timestamp"\]\s*=\s*(\d+)', profile_text, re.DOTALL):
+                ts = int(match.group(1))
+                if ts > max_ts:
+                    max_ts = ts
+
+            if max_ts > 0:
+                timestamps[profile_key] = max_ts
+    except Exception as e:
+        print(f"[WARNING] Could not parse raid end timestamps: {e}")
+    return timestamps
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN CLIENT LOGIC
 # ─────────────────────────────────────────────────────────────────────────────
@@ -193,6 +227,7 @@ def main():
     config_path = addon_dir / "rlm_importer_config.json"
     wow_path = ""
     account = ""
+    cfg = {}
     
     sync_key = _sync_key
     sync_url = _sync_url
@@ -266,10 +301,29 @@ def main():
         print(f"Successfully parsed {len(all_profiles)} database profiles across all accounts.")
         for p_key, roster in all_profiles.items():
             print(f" - Profile '{p_key.split('::')[-1]}' ({len(roster)} characters)")
-            
+
     except Exception as e:
         print(f"❌ Error parsing Lua SavedVariables: {e}")
         prompt_exit(1)
+
+    # 3b. Check Post-Raid Raid End timestamp deduplication if running on WoW Exit
+    is_post_raid_trigger = "--post-raid" in sys.argv or cfg.get("epgp_schedule") == "Post-Raid (On WoW Exit)"
+    last_posted_ends = cfg.get("last_posted_raid_end_timestamps", {})
+    new_posted_ends = dict(last_posted_ends)
+
+    if is_post_raid_trigger and "--force" not in sys.argv:
+        has_new_raid_end = False
+        for sv_file in sv_files:
+            raid_ends = extract_raid_end_timestamps(sv_file)
+            for p_key, latest_ts in raid_ends.items():
+                last_ts = last_posted_ends.get(p_key, 0)
+                if latest_ts > last_ts:
+                    has_new_raid_end = True
+                    new_posted_ends[p_key] = latest_ts
+
+        if not has_new_raid_end and last_posted_ends:
+            print("ℹ️ Post-Raid Sync skipped: No new 'Raid End' event detected since last post.")
+            prompt_exit(0)
 
     # 4. Check Sync Key configuration
     if sync_key == "YOUR_SYNC_KEY_HERE" or not sync_key:
@@ -277,17 +331,44 @@ def main():
         print("To get your sync key, type '!synckey' in your Discord server.")
         prompt_exit(1)
 
-    # 5. Send data to Discord Bot API
+    # Build Mythic+ leaderboard summary for active roster
+    mplus_leaderboard = {}
     try:
-        import requests
-    except ImportError:
-        print("Error: The 'requests' library is required to run this sync script.")
-        print("Please install it by running: pip install requests")
-        prompt_exit(1)
+        import raidlootmatrix_mplus
+        print("Fetching Mythic+ scores and dungeon summaries from Raider.IO...")
+        for p_key, roster in all_profiles.items():
+            mplus_leaderboard[p_key] = []
+            for char_name in list(roster.keys())[:30]:
+                if "-" in char_name:
+                    cname, crealm = char_name.split("-", 1)
+                else:
+                    cname, crealm = char_name, "Whisperwind"
+                
+                runs = raidlootmatrix_mplus.fetch_runs(cname, crealm, max_recent=5)
+                highest_level = max([r.get("mythic_level", 0) for r in runs], default=0)
+                mplus_leaderboard[p_key].append({
+                    "name": char_name,
+                    "highest_level": highest_level,
+                    "recent_runs": [
+                        {
+                            "dungeon": r.get("_dungeon_name", "Unknown"),
+                            "level": r.get("mythic_level", 0),
+                            "timed": (r.get("num_keystone_upgrades", 0) > 0)
+                        } for r in runs[:3]
+                    ]
+                })
+    except Exception as e:
+        print(f"[WARNING] Could not fetch Raider.IO M+ leaderboard data: {e}")
 
     payload = {
         "timestamp": int(time.time()),
-        "profiles": all_profiles
+        "profiles": all_profiles,
+        "epgp_channel": cfg.get("epgp_channel", "epgp-standings"),
+        "epgp_schedule": cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)"),
+        "mplus_channel": cfg.get("mplus_channel", "mplus-leaderboard"),
+        "mplus_schedule": cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)"),
+        "pin_update_mode": cfg.get("pin_update_mode", True),
+        "mplus_leaderboard": mplus_leaderboard
     }
     
     headers = {
@@ -303,6 +384,13 @@ def main():
             print("============================================================")
             print("🚀 Sync Successful! EPGP standings and rosters updated.")
             print("============================================================")
+            if new_posted_ends:
+                cfg["last_posted_raid_end_timestamps"] = new_posted_ends
+                try:
+                    with open(config_path, "w", encoding="utf-8") as f:
+                        json.dump(cfg, f, indent=2)
+                except Exception:
+                    pass
         else:
             print(f"❌ Sync Failed with status code: {response.status_code}")
             try:

@@ -86,6 +86,7 @@ class RLMHelperBot(commands.Bot):
         app = web.Application()
         app.add_routes([
             web.post('/api/sync', self.handle_sync_post),
+            web.get('/api/channels', self.handle_get_channels),
             web.get('/terms', self.handle_terms),
             web.get('/privacy', self.handle_privacy)
         ])
@@ -98,18 +99,58 @@ class RLMHelperBot(commands.Bot):
         await self.site.start()
         print(f"HTTP Sync API server started on http://0.0.0.0:{port}")
 
+    async def handle_get_channels(self, request):
+        try:
+            auth_header = request.headers.get("Authorization")
+            if not auth_header:
+                return web.json_response({"error": "Missing Authorization header"}, status=401)
+            
+            guild_id = get_guild_by_sync_key(auth_header)
+            if not guild_id:
+                return web.json_response({"error": "Invalid Sync Key. Type !synckey in your Discord server to retrieve your key."}, status=403)
+            
+            guild = self.get_guild(int(guild_id))
+            if not guild:
+                return web.json_response({"error": "RLM Discord Bot is not currently in the server associated with this Sync Key."}, status=404)
+            
+            channels = []
+            for ch in guild.text_channels:
+                perms = ch.permissions_for(guild.me)
+                if perms.view_channel and perms.send_messages:
+                    channels.append({
+                        "id": str(ch.id),
+                        "name": f"#{ch.name}"
+                    })
+            
+            if not channels:
+                return web.json_response({"error": "Bot lacks 'View Channel' or 'Send Messages' permissions in text channels."}, status=403)
+
+            return web.json_response({
+                "success": True,
+                "guild_name": guild.name,
+                "channels": channels
+            })
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
     async def handle_sync_post(self, request):
         try:
             auth_header = request.headers.get("Authorization")
             if not auth_header:
                 return web.json_response({"error": "Missing Authorization header"}, status=401)
             
-            # Find the guild corresponding to this key
-            guild_id = get_guild_by_sync_key(auth_header)
-            if not guild_id:
-                return web.json_response({"error": "Invalid Authorization token"}, status=403)
-            
             payload = await request.json()
+            if payload.get("action") == "get_channels":
+                guild = self.get_guild(int(guild_id))
+                if not guild:
+                    return web.json_response({"error": "RLM Discord Bot is not currently in the server for this Sync Key."}, status=404)
+                channels = []
+                for ch in guild.text_channels:
+                    perms = ch.permissions_for(guild.me)
+                    if perms.view_channel and perms.send_messages:
+                        channels.append({"id": str(ch.id), "name": f"#{ch.name}"})
+                return web.json_response({"success": True, "guild_name": guild.name, "channels": channels})
+
             update_guild_data(guild_id, payload)
             
             # Notify block removed to prevent channel spam on sync.

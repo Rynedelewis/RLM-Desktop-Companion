@@ -307,13 +307,12 @@ def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
         "region": REGION,
         "realm":  slug,
         "name":   name,
-        "fields": f"mythic_plus_recent_runs:{max_recent},mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs",
+        "fields": "mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs",
     }
     for attempt in range(3):
         try:
             r = requests.get(url, params=params, timeout=15)
-            if r.status_code == 404:
-                print(f"  [not found on Raider.IO]", end=" ")
+            if r.status_code in (400, 404):
                 return []
             r.raise_for_status()
             data = r.json()
