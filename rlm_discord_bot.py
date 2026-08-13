@@ -145,17 +145,13 @@ class RLMHelperBot(commands.Bot):
 
             for ch in text_channels:
                 if isinstance(ch, discord.TextChannel):
-                    if me:
-                        perms = ch.permissions_for(me)
-                        if not perms.view_channel or not perms.send_messages:
-                            continue
                     channels.append({
                         "id": str(ch.id),
                         "name": f"#{ch.name}"
                     })
             
             if not channels:
-                return web.json_response({"error": "Bot lacks 'View Channel' or 'Send Messages' permissions in text channels."}, status=403)
+                return web.json_response({"error": "No text channels found in this Discord server."}, status=404)
 
             return web.json_response({
                 "success": True,
