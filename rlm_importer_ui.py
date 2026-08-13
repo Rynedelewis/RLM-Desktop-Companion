@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.3.7"
+VERSION = "1.3.8"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -663,6 +663,11 @@ del /f "%~f0" > NUL
         self.btn_save = ttk.Button(self.header_action_frame, text=self.L("btn_save_settings"), style="GoldSave.TButton", command=self.save_settings, width=18)
         self.btn_save.pack(side="right")
 
+        # Save Confirmation Label on Header Banner
+        self.lbl_save_status = ttk.Label(self.header_action_frame, text="", font=("Segoe UI", 10, "bold"), foreground=FG_GOLD_BRIGHT, style="Panel.TLabel")
+        self.lbl_save_status.pack(side="right", padx=(0, 15))
+        self._toast_timer = None
+
         # Main Notebook Tabs
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True, padx=15, pady=(0, 10))
@@ -691,6 +696,26 @@ del /f "%~f0" > NUL
         self.tab_console = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_console, text=self.L("tab_console"))
         self.build_tab_console(self.tab_console)
+
+    def show_toast_banner(self, message, toast_type="success"):
+        if not hasattr(self, "lbl_save_status"):
+            return
+        
+        fg_color = FG_GOLD_BRIGHT if toast_type == "success" else "#e74c3c"
+        icon = "✨" if toast_type == "success" else "⚠️"
+        
+        self.lbl_save_status.configure(text=f"{icon} {message}", foreground=fg_color)
+        
+        if getattr(self, "_toast_timer", None):
+            self.root.after_cancel(self._toast_timer)
+            
+        self._toast_timer = self.root.after(3500, lambda: self.lbl_save_status.configure(text=""))
+
+    def flash_save_button(self):
+        if hasattr(self, "btn_save"):
+            orig_text = self.L("btn_save_settings")
+            self.btn_save.configure(text="✓ Saved Successfully!")
+            self.root.after(1800, lambda: self.btn_save.configure(text=orig_text))
 
     def build_tab_general(self, parent):
         card = ttk.Frame(parent, style="Panel.TFrame")
@@ -876,7 +901,9 @@ del /f "%~f0" > NUL
                 self.update_providers_listbox()
                 self.lst_providers.selection_set(idx)
                 self.save_settings()
-                self.log_message(f"Updated sync options for source '{providers_list[idx].get('name', 'Guild')}'")
+                source_name = providers_list[idx].get('name', 'Guild')
+                self.log_message(f"Updated sync options for source '{source_name}'")
+                self.show_toast_banner(f"Updated sync options for provider '{source_name}'!")
 
     def build_tab_sched(self, parent):
         card = ttk.Frame(parent, style="Panel.TFrame")
@@ -1280,10 +1307,11 @@ del /f "%~f0" > NUL
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.settings, f, indent=2)
             self.log_message("Settings saved successfully to config JSON.")
-            messagebox.showinfo(self.L("msg_success_title"), self.L("msg_success_saved"))
+            self.flash_save_button()
+            self.show_toast_banner("Settings and Guild Team configurations saved successfully!")
         except Exception as e:
             self.log_message(f"Error saving settings: {e}")
-            messagebox.showerror("Error", f"Failed to save settings: {e}")
+            self.show_toast_banner(f"Failed to save settings: {e}", toast_type="error")
 
     def _save_current_team_view(self):
         if hasattr(self, "current_team_key") and self.current_team_key:
@@ -1353,18 +1381,21 @@ del /f "%~f0" > NUL
         
         def task():
             try:
-                r = requests.get(channels_url, headers=headers, timeout=5)
+                r = requests.get(channels_url, headers=headers, timeout=6)
                 if r.status_code == 200:
                     data = r.json()
                     channels_list = [item.get("name") for item in data.get("channels", []) if item.get("name")]
                     guild_name = data.get("guild_name", "Discord Server")
-                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, True, channels_list, f"🟢 Connected to '{guild_name}' ({len(channels_list)} real channels accessible)"))
+                    msg = f"🟢 Connected to '{guild_name}' ({len(channels_list)} real channels loaded!)"
+                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, True, channels_list, msg))
                 else:
-                    channels_list = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
-                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, channels_list, "🟢 Channel selection active. Select from dropdown or type your channel name."))
+                    err_msg = r.json().get("error", "Key mismatch or bot not in server.") if r.headers.get("content-type") == "application/json" else f"HTTP {r.status_code}"
+                    fallback_channels = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
+                    status_text = f"⚠️ Server response: {err_msg} (Type !synckey in your Discord server)."
+                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, fallback_channels, status_text))
             except Exception as e:
-                channels_list = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
-                self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, channels_list, "🟢 Channel selection active. Select from dropdown or type your channel name."))
+                fallback_channels = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
+                self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, fallback_channels, f"⚠️ Connection notice: {e}"))
                 
         threading.Thread(target=task, daemon=True).start()
 

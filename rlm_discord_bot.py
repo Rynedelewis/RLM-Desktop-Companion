@@ -109,14 +109,46 @@ class RLMHelperBot(commands.Bot):
             if not guild_id:
                 return web.json_response({"error": "Invalid Sync Key. Type !synckey in your Discord server to retrieve your key."}, status=403)
             
-            guild = self.get_guild(int(guild_id))
+            gid_int = int(guild_id)
+            guild = self.get_guild(gid_int)
             if not guild:
-                return web.json_response({"error": "RLM Discord Bot is not currently in the server associated with this Sync Key."}, status=404)
+                for g in self.guilds:
+                    if g.id == gid_int:
+                        guild = g
+                        break
+            
+            if not guild:
+                try:
+                    guild = await self.fetch_guild(gid_int)
+                except Exception:
+                    guild = None
+            
+            if not guild:
+                cached_ids = [str(g.id) for g in self.guilds]
+                return web.json_response({
+                    "error": f"RLM Discord Bot cannot access server (Target Guild ID: {guild_id}, Connected Guild IDs: {cached_ids}). Verify bot is invited to your server."
+                }, status=404)
             
             channels = []
-            for ch in guild.text_channels:
-                perms = ch.permissions_for(guild.me)
-                if perms.view_channel and perms.send_messages:
+            text_channels = []
+            if hasattr(guild, "text_channels") and guild.text_channels:
+                text_channels = guild.text_channels
+            else:
+                try:
+                    text_channels = await guild.fetch_channels()
+                except Exception:
+                    text_channels = []
+
+            me = getattr(guild, "me", None)
+            if not me and hasattr(guild, "get_member"):
+                me = guild.get_member(self.user.id) if self.user else None
+
+            for ch in text_channels:
+                if isinstance(ch, discord.TextChannel):
+                    if me:
+                        perms = ch.permissions_for(me)
+                        if not perms.view_channel or not perms.send_messages:
+                            continue
                     channels.append({
                         "id": str(ch.id),
                         "name": f"#{ch.name}"
@@ -127,7 +159,7 @@ class RLMHelperBot(commands.Bot):
 
             return web.json_response({
                 "success": True,
-                "guild_name": guild.name,
+                "guild_name": getattr(guild, "name", "Discord Server"),
                 "channels": channels
             })
         except Exception as e:
