@@ -182,8 +182,9 @@ def extract_raid_end_timestamps(file_path):
                 continue
 
             max_ts = 0
-            for match in re.finditer(r'\["reason"\]\s*=\s*"Raid End".*?\["timestamp"\]\s*=\s*(\d+)', profile_text, re.DOTALL):
-                ts = int(match.group(1))
+            # Match any EP history entry logged for ending a raid (Raid Complete, Raid End, End Raid, etc.)
+            for match in re.finditer(r'\["reason"\]\s*=\s*"(Raid Complete|Raid End|End Raid|Raid Ended|Raid Complete \([^"]+\))".*?\["timestamp"\]\s*=\s*(\d+)', profile_text, re.DOTALL):
+                ts = int(match.group(2))
                 if ts > max_ts:
                     max_ts = ts
             

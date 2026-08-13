@@ -167,22 +167,12 @@ class RLMHelperBot(commands.Bot):
             if not auth_header:
                 return web.json_response({"error": "Missing Authorization header"}, status=401)
             
-            payload = await request.json()
-            if payload.get("action") == "get_channels":
-                guild = self.get_guild(int(guild_id))
-                if not guild:
-                    return web.json_response({"error": "RLM Discord Bot is not currently in the server for this Sync Key."}, status=404)
-                channels = []
-                for ch in guild.text_channels:
-                    perms = ch.permissions_for(guild.me)
-                    if perms.view_channel and perms.send_messages:
-                        channels.append({"id": str(ch.id), "name": f"#{ch.name}"})
-                return web.json_response({"success": True, "guild_name": guild.name, "channels": channels})
+            guild_id = get_guild_by_sync_key(auth_header)
+            if not guild_id:
+                return web.json_response({"error": "Invalid Sync Key. Type !synckey in your Discord server to retrieve your key."}, status=403)
 
+            payload = await request.json()
             update_guild_data(guild_id, payload)
-            
-            # Notify block removed to prevent channel spam on sync.
-            pass
             
             return web.json_response({"success": True, "message": "EPGP data synced successfully!"})
         except Exception as e:

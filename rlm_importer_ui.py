@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.3.9"
+VERSION = "1.4.0"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
