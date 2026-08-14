@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "RaidLootMatrix Desktop Companion"
-#define MyAppVersion "1.6.0"
+#define MyAppVersion "1.6.1"
 #define MyAppPublisher "RaidLootMatrix Team"
 #define MyAppURL "https://github.com/rynecheow/AAAddon"
 #define MyAppExeName "RLM_Companion.exe"
