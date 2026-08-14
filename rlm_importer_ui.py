@@ -40,7 +40,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.6.5"
+VERSION = "1.7.0"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -484,12 +484,14 @@ class RLMImporterApp:
                     data = r.json()
                     tag = data.get("tag_name", "").strip().lstrip("v")
                     if tag and tag > VERSION:
-                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion.exe"
+                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion_Setup_v{tag}.exe"
                         for asset in data.get("assets", []):
                             aname = asset.get("name", "").lower()
-                            if aname == "rlm_companion.exe":
+                            if "setup" in aname and aname.endswith(".exe"):
                                 download_url = asset.get("browser_download_url")
                                 break
+                            elif aname == "rlm_companion.exe":
+                                download_url = asset.get("browser_download_url")
                             elif aname.endswith(".exe"):
                                 download_url = asset.get("browser_download_url")
                         self.root.after(0, lambda: self.show_update_banner(tag, download_url))
