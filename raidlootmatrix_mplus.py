@@ -384,6 +384,34 @@ def norm_key(key):
         return parts[0].lower() + "-" + re.sub(r"[^a-z0-9]", "", parts[1].lower())
     return key.lower()
 
+_RUN_ROSTER_CACHE = {}
+
+def fetch_run_roster(keystone_run_id, season_slug="season-mn-1"):
+    """Fetch 5-player group roster for a specific keystone run ID from Raider.IO run-details API."""
+    if not keystone_run_id:
+        return set()
+    if keystone_run_id in _RUN_ROSTER_CACHE:
+        return _RUN_ROSTER_CACHE[keystone_run_id]
+    url = "https://raider.io/api/v1/mythic-plus/run-details"
+    params = {"season": season_slug, "id": keystone_run_id}
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            roster_names = set()
+            for member in data.get("roster", []) or []:
+                char = member.get("character", {})
+                cname = char.get("name", "")
+                realm_info = char.get("realm", {})
+                crealm = realm_info.get("name", "") if isinstance(realm_info, dict) else str(realm_info)
+                if cname and crealm:
+                    roster_names.add(cname.lower() + "-" + re.sub(r"[^a-z0-9]", "", crealm.lower()))
+            _RUN_ROSTER_CACHE[keystone_run_id] = roster_names
+            return roster_names
+    except Exception:
+        pass
+    return set()
+
 def parse_rio_run(rio_run):
     """Extract raw fields from a Raider.IO run entry."""
     roster_raw   = rio_run.get("roster", []) or []
@@ -396,6 +424,10 @@ def parse_rio_run(rio_run):
         if char_name and char_realm:
             # Normalize realm so "Area 52" == "Area52" == "area-52" etc.
             roster_names.add(char_name.lower() + "-" + re.sub(r"[^a-z0-9]", "", char_realm.lower()))
+
+    # If roster array was missing on summary object, fetch via run-details API!
+    if not roster_names and rio_run.get("keystone_run_id"):
+        roster_names = fetch_run_roster(rio_run.get("keystone_run_id"))
 
     dungeon_name = rio_run.get("_dungeon_name") or "Unknown"
     return {
