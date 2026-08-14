@@ -33,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.9"
+VERSION = "1.6.0"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -471,10 +471,10 @@ class RLMImporterApp:
                         download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion.exe"
                         for asset in data.get("assets", []):
                             aname = asset.get("name", "").lower()
-                            if aname.endswith(".zip"):
+                            if aname == "rlm_companion.exe":
                                 download_url = asset.get("browser_download_url")
                                 break
-                            elif aname.endswith(".exe") and not download_url.lower().endswith(".zip"):
+                            elif aname.endswith(".exe"):
                                 download_url = asset.get("browser_download_url")
                         self.root.after(0, lambda: self.show_update_banner(tag, download_url))
                         self.root.after(500, lambda: self.show_update_popup(tag, download_url))
@@ -529,35 +529,34 @@ class RLMImporterApp:
             lbl_msg = ttk.Label(
                 card, 
                 text=f"A new version of RaidLootMatrix Companion (v{remote_version}) is ready!\n\n"
-                     f"Current Version: v{VERSION}\n"
-                     f"Latest Version:  v{remote_version}\n\n"
-                     f"Clicking 'Update & Restart Now' will automatically download\n"
-                     f"the update directly to your PC and restart the application.",
+                     f"Click 'Update & Restart Now' to automatically download and launch v{remote_version}.\n"
+                     f"No manual file extraction or re-configuration is required.",
                 style="Panel.TLabel",
+                wraplength=480,
                 justify="left"
             )
-            lbl_msg.pack(anchor="w", padx=15, pady=5)
+            lbl_msg.pack(anchor="w", padx=15, pady=(0, 15))
 
-            btn_bar = ttk.Frame(card, style="Panel.TFrame")
-            btn_bar.pack(fill="x", side="bottom", padx=15, pady=(10, 15))
+            btn_frame = ttk.Frame(card, style="Panel.TFrame")
+            btn_frame.pack(fill="x", padx=15, pady=(10, 0))
 
-            btn_apply = ttk.Button(
-                btn_bar, 
-                text="⚡ Update & Restart Now", 
-                style="GoldSave.TButton", 
+            btn_do_update = ttk.Button(
+                btn_frame, 
+                text="🚀 Update & Restart Now", 
+                style="Accent.TButton", 
                 command=lambda: [win.destroy(), self.download_and_apply_update(download_url, remote_version)]
             )
-            btn_apply.pack(side="right", padx=(8, 0))
+            btn_do_update.pack(side="right", padx=(8, 0))
 
-            btn_later = ttk.Button(btn_bar, text="Later", style="Accent.TButton", command=win.destroy)
+            btn_later = ttk.Button(btn_frame, text="Remind Me Later", style="TButton", command=win.destroy)
             btn_later.pack(side="right")
         except Exception as e:
-            print(f"Error showing update popup: {e}")
+            pass
 
     def download_and_apply_update(self, download_url, remote_version):
         progress_win = tk.Toplevel(self.root)
         progress_win.title("Downloading Update...")
-        progress_win.geometry("480x190")
+        progress_win.geometry("450x160")
         progress_win.resizable(False, False)
         progress_win.configure(bg=BG_DARK)
         progress_win.transient(self.root)
@@ -567,15 +566,15 @@ class RLMImporterApp:
         card = ttk.Frame(progress_win, style="Panel.TFrame")
         card.pack(fill="both", expand=True, padx=12, pady=12)
 
-        lbl_title = ttk.Label(card, text=f"⚡ Downloading Update v{remote_version}...", style="Header.TLabel", foreground=FG_GOLD_BRIGHT)
-        lbl_title.pack(anchor="w", padx=15, pady=(15, 8))
+        lbl = ttk.Label(card, text=f"Downloading RaidLootMatrix Companion v{remote_version}...", style="Header.TLabel", foreground=FG_GOLD_BRIGHT)
+        lbl.pack(anchor="w", padx=15, pady=(15, 8))
 
-        progress_var = tk.DoubleVar(value=0.0)
-        progress_bar = ttk.Progressbar(card, variable=progress_var, maximum=100.0)
-        progress_bar.pack(fill="x", padx=15, pady=8)
+        progress_var = tk.DoubleVar()
+        progress_bar = ttk.Progressbar(card, variable=progress_var, maximum=100)
+        progress_bar.pack(fill="x", padx=15, pady=5)
 
-        lbl_status = ttk.Label(card, text="Starting download...", style="Panel.TLabel")
-        lbl_status.pack(anchor="w", padx=15, pady=4)
+        lbl_status = ttk.Label(card, text="Connecting to GitHub...", style="Panel.TLabel")
+        lbl_status.pack(anchor="w", padx=15, pady=(5, 10))
 
         def worker():
             try:
@@ -610,6 +609,7 @@ class RLMImporterApp:
                 batch_content = f"""@echo off
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
 timeout /t 3 /nobreak > NUL
+if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
 if exist "RLM_Companion_update.zip" (
     powershell -Command "Expand-Archive -Path 'RLM_Companion_update.zip' -DestinationPath '.' -Force" > NUL 2>&1
     del /f "RLM_Companion_update.zip" > NUL 2>&1
