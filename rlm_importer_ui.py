@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.7.8"
+VERSION = "1.7.9"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -1526,7 +1526,7 @@ del /f "%~f0" > NUL
             self.lbl_team_hdr.configure(text=f"Discord Bot Settings: {display_name}")
 
         p_data = getattr(self, "team_settings_data", {}).get(team_key, {}) or {}
-        key_val = p_data.get("discord_sync_key", "").strip()
+        key_val = p_data.get("discord_sync_key", "").strip() or self.settings.get("discord_sync_key", "").strip()
         epgp_ch = p_data.get("epgp_channel", "").strip()
         epgp_sch = p_data.get("epgp_schedule", "Post-Raid (On WoW Exit)")
         mplus_ch = p_data.get("mplus_channel", "").strip()

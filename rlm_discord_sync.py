@@ -400,6 +400,18 @@ def main():
         }
 
         print(f"\nUploading standings data for team '{display_name}' to {sync_url}...")
+        epgp_target = payload["epgp_channel"]
+        mplus_target = payload["mplus_channel"]
+        if epgp_target:
+            print(f"  • EPGP Standings Target: #{epgp_target}")
+        else:
+            print(f"  • EPGP Standings Target: (Not configured — skipping EPGP post)")
+
+        if mplus_target:
+            print(f"  • Mythic+ Leaderboard Target: #{mplus_target}")
+        else:
+            print(f"  • Mythic+ Leaderboard Target: (Not configured — skipping M+ post)")
+
         try:
             response = requests.post(sync_url, json=payload, headers=headers, timeout=10)
             if response.status_code == 200:
