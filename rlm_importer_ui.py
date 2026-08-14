@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 import json
 import os
 import sys
+import time
 import pathlib
 import platform
 import threading
@@ -28,7 +29,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -347,25 +348,34 @@ class RLMImporterApp:
 
         # Load Icon if available (both .ico and .png formats for titlebar and taskbar)
         self.icon_path = next((p for p in [meipass / "rlm_icon.ico", self.app_dir / "rlm_icon.ico"] if p.exists()), None)
-        if self.icon_path:
-            try:
-                self.root.iconbitmap(str(self.icon_path))
-            except Exception:
-                pass
-
         self.png_icon_path = next((p for p in [meipass / "rlm_icon.png", self.app_dir / "rlm_icon.png"] if p.exists()), None)
+        self.tk_icon = None
+
         if self.png_icon_path and PIL_AVAILABLE:
             try:
                 img = Image.open(self.png_icon_path)
                 self.tk_icon = ImageTk.PhotoImage(img)
-                self.root.iconphoto(True, self.tk_icon)
             except Exception:
                 pass
+
+        self.apply_window_icon(self.root)
 
         self.config_path = self.app_dir / "rlm_importer_config.json"
         self.settings = self.load_settings()
         self.team_settings_data = self.settings.get("team_discord_settings", {})
         self.ensure_provider_schema()
+
+    def apply_window_icon(self, window):
+        if hasattr(self, "icon_path") and self.icon_path:
+            try:
+                window.iconbitmap(str(self.icon_path))
+            except Exception:
+                pass
+        if hasattr(self, "tk_icon") and self.tk_icon:
+            try:
+                window.iconphoto(True, self.tk_icon)
+            except Exception:
+                pass
 
         self.setup_styles()
         self.create_widgets()
@@ -485,11 +495,12 @@ class RLMImporterApp:
         try:
             win = tk.Toplevel(self.root)
             win.title("🚀 Update Available")
-            win.geometry("480x240")
+            win.geometry("520x290")
             win.resizable(False, False)
             win.configure(bg=BG_DARK)
             win.transient(self.root)
             win.grab_set()
+            self.apply_window_icon(win)
 
             card = ttk.Frame(win, style="Panel.TFrame")
             card.pack(fill="both", expand=True, padx=12, pady=12)
@@ -510,7 +521,7 @@ class RLMImporterApp:
             lbl_msg.pack(anchor="w", padx=15, pady=5)
 
             btn_bar = ttk.Frame(card, style="Panel.TFrame")
-            btn_bar.pack(fill="x", padx=15, pady=15)
+            btn_bar.pack(fill="x", side="bottom", padx=15, pady=(10, 15))
 
             btn_apply = ttk.Button(
                 btn_bar, 
@@ -520,7 +531,7 @@ class RLMImporterApp:
             )
             btn_apply.pack(side="right", padx=(8, 0))
 
-            btn_later = ttk.Button(btn_bar, text="Later", command=win.destroy)
+            btn_later = ttk.Button(btn_bar, text="Later", style="Accent.TButton", command=win.destroy)
             btn_later.pack(side="right")
         except Exception as e:
             print(f"Error showing update popup: {e}")
@@ -528,11 +539,12 @@ class RLMImporterApp:
     def download_and_apply_update(self, download_url, remote_version):
         progress_win = tk.Toplevel(self.root)
         progress_win.title("Downloading Update...")
-        progress_win.geometry("460x170")
+        progress_win.geometry("480x190")
         progress_win.resizable(False, False)
         progress_win.configure(bg=BG_DARK)
         progress_win.transient(self.root)
         progress_win.grab_set()
+        self.apply_window_icon(progress_win)
 
         card = ttk.Frame(progress_win, style="Panel.TFrame")
         card.pack(fill="both", expand=True, padx=12, pady=12)
@@ -848,6 +860,7 @@ del /f "%~f0" > NUL
         win.configure(bg=BG_DARK)
         win.transient(self.root)
         win.grab_set()
+        self.apply_window_icon(win)
 
         card = ttk.Frame(win, style="Panel.TFrame")
         card.pack(fill="both", expand=True, padx=15, pady=15)
