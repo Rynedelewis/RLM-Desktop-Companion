@@ -33,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.6.2"
+VERSION = "1.6.3"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -351,14 +351,22 @@ class RLMImporterApp:
             meipass = self.app_dir
 
         # Load Icon if available (both .ico and .png formats for titlebar and taskbar)
-        self.icon_path = next((p for p in [meipass / "rlm_icon.ico", self.app_dir / "rlm_icon.ico"] if p.exists()), None)
-        self.png_icon_path = next((p for p in [meipass / "rlm_icon.png", self.app_dir / "rlm_icon.png"] if p.exists()), None)
+        self.icon_path = next((p for p in [meipass / "rlm_icon.ico", self.app_dir / "rlm_icon.ico"] if p and p.exists()), None)
+        self.png_icon_path = next((p for p in [meipass / "rlm_icon.png", self.app_dir / "rlm_icon.png"] if p and p.exists()), None)
         self.tk_icon = None
+
+        if self.icon_path and self.icon_path.exists():
+            try:
+                self.root.iconbitmap(default=str(self.icon_path))
+                self.root.iconbitmap(str(self.icon_path))
+            except Exception:
+                pass
 
         if self.png_icon_path and PIL_AVAILABLE:
             try:
                 img = Image.open(self.png_icon_path)
                 self.tk_icon = ImageTk.PhotoImage(img)
+                self.root.iconphoto(True, self.tk_icon)
             except Exception:
                 pass
 
@@ -381,8 +389,9 @@ class RLMImporterApp:
         self.check_for_updates()
 
     def apply_window_icon(self, window):
-        if hasattr(self, "icon_path") and self.icon_path:
+        if hasattr(self, "icon_path") and self.icon_path and self.icon_path.exists():
             try:
+                window.iconbitmap(default=str(self.icon_path))
                 window.iconbitmap(str(self.icon_path))
             except Exception:
                 pass
