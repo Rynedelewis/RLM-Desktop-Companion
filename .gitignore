@@ -6,6 +6,7 @@ RLM_Companion.exe
 build/
 dist/
 dist_setup/
+RLM_Companion_Folder.spec
 err.txt
 out.txt
 .env

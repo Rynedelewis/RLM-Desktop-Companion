@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.0"
+VERSION = "1.5.1"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -340,14 +340,25 @@ class RLMImporterApp:
 
         if getattr(sys, "frozen", False):
             self.app_dir = pathlib.Path(sys.executable).parent
+            meipass = pathlib.Path(getattr(sys, "_MEIPASS", self.app_dir))
         else:
             self.app_dir = pathlib.Path(__file__).parent
+            meipass = self.app_dir
 
-        # Load Icon if available
-        self.icon_path = self.app_dir / "rlm_icon.ico"
-        if self.icon_path.exists():
+        # Load Icon if available (both .ico and .png formats for titlebar and taskbar)
+        self.icon_path = next((p for p in [meipass / "rlm_icon.ico", self.app_dir / "rlm_icon.ico"] if p.exists()), None)
+        if self.icon_path:
             try:
                 self.root.iconbitmap(str(self.icon_path))
+            except Exception:
+                pass
+
+        self.png_icon_path = next((p for p in [meipass / "rlm_icon.png", self.app_dir / "rlm_icon.png"] if p.exists()), None)
+        if self.png_icon_path and PIL_AVAILABLE:
+            try:
+                img = Image.open(self.png_icon_path)
+                self.tk_icon = ImageTk.PhotoImage(img)
+                self.root.iconphoto(True, self.tk_icon)
             except Exception:
                 pass
 
