@@ -174,14 +174,19 @@ class RLMHelperBot(commands.Bot):
             payload = await request.json()
             update_guild_data(guild_id, payload)
             
-            # Automatically push / update embeds in target text channels
-            self.loop.create_task(self.post_automatic_updates(guild_id, payload))
+            # Execute post updates and capture status results
+            results = await self.post_automatic_updates(guild_id, payload)
 
-            return web.json_response({"success": True, "message": "EPGP data synced successfully!"})
+            return web.json_response({
+                "success": True,
+                "message": "EPGP data synced successfully!",
+                "results": results
+            })
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
 
     async def post_automatic_updates(self, guild_id, payload):
+        results = {"epgp": "Skipped (Unconfigured)", "mplus": "Skipped (Unconfigured)"}
         try:
             guild_id_str = str(guild_id)
             gid_int = int(guild_id)
@@ -197,8 +202,11 @@ class RLMHelperBot(commands.Bot):
                 except Exception:
                     guild = None
             if not guild:
-                print(f"[AUTO-POST ERROR] Guild {guild_id} not found in bot cache or API.")
-                return
+                err_msg = f"Guild {guild_id} not found in bot cache or API."
+                print(f"[AUTO-POST ERROR] {err_msg}")
+                results["epgp"] = f"Error: {err_msg}"
+                results["mplus"] = f"Error: {err_msg}"
+                return results
 
             # Fetch channels dynamically if cache is empty or incomplete
             text_channels = []
@@ -232,7 +240,7 @@ class RLMHelperBot(commands.Bot):
                         return ch
                 return None
 
-            # 1. Post/Update EPGP Standings Embed (ONLY if epgp_ch_raw is configured)
+            # 1. Post/Update EPGP Standings Embed
             if epgp_ch_raw and profiles:
                 target_ch = resolve_channel(epgp_ch_raw)
                 if target_ch:
@@ -271,9 +279,16 @@ class RLMHelperBot(commands.Bot):
                             embed.description = "No active main characters found in roster."
 
                         embed.set_footer(text=f"Last Synced: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
-                        await self._post_or_pin_embed(target_ch, embed, pin_mode, team_display)
+                        post_err = await self._post_or_pin_embed(target_ch, embed, pin_mode, team_display)
+                        if post_err:
+                            results["epgp"] = f"Failed to post to #{target_ch.name}: {post_err}"
+                        else:
+                            results["epgp"] = f"Posted to #{target_ch.name}"
+                else:
+                    avail_str = ", ".join([f"#{c.name}" for c in text_channels[:5]]) if text_channels else "None"
+                    results["epgp"] = f"Channel '{epgp_ch_raw}' not found in server channels ({avail_str})"
 
-            # 2. Post/Update Mythic+ Leaderboard Embed (ONLY if mplus_ch_raw is configured)
+            # 2. Post/Update Mythic+ Leaderboard Embed
             if mplus_ch_raw and mplus_data:
                 target_ch = resolve_channel(mplus_ch_raw)
                 if target_ch:
@@ -302,10 +317,21 @@ class RLMHelperBot(commands.Bot):
                             embed.description = "No Mythic+ runs found for this roster."
 
                         embed.set_footer(text=f"Last Synced: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
-                        await self._post_or_pin_embed(target_ch, embed, pin_mode, team_display)
+                        post_err = await self._post_or_pin_embed(target_ch, embed, pin_mode, team_display)
+                        if post_err:
+                            results["mplus"] = f"Failed to post to #{target_ch.name}: {post_err}"
+                        else:
+                            results["mplus"] = f"Posted to #{target_ch.name}"
+                else:
+                    avail_str = ", ".join([f"#{c.name}" for c in text_channels[:5]]) if text_channels else "None"
+                    results["mplus"] = f"Channel '{mplus_ch_raw}' not found in server channels ({avail_str})"
 
+            return results
         except Exception as e:
             print(f"[AUTO-POST ERROR] {e}")
+            results["epgp"] = f"Error: {e}"
+            results["mplus"] = f"Error: {e}"
+            return results
 
     async def _post_or_pin_embed(self, channel, embed, pin_mode, tag_marker):
         try:
@@ -328,7 +354,7 @@ class RLMHelperBot(commands.Bot):
                 if target_msg:
                     await target_msg.edit(embed=embed)
                     print(f"Updated pinned embed in #{channel.name}")
-                    return
+                    return None
 
             msg = await channel.send(embed=embed)
             if pin_mode:
@@ -337,8 +363,10 @@ class RLMHelperBot(commands.Bot):
                 except Exception:
                     pass
             print(f"Posted new embed to #{channel.name}")
+            return None
         except Exception as e:
             print(f"Error posting embed to #{channel.name}: {e}")
+            return str(e)
 
     async def handle_terms(self, request):
         html = """

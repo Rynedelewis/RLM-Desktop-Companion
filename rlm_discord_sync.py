@@ -420,6 +420,15 @@ def main():
             if response.status_code == 200:
                 print(f"🚀 Sync Successful for team '{display_name}'!")
                 synced_any = True
+                try:
+                    res_json = response.json()
+                    results = res_json.get("results", {})
+                    if results.get("epgp"):
+                        print(f"   💬 Server EPGP Status: {results['epgp']}")
+                    if results.get("mplus"):
+                        print(f"   💬 Server Mythic+ Status: {results['mplus']}")
+                except Exception:
+                    pass
             else:
                 print(f"❌ Sync Failed for team '{display_name}' with status code: {response.status_code}")
                 try:
