@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.8.1"
+VERSION = "1.8.2"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -1625,21 +1625,42 @@ del /f "%~f0" > NUL
         if hasattr(self, "lbl_team_status"):
             fg = FG_GOLD_BRIGHT if success else "#f39c12"
             self.lbl_team_status.configure(text=status_msg, foreground=fg)
+
+        p_data = getattr(self, "team_settings_data", {}).get(target_team_key, {}) or {}
+        saved_epgp = p_data.get("epgp_channel", "").strip()
+        saved_mplus = p_data.get("mplus_channel", "").strip()
+
+        def resolve_best_match(saved_val, fallback_keywords):
+            if saved_val:
+                clean_s = saved_val.lower().lstrip("#").strip()
+                for ch in channels_list:
+                    clean_ch = ch.lower().lstrip("#").strip()
+                    if clean_s == clean_ch:
+                        return ch
+                return f"#{saved_val.lstrip('#')}"
             
+            if channels_list:
+                for kw in fallback_keywords:
+                    for ch in channels_list:
+                        if kw in ch.lower():
+                            return ch
+                return channels_list[0]
+            return ""
+
         if success and channels_list:
             if hasattr(self, "cb_team_epgp_ch"):
                 self.cb_team_epgp_ch.configure(values=channels_list)
-                current_e = self.cb_team_epgp_ch.get()
-                if not current_e or current_e not in channels_list:
-                    match_e = next((c for c in channels_list if "epgp" in c.lower() or "standings" in c.lower()), channels_list[0])
-                    self.cb_team_epgp_ch.set(match_e)
+                target_e = resolve_best_match(saved_epgp or self.cb_team_epgp_ch.get(), ["epgp", "standings"])
+                if target_e:
+                    self.cb_team_epgp_ch.set(target_e)
                 
             if hasattr(self, "cb_team_mplus_ch"):
                 self.cb_team_mplus_ch.configure(values=channels_list)
-                current_m = self.cb_team_mplus_ch.get()
-                if not current_m or current_m not in channels_list:
-                    match_m = next((c for c in channels_list if "mplus" in c.lower() or "leaderboard" in c.lower() or "keys" in c.lower()), channels_list[0])
-                    self.cb_team_mplus_ch.set(match_m)
+                target_m = resolve_best_match(saved_mplus or self.cb_team_mplus_ch.get(), ["mplus", "leaderboard", "keys"])
+                if target_m:
+                    self.cb_team_mplus_ch.set(target_m)
+            self._save_current_team_view()
+            self.save_settings()
         else:
             if hasattr(self, "cb_team_epgp_ch"):
                 self.cb_team_epgp_ch.configure(values=[])

@@ -609,12 +609,14 @@ def main():
                         help="Which week(s): all (default, auto-detects from data), current, last, both")
     parser.add_argument("--reprocess",  action="store_true",
                         help="Force re-import of locked past weeks (ignores freeze-on-import)")
+    parser.add_argument("--force",      action="store_true",
+                        help="Force re-import of locked past weeks")
     parser.add_argument("--dry-run",    action="store_true",
                         help="Print results but don't write the file")
     parser.add_argument("--sv",      help="Override SavedVariables directory path")
     parser.add_argument("--account", default=ACCOUNT,
                         help=f"WoW account name (default: {ACCOUNT})")
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     if not REGION:
         print("[ERROR] Raider.IO Region is not configured. Please open the RLM Desktop UI to select your region.")
