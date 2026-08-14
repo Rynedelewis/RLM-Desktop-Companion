@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "RaidLootMatrix Desktop Companion"
-#define MyAppVersion "1.7.1"
+#define MyAppVersion "1.7.2"
 #define MyAppPublisher "RaidLootMatrix Team"
 #define MyAppURL "https://github.com/Rynedelewis/RLM-Desktop-Companion"
 #define MyAppExeName "RLM_Companion.exe"
@@ -17,7 +17,8 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\RaidLootMatrix Companion
+DefaultDirName={localappdata}\Programs\RaidLootMatrix Companion
+PrivilegesRequired=lowest
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=..\dist

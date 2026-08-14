@@ -13,6 +13,7 @@ if meipass_env and not os.path.exists(meipass_env):
 import time
 import pathlib
 import platform
+import tempfile
 import threading
 import subprocess
 import pystray
@@ -40,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.7.1"
+VERSION = "1.7.2"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -601,7 +602,18 @@ class RLMImporterApp:
                 total_size = int(r.headers.get('content-length', 0))
                 
                 is_zip = download_url.lower().endswith(".zip")
-                target_file = self.app_dir / ("RLM_Companion_update.zip" if is_zip else "RLM_Companion_update.exe")
+                is_setup = "setup" in download_url.lower() and download_url.lower().endswith(".exe")
+
+                temp_dir = pathlib.Path(tempfile.gettempdir())
+                
+                if is_setup:
+                    download_filename = "RLM_Companion_update_setup.exe"
+                elif is_zip:
+                    download_filename = "RLM_Companion_update.zip"
+                else:
+                    download_filename = "RLM_Companion_update.exe"
+
+                target_file = temp_dir / download_filename
                 downloaded = 0
 
                 with open(target_file, 'wb') as f:
@@ -621,22 +633,39 @@ class RLMImporterApp:
                 progress_win.after(0, lambda: lbl_status.configure(text="Download complete! Restarting application..."))
                 time.sleep(1)
 
-                batch_path = self.app_dir / "apply_update.bat"
+                batch_path = temp_dir / "apply_update.bat"
                 target_exe_name = pathlib.Path(sys.executable).name if getattr(sys, "frozen", False) else "RLM_Companion.exe"
-                
-                batch_content = f"""@echo off
+                app_dir_str = str(self.app_dir)
+                target_file_str = str(target_file)
+
+                if is_setup:
+                    batch_content = f"""@echo off
+set "_MEIPASS="
+set "_MEIPASS2="
+taskkill /F /IM "{target_exe_name}" > NUL 2>&1
+timeout /t 2 /nobreak > NUL
+start "" /wait "{target_file_str}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+timeout /t 1 /nobreak > NUL
+del /f "{target_file_str}" > NUL 2>&1
+powershell -Command "Remove-Item Env:\\_MEIPASS -ErrorAction SilentlyContinue; Remove-Item Env:\\_MEIPASS2 -ErrorAction SilentlyContinue; Start-Process '{target_exe_name}'"
+del /f "%~f0" > NUL
+"""
+                else:
+                    batch_content = f"""@echo off
 set "_MEIPASS="
 set "_MEIPASS2="
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
 timeout /t 3 /nobreak > NUL
+cd /d "{app_dir_str}"
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
-if exist "RLM_Companion_update.zip" (
-    powershell -Command "Expand-Archive -Path 'RLM_Companion_update.zip' -DestinationPath '.' -Force" > NUL 2>&1
-    del /f "RLM_Companion_update.zip" > NUL 2>&1
-)
-if exist "RLM_Companion_update.exe" (
-    copy /y "RLM_Companion_update.exe" "{target_exe_name}" > NUL
-    del /f "RLM_Companion_update.exe" > NUL
+if exist "{target_file_str}" (
+    if "{download_filename}"=="RLM_Companion_update.zip" (
+        powershell -Command "Expand-Archive -Path '{target_file_str}' -DestinationPath '.' -Force" > NUL 2>&1
+        del /f "{target_file_str}" > NUL 2>&1
+    ) else (
+        copy /y "{target_file_str}" "{target_exe_name}" > NUL
+        del /f "{target_file_str}" > NUL
+    )
 )
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
 timeout /t 1 /nobreak > NUL
@@ -650,8 +679,8 @@ del /f "%~f0" > NUL
                 clean_env.pop("_MEIPASS", None)
                 clean_env.pop("_MEIPASS2", None)
 
-                # Launch batch updater detached and exit current app
-                subprocess.Popen(["cmd.exe", "/c", str(batch_path)], cwd=str(self.app_dir), env=clean_env)
+                # Launch batch updater detached from temp directory and exit current app
+                subprocess.Popen(["cmd.exe", "/c", str(batch_path)], cwd=str(temp_dir), env=clean_env)
                 progress_win.after(100, self.exit_app)
 
             except Exception as e:
