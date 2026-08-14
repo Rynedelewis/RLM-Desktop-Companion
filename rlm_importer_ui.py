@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.7.5"
+VERSION = "1.7.6"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -644,9 +644,9 @@ class RLMImporterApp:
 set "_MEIPASS="
 set "_MEIPASS2="
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
+timeout /t 4 /nobreak > NUL
+start "" /wait "{target_file_str}" /DIR="{app_dir_str}" /FORCECLOSEAPPLICATIONS /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 timeout /t 2 /nobreak > NUL
-start "" /wait "{target_file_str}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-timeout /t 1 /nobreak > NUL
 del /f "{target_file_str}" > NUL 2>&1
 powershell -Command "Remove-Item Env:\\_MEIPASS -ErrorAction SilentlyContinue; Remove-Item Env:\\_MEIPASS2 -ErrorAction SilentlyContinue; Start-Process '{installed_exe_str}'"
 del /f "%~f0" > NUL
