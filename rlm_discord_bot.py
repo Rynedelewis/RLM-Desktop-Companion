@@ -247,10 +247,10 @@ class RLMHelperBot(commands.Bot):
                 target_ch = resolve_channel(epgp_ch_raw)
                 if target_ch:
                     for prof_key, roster in profiles.items():
-                        team_display = prof_key.split("::")[-1]
+                        raw_team = prof_key.split("::")[-1]
+                        team_display = raw_team.rsplit("-", 1)[-1] if "-" in raw_team else raw_team
                         embed = discord.Embed(
                             title=f"👑 RaidLootMatrix EPGP Standings — {team_display}",
-                            description="Active EPGP standings auto-synced from World of Warcraft",
                             color=discord.Color.gold()
                         )
                         
@@ -264,19 +264,18 @@ class RLMHelperBot(commands.Bot):
                             player_list.append((name, data.get("class", "Unknown"), ep, gp, pr))
                         
                         player_list.sort(key=lambda x: x[4], reverse=True)
-                        top_players = player_list[:45]
+                        top_players = player_list[:35]
                         
                         if top_players:
-                            chunk_size = 15
-                            for i in range(0, len(top_players), chunk_size):
-                                chunk = top_players[i:i+chunk_size]
-                                table_content = "```\nName            Class             EP      GP      PR\n"
-                                table_content += "-" * 52 + "\n"
-                                for name, cl, ep, gp, pr in chunk:
-                                    clean_name = name.split("-")[0]
-                                    table_content += f"{clean_name:<15} {cl:<17} {int(ep):<7} {int(gp):<7} {pr:.2f}\n"
-                                table_content += "```"
-                                embed.add_field(name=f"Standings Rank {i+1}-{i+len(chunk)}", value=table_content, inline=False)
+                            table_content = "```\n"
+                            table_content += f"{'Name':<14} {'Class':<16} {'EP':<6} {'GP':<6} {'PR'}\n"
+                            table_content += "-" * 48 + "\n"
+                            for name, cl, ep, gp, pr in top_players:
+                                clean_name = name.split("-")[0][:13]
+                                clean_class = cl[:15]
+                                table_content += f"{clean_name:<14} {clean_class:<16} {int(ep):<6} {int(gp):<6} {pr:.2f}\n"
+                            table_content += "```"
+                            embed.description = table_content
                         else:
                             embed.description = "No active main characters found in roster."
 
@@ -782,21 +781,17 @@ async def standings(ctx, *, team_name: str):
             await ctx.send(L(ctx, "standings_no_mains"))
             return
 
-        # Limit to top 45 players max to fit within embed limits
-        top_players = player_list[:45]
+        top_players = player_list[:35]
+        table_content = "```\n"
+        table_content += f"{'Name':<14} {'Class':<16} {'EP':<6} {'GP':<6} {'PR'}\n"
+        table_content += "-" * 48 + "\n"
+        for name, cl, ep, gp, pr in top_players:
+            clean_name = name.split("-")[0][:13]
+            clean_class = cl[:15]
+            table_content += f"{clean_name:<14} {clean_class:<16} {int(ep):<6} {int(gp):<6} {pr:.2f}\n"
+        table_content += "```"
         
-        chunk_size = 15
-        for i in range(0, len(top_players), chunk_size):
-            chunk = top_players[i:i+chunk_size]
-            table_content = "```\nName            Class             EP      GP      PR\n"
-            table_content += "-" * 52 + "\n"
-            for name, cl, ep, gp, pr in chunk:
-                clean_name = name.split("-")[0]
-                table_content += f"{clean_name:<15} {cl:<17} {int(ep):<7} {int(gp):<7} {pr:.2f}\n"
-            table_content += "```"
-            
-            field_name = L(ctx, "standings_rank_field").format(start=i+1, end=i+len(chunk))
-            embed.add_field(name=field_name, value=table_content, inline=False)
+        embed.description = table_content
         embed.set_footer(text=L(ctx, "standings_footer").format(name=ctx.guild.me.display_name))
         await ctx.send(embed=embed)
         return
