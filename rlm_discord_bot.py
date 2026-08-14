@@ -202,15 +202,20 @@ class RLMHelperBot(commands.Bot):
             profiles = payload.get("profiles", {})
             mplus_data = payload.get("mplus_leaderboard", {})
 
-            # 1. Post/Update EPGP Standings Embed
-            if epgp_ch_raw and profiles:
-                target_ch = None
-                clean_target = epgp_ch_raw.lower().lstrip("#")
+            # Helper to find target channel by ID or Name, with fallback to first channel
+            def resolve_channel(ch_raw):
+                if not ch_raw:
+                    return guild.text_channels[0] if guild.text_channels else None
+                clean_target = ch_raw.lower().lstrip("#").strip()
                 for ch in guild.text_channels:
-                    if str(ch.id) == epgp_ch_raw or ch.name.lower() == clean_target or ch.name.lower() == epgp_ch_raw.lower():
-                        target_ch = ch
-                        break
-                
+                    if str(ch.id) == ch_raw or ch.name.lower() == clean_target or ch.name.lower() == ch_raw.lower():
+                        return ch
+                # If exact channel not found, return first text channel as fallback
+                return guild.text_channels[0] if guild.text_channels else None
+
+            # 1. Post/Update EPGP Standings Embed
+            if profiles:
+                target_ch = resolve_channel(epgp_ch_raw)
                 if target_ch:
                     for prof_key, roster in profiles.items():
                         team_display = prof_key.split("::")[-1]
@@ -247,17 +252,11 @@ class RLMHelperBot(commands.Bot):
                             embed.description = "No active main characters found in roster."
 
                         embed.set_footer(text=f"Last Synced: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
-                        await self._post_or_pin_embed(target_ch, embed, pin_mode, f"EPGP_{team_display}")
+                        await self._post_or_pin_embed(target_ch, embed, pin_mode, team_display)
 
             # 2. Post/Update Mythic+ Leaderboard Embed
-            if mplus_ch_raw and mplus_data:
-                target_ch = None
-                clean_m_target = mplus_ch_raw.lower().lstrip("#")
-                for ch in guild.text_channels:
-                    if str(ch.id) == mplus_ch_raw or ch.name.lower() == clean_m_target or ch.name.lower() == mplus_ch_raw.lower():
-                        target_ch = ch
-                        break
-
+            if mplus_data:
+                target_ch = resolve_channel(mplus_ch_raw)
                 if target_ch:
                     for prof_key, chars in mplus_data.items():
                         team_display = prof_key.split("::")[-1]
@@ -284,7 +283,7 @@ class RLMHelperBot(commands.Bot):
                             embed.description = "No Mythic+ runs found for this roster."
 
                         embed.set_footer(text=f"Last Synced: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
-                        await self._post_or_pin_embed(target_ch, embed, pin_mode, f"MPLUS_{team_display}")
+                        await self._post_or_pin_embed(target_ch, embed, pin_mode, team_display)
 
         except Exception as e:
             print(f"[AUTO-POST ERROR] {e}")
@@ -301,7 +300,9 @@ class RLMHelperBot(commands.Bot):
                 target_msg = None
                 for msg in pinned:
                     if msg.author.id == self.user.id and msg.embeds:
-                        if tag_marker in msg.embeds[0].title or tag_marker in str(msg.embeds[0].footer.text):
+                        title_text = str(msg.embeds[0].title or "")
+                        footer_text = str(msg.embeds[0].footer.text or "") if msg.embeds[0].footer else ""
+                        if tag_marker.lower() in title_text.lower() or tag_marker.lower() in footer_text.lower():
                             target_msg = msg
                             break
                 
