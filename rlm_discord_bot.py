@@ -202,19 +202,18 @@ class RLMHelperBot(commands.Bot):
             profiles = payload.get("profiles", {})
             mplus_data = payload.get("mplus_leaderboard", {})
 
-            # Helper to find target channel by ID or Name, with fallback to first channel
+            # Helper to find target channel by ID or Name (No fallback if unconfigured)
             def resolve_channel(ch_raw):
-                if not ch_raw:
-                    return guild.text_channels[0] if guild.text_channels else None
-                clean_target = ch_raw.lower().lstrip("#").strip()
+                if not ch_raw or not str(ch_raw).strip():
+                    return None
+                clean_target = str(ch_raw).lower().lstrip("#").strip()
                 for ch in guild.text_channels:
-                    if str(ch.id) == ch_raw or ch.name.lower() == clean_target or ch.name.lower() == ch_raw.lower():
+                    if str(ch.id) == ch_raw or ch.name.lower() == clean_target or ch.name.lower() == str(ch_raw).lower():
                         return ch
-                # If exact channel not found, return first text channel as fallback
-                return guild.text_channels[0] if guild.text_channels else None
+                return None
 
-            # 1. Post/Update EPGP Standings Embed
-            if profiles:
+            # 1. Post/Update EPGP Standings Embed (ONLY if epgp_ch_raw is configured)
+            if epgp_ch_raw and profiles:
                 target_ch = resolve_channel(epgp_ch_raw)
                 if target_ch:
                     for prof_key, roster in profiles.items():
@@ -254,8 +253,8 @@ class RLMHelperBot(commands.Bot):
                         embed.set_footer(text=f"Last Synced: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
                         await self._post_or_pin_embed(target_ch, embed, pin_mode, team_display)
 
-            # 2. Post/Update Mythic+ Leaderboard Embed
-            if mplus_data:
+            # 2. Post/Update Mythic+ Leaderboard Embed (ONLY if mplus_ch_raw is configured)
+            if mplus_ch_raw and mplus_data:
                 target_ch = resolve_channel(mplus_ch_raw)
                 if target_ch:
                     for prof_key, chars in mplus_data.items():

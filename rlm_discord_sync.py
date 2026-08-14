@@ -386,10 +386,10 @@ def main():
         payload = {
             "timestamp": int(time.time()),
             "profiles": team_profiles,
-            "epgp_channel": p_cfg.get("epgp_channel", cfg.get("epgp_channel", "epgp-standings")),
-            "epgp_schedule": p_cfg.get("epgp_schedule", cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)")),
-            "mplus_channel": p_cfg.get("mplus_channel", cfg.get("mplus_channel", "mplus-leaderboard")),
-            "mplus_schedule": p_cfg.get("mplus_schedule", cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)")),
+            "epgp_channel": p_cfg.get("epgp_channel", "").strip(),
+            "epgp_schedule": p_cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)"),
+            "mplus_channel": p_cfg.get("mplus_channel", "").strip(),
+            "mplus_schedule": p_cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)"),
             "pin_update_mode": cfg.get("pin_update_mode", True),
             "mplus_leaderboard": team_mplus
         }
