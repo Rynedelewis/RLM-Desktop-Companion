@@ -33,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.7"
+VERSION = "1.5.8"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -607,19 +607,18 @@ class RLMImporterApp:
                 batch_path = self.app_dir / "apply_update.bat"
                 target_exe_name = pathlib.Path(sys.executable).name if getattr(sys, "frozen", False) else "RLM_Companion.exe"
                 
-                if is_zip:
-                    batch_content = f"""@echo off
-timeout /t 2 /nobreak > NUL
-powershell -Command "Expand-Archive -Path 'RLM_Companion_update.zip' -DestinationPath '.' -Force" > NUL 2>&1
-del /f "RLM_Companion_update.zip" > NUL 2>&1
-start "" "{target_exe_name}"
-del /f "%~f0" > NUL
-"""
-                else:
-                    batch_content = f"""@echo off
-timeout /t 2 /nobreak > NUL
-copy /y "RLM_Companion_update.exe" "{target_exe_name}" > NUL
-del /f "RLM_Companion_update.exe" > NUL
+                batch_content = f"""@echo off
+taskkill /F /IM "{target_exe_name}" > NUL 2>&1
+timeout /t 3 /nobreak > NUL
+if exist "RLM_Companion_update.zip" (
+    powershell -Command "Expand-Archive -Path 'RLM_Companion_update.zip' -DestinationPath '.' -Force" > NUL 2>&1
+    del /f "RLM_Companion_update.zip" > NUL 2>&1
+)
+if exist "RLM_Companion_update.exe" (
+    copy /y "RLM_Companion_update.exe" "{target_exe_name}" > NUL
+    del /f "RLM_Companion_update.exe" > NUL
+)
+timeout /t 1 /nobreak > NUL
 start "" "{target_exe_name}"
 del /f "%~f0" > NUL
 """
@@ -627,7 +626,7 @@ del /f "%~f0" > NUL
                 
                 # Launch batch updater detached and exit current app
                 subprocess.Popen(["cmd.exe", "/c", str(batch_path)], cwd=str(self.app_dir))
-                progress_win.after(0, self.exit_app)
+                progress_win.after(100, self.exit_app)
 
             except Exception as e:
                 progress_win.after(0, lambda err=e: messagebox.showerror("Update Error", f"Failed to download update: {err}"))
