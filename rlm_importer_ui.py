@@ -29,7 +29,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.2"
+VERSION = "1.5.3"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -464,11 +464,14 @@ class RLMImporterApp:
                     data = r.json()
                     tag = data.get("tag_name", "").strip().lstrip("v")
                     if tag and tag > VERSION:
-                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion.exe"
+                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion_v{tag}_Portable.zip"
                         for asset in data.get("assets", []):
-                            if asset.get("name", "").endswith(".exe"):
+                            aname = asset.get("name", "").lower()
+                            if aname.endswith(".zip"):
                                 download_url = asset.get("browser_download_url")
                                 break
+                            elif aname.endswith(".exe") and not download_url.lower().endswith(".zip"):
+                                download_url = asset.get("browser_download_url")
                         self.root.after(0, lambda: self.show_update_banner(tag, download_url))
                         self.root.after(500, lambda: self.show_update_popup(tag, download_url))
             except Exception as e:
@@ -565,10 +568,11 @@ class RLMImporterApp:
                 r = requests.get(download_url, headers=headers, stream=True, timeout=30)
                 total_size = int(r.headers.get('content-length', 0))
                 
-                target_new_exe = self.app_dir / "RLM_Companion_update.exe"
+                is_zip = download_url.lower().endswith(".zip")
+                target_file = self.app_dir / ("RLM_Companion_update.zip" if is_zip else "RLM_Companion_update.exe")
                 downloaded = 0
 
-                with open(target_new_exe, 'wb') as f:
+                with open(target_file, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=65536):
                         if chunk:
                             f.write(chunk)
@@ -585,11 +589,19 @@ class RLMImporterApp:
                 progress_win.after(0, lambda: lbl_status.configure(text="Download complete! Restarting application..."))
                 time.sleep(1)
 
-                # Create self-replacer batch script
                 batch_path = self.app_dir / "apply_update.bat"
                 target_exe_name = pathlib.Path(sys.executable).name if getattr(sys, "frozen", False) else "RLM_Companion.exe"
                 
-                batch_content = f"""@echo off
+                if is_zip:
+                    batch_content = f"""@echo off
+timeout /t 2 /nobreak > NUL
+powershell -Command "Expand-Archive -Path 'RLM_Companion_update.zip' -DestinationPath '.' -Force" > NUL 2>&1
+del /f "RLM_Companion_update.zip" > NUL 2>&1
+start "" "{target_exe_name}"
+del /f "%~f0" > NUL
+"""
+                else:
+                    batch_content = f"""@echo off
 timeout /t 2 /nobreak > NUL
 copy /y "RLM_Companion_update.exe" "{target_exe_name}" > NUL
 del /f "RLM_Companion_update.exe" > NUL
