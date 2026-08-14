@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.7.9"
+VERSION = "1.8.0"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -1507,10 +1507,12 @@ del /f "%~f0" > NUL
                 self.team_settings_data = self.settings.get("team_discord_settings", {})
             
             key_val = self.ent_team_key.get().strip() if hasattr(self, "ent_team_key") else ""
+            epgp_ch_clean = self.cb_team_epgp_ch.get().strip().lstrip("#") if hasattr(self, "cb_team_epgp_ch") else ""
+            mplus_ch_clean = self.cb_team_mplus_ch.get().strip().lstrip("#") if hasattr(self, "cb_team_mplus_ch") else ""
             entry = {
                 "discord_sync_key": key_val,
-                "epgp_channel": self.cb_team_epgp_ch.get().strip() if hasattr(self, "cb_team_epgp_ch") else "",
-                "mplus_channel": self.cb_team_mplus_ch.get().strip() if hasattr(self, "cb_team_mplus_ch") else "",
+                "epgp_channel": epgp_ch_clean,
+                "mplus_channel": mplus_ch_clean,
                 "epgp_schedule": self.cb_team_epgp_sched.get().strip() if hasattr(self, "cb_team_epgp_sched") else "",
                 "mplus_schedule": self.cb_team_mplus_sched.get().strip() if hasattr(self, "cb_team_mplus_sched") else ""
             }

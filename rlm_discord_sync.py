@@ -383,12 +383,15 @@ def main():
         team_profiles = {profile_key: roster}
         team_mplus = {profile_key: mplus_leaderboard.get(profile_key, [])}
 
+        epgp_ch_clean = p_cfg.get("epgp_channel", "").strip().lstrip("#")
+        mplus_ch_clean = p_cfg.get("mplus_channel", "").strip().lstrip("#")
+
         payload = {
             "timestamp": int(time.time()),
             "profiles": team_profiles,
-            "epgp_channel": p_cfg.get("epgp_channel", "").strip(),
+            "epgp_channel": epgp_ch_clean,
             "epgp_schedule": p_cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)"),
-            "mplus_channel": p_cfg.get("mplus_channel", "").strip(),
+            "mplus_channel": mplus_ch_clean,
             "mplus_schedule": p_cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)"),
             "pin_update_mode": cfg.get("pin_update_mode", True),
             "mplus_leaderboard": team_mplus

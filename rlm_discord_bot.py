@@ -187,28 +187,48 @@ class RLMHelperBot(commands.Bot):
             gid_int = int(guild_id)
             guild = self.get_guild(gid_int)
             if not guild:
+                for g in self.guilds:
+                    if g.id == gid_int:
+                        guild = g
+                        break
+            if not guild:
                 try:
                     guild = await self.fetch_guild(gid_int)
                 except Exception:
                     guild = None
             if not guild:
-                print(f"[AUTO-POST] Guild {guild_id} not found in bot cache.")
+                print(f"[AUTO-POST ERROR] Guild {guild_id} not found in bot cache or API.")
                 return
 
-            epgp_ch_raw = payload.get("epgp_channel", "").strip().lstrip("#")
-            mplus_ch_raw = payload.get("mplus_channel", "").strip().lstrip("#")
+            # Fetch channels dynamically if cache is empty or incomplete
+            text_channels = []
+            if hasattr(guild, "text_channels") and guild.text_channels:
+                text_channels = list(guild.text_channels)
+            
+            if not text_channels:
+                try:
+                    all_chs = await guild.fetch_channels()
+                    text_channels = [c for c in all_chs if isinstance(c, discord.TextChannel)]
+                except Exception as e:
+                    print(f"[AUTO-POST ERROR] Could not fetch channels for Guild '{guild.name}': {e}")
+                    text_channels = []
+
+            epgp_ch_raw = payload.get("epgp_channel", "").strip()
+            mplus_ch_raw = payload.get("mplus_channel", "").strip()
             pin_mode = payload.get("pin_update_mode", True)
 
             profiles = payload.get("profiles", {})
             mplus_data = payload.get("mplus_leaderboard", {})
 
-            # Helper to find target channel by ID or Name (No fallback if unconfigured)
+            # Helper to find target channel by ID or Name
             def resolve_channel(ch_raw):
                 if not ch_raw or not str(ch_raw).strip():
                     return None
                 clean_target = str(ch_raw).lower().lstrip("#").strip()
-                for ch in guild.text_channels:
-                    if str(ch.id) == ch_raw or ch.name.lower() == clean_target or ch.name.lower() == str(ch_raw).lower():
+                for ch in text_channels:
+                    ch_id_str = str(getattr(ch, "id", ""))
+                    ch_name_clean = str(getattr(ch, "name", "")).lower().lstrip("#").strip()
+                    if ch_id_str == clean_target or ch_name_clean == clean_target:
                         return ch
                 return None
 
