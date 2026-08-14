@@ -33,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.6"
+VERSION = "1.5.7"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -455,7 +455,7 @@ class RLMImporterApp:
         except Exception:
             pass
 
-    def check_for_updates(self):
+    def check_for_updates(self, manual=False):
         def task():
             try:
                 headers = {
@@ -468,7 +468,7 @@ class RLMImporterApp:
                     data = r.json()
                     tag = data.get("tag_name", "").strip().lstrip("v")
                     if tag and tag > VERSION:
-                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion_v{tag}_Portable.zip"
+                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion.exe"
                         for asset in data.get("assets", []):
                             aname = asset.get("name", "").lower()
                             if aname.endswith(".zip"):
@@ -478,8 +478,19 @@ class RLMImporterApp:
                                 download_url = asset.get("browser_download_url")
                         self.root.after(0, lambda: self.show_update_banner(tag, download_url))
                         self.root.after(500, lambda: self.show_update_popup(tag, download_url))
+                    elif manual:
+                        self.root.after(0, lambda: self.show_toast_banner(f"✅ You are running the latest version (v{VERSION})!"))
+                elif manual:
+                    self.root.after(0, lambda: self.show_toast_banner("Could not check for updates. Please try again later.", toast_type="error"))
             except Exception as e:
-                pass
+                if manual:
+                    self.root.after(0, lambda err=e: self.show_toast_banner(f"Update check failed: {err}", toast_type="error"))
+            finally:
+                # Schedule recurring automatic check every 6 hours (21,600,000 ms)
+                try:
+                    self.root.after(21600000, lambda: self.check_for_updates(manual=False))
+                except Exception:
+                    pass
         threading.Thread(target=task, daemon=True).start()
 
     def show_update_banner(self, remote_version, download_url):
@@ -703,6 +714,10 @@ del /f "%~f0" > NUL
         # Gold Save Button on Header Banner
         self.btn_save = ttk.Button(self.header_action_frame, text=self.L("btn_save_settings"), style="GoldSave.TButton", command=self.save_settings, width=18)
         self.btn_save.pack(side="right")
+
+        # Check for Updates Button on Header Banner
+        self.btn_check_update = ttk.Button(self.header_action_frame, text="🔄 Check Updates", style="TButton", command=lambda: self.check_for_updates(manual=True))
+        self.btn_check_update.pack(side="right", padx=(0, 8))
 
         # Save Confirmation Label on Header Banner
         self.lbl_save_status = ttk.Label(self.header_action_frame, text="", font=("Segoe UI", 10, "bold"), foreground=FG_GOLD_BRIGHT, style="Panel.TLabel")
