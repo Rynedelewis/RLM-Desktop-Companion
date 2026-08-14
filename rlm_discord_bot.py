@@ -205,8 +205,9 @@ class RLMHelperBot(commands.Bot):
             # 1. Post/Update EPGP Standings Embed
             if epgp_ch_raw and profiles:
                 target_ch = None
+                clean_target = epgp_ch_raw.lower().lstrip("#")
                 for ch in guild.text_channels:
-                    if ch.name.lower() == epgp_ch_raw.lower():
+                    if str(ch.id) == epgp_ch_raw or ch.name.lower() == clean_target or ch.name.lower() == epgp_ch_raw.lower():
                         target_ch = ch
                         break
                 
@@ -251,8 +252,9 @@ class RLMHelperBot(commands.Bot):
             # 2. Post/Update Mythic+ Leaderboard Embed
             if mplus_ch_raw and mplus_data:
                 target_ch = None
+                clean_m_target = mplus_ch_raw.lower().lstrip("#")
                 for ch in guild.text_channels:
-                    if ch.name.lower() == mplus_ch_raw.lower():
+                    if str(ch.id) == mplus_ch_raw or ch.name.lower() == clean_m_target or ch.name.lower() == mplus_ch_raw.lower():
                         target_ch = ch
                         break
 

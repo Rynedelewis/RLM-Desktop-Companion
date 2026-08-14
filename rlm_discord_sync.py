@@ -308,7 +308,7 @@ def main():
         prompt_exit(1)
 
     # 3b. Check Post-Raid Raid End timestamp deduplication if running on WoW Exit
-    is_post_raid_trigger = "--post-raid" in sys.argv or cfg.get("epgp_schedule") == "Post-Raid (On WoW Exit)"
+    is_post_raid_trigger = "--post-raid" in sys.argv
     last_posted_ends = cfg.get("last_posted_raid_end_timestamps", {})
     new_posted_ends = dict(last_posted_ends)
 

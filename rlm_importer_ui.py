@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.7.4"
+VERSION = "1.7.5"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -1751,6 +1751,8 @@ del /f "%~f0" > NUL
                 import importlib
                 import rlm_discord_sync
                 importlib.reload(rlm_discord_sync)
+                if "--force" not in sys.argv:
+                    sys.argv.append("--force")
                 rlm_discord_sync.main()
                 self.log_message("--- Discord Sync Finished ---")
             except Exception as e:
