@@ -33,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.5"
+VERSION = "1.5.6"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -1615,6 +1615,11 @@ del /f "%~f0" > NUL
             self.txt_console.see(tk.END)
 
     def trigger_live_import(self):
+        try:
+            self._save_current_team_view()
+            self.save_settings()
+        except Exception:
+            pass
         def task():
             if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
                 self.root.after(0, lambda: self.btn_run_mplus.configure(text="⌛ Importing M+ Data...", state="disabled"))
@@ -1633,6 +1638,14 @@ del /f "%~f0" > NUL
             if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
                 self.root.after(0, lambda: self.btn_run_mplus.configure(text=self.L("btn_run_mplus"), state="normal"))
 
+            if not error_occurred:
+                should_sync = True
+                if hasattr(self, "var_sync_on_import"):
+                    should_sync = self.var_sync_on_import.get()
+                if should_sync:
+                    self.log_message("Triggering automatic Discord Sync after M+ import...")
+                    self.trigger_discord_sync()
+
         threading.Thread(target=task, daemon=True).start()
 
     def trigger_wowaudit_sync(self):
@@ -1649,6 +1662,11 @@ del /f "%~f0" > NUL
         threading.Thread(target=task, daemon=True).start()
 
     def trigger_discord_sync(self):
+        try:
+            self._save_current_team_view()
+            self.save_settings()
+        except Exception:
+            pass
         def task():
             if hasattr(self, "btn_sync_now") and self.btn_sync_now:
                 self.root.after(0, lambda: self.btn_sync_now.configure(text="⌛ Syncing Discord Bot...", state="disabled"))

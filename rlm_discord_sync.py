@@ -361,7 +361,19 @@ def main():
 
     for profile_key, roster in all_profiles.items():
         p_cfg = team_settings.get(profile_key, {})
+        if not p_cfg:
+            for tk, tval in team_settings.items():
+                if tk and (tk in profile_key or profile_key in tk or tk.split("::")[-1] in profile_key):
+                    p_cfg = tval
+                    break
+
         team_key = p_cfg.get("discord_sync_key") or (sync_key if sync_key != "YOUR_SYNC_KEY_HERE" else "")
+        if not team_key:
+            for tval in team_settings.values():
+                k_candidate = tval.get("discord_sync_key", "").strip()
+                if k_candidate and k_candidate != "YOUR_SYNC_KEY_HERE":
+                    team_key = k_candidate
+                    break
         display_name = profile_key.split("::")[-1]
 
         if not team_key:
