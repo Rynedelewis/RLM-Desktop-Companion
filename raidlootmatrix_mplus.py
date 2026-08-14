@@ -307,9 +307,10 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
         "region": REGION,
         "realm":  slug,
         "name":   name,
-        "fields": "mythic_plus_scores_by_season:current,mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs",
+        "fields": "mythic_plus_scores_by_season:current,mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs",
     }
     score_val = 0.0
+    data = None
     for attempt in range(3):
         try:
             r = requests.get(url, params=params, timeout=15)
@@ -335,9 +336,8 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
     else:
         return [], 0.0
 
-def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
-    runs, _ = fetch_runs_with_score(name, realm, max_recent)
-    return runs
+    if not data:
+        return [], 0.0
 
     seen, runs = set(), []
 
@@ -367,7 +367,10 @@ def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
 
     add_runs(data.get("mythic_plus_recent_runs") or [])
     add_runs(data.get("mythic_plus_weekly_highest_level_runs") or [])
-    add_runs(data.get("mythic_plus_best_runs") or [])
+    return runs, score_val
+
+def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
+    runs, _ = fetch_runs_with_score(name, realm, max_recent)
     return runs
 
 def norm_key(key):
