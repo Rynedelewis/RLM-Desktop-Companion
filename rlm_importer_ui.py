@@ -33,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.6.1"
+VERSION = "1.6.2"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -607,6 +607,8 @@ class RLMImporterApp:
                 target_exe_name = pathlib.Path(sys.executable).name if getattr(sys, "frozen", False) else "RLM_Companion.exe"
                 
                 batch_content = f"""@echo off
+set _MEIPASS=
+set _MEIPASS2=
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
 timeout /t 3 /nobreak > NUL
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
@@ -618,14 +620,20 @@ if exist "RLM_Companion_update.exe" (
     copy /y "RLM_Companion_update.exe" "{target_exe_name}" > NUL
     del /f "RLM_Companion_update.exe" > NUL
 )
+if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
 timeout /t 1 /nobreak > NUL
 start "" "{target_exe_name}"
 del /f "%~f0" > NUL
 """
                 batch_path.write_text(batch_content, encoding="utf-8")
                 
+                # Clean _MEIPASS from env so child process does not inherit stale PyInstaller temp path
+                clean_env = os.environ.copy()
+                clean_env.pop("_MEIPASS", None)
+                clean_env.pop("_MEIPASS2", None)
+
                 # Launch batch updater detached and exit current app
-                subprocess.Popen(["cmd.exe", "/c", str(batch_path)], cwd=str(self.app_dir))
+                subprocess.Popen(["cmd.exe", "/c", str(batch_path)], cwd=str(self.app_dir), env=clean_env)
                 progress_win.after(100, self.exit_app)
 
             except Exception as e:
