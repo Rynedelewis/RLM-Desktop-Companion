@@ -9,7 +9,11 @@ import platform
 import threading
 import subprocess
 import pystray
-from PIL import Image, ImageDraw
+try:
+    from PIL import Image, ImageTk, ImageDraw
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 import ctypes
 import requests
 import webbrowser
@@ -29,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.3"
+VERSION = "1.5.4"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
