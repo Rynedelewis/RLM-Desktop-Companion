@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.4.1"
+VERSION = "1.5.0"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -353,6 +353,7 @@ class RLMImporterApp:
 
         self.config_path = self.app_dir / "rlm_importer_config.json"
         self.settings = self.load_settings()
+        self.team_settings_data = self.settings.get("team_discord_settings", {})
         self.ensure_provider_schema()
 
         self.setup_styles()
@@ -592,6 +593,7 @@ del /f "%~f0" > NUL
         self.style.configure(".", background=BG_DARK, foreground=FG_TEXT)
         self.style.configure("TFrame", background=BG_DARK)
         self.style.configure("Panel.TFrame", background=BG_PANEL, bordercolor=BORDER_GOLD, borderwidth=1, relief="solid")
+        self.style.configure("HeaderAction.TFrame", background=BG_PANEL, borderwidth=0)
         
         self.style.configure("TLabel", background=BG_DARK, foreground=FG_TEXT, font=("Segoe UI", 9))
         self.style.configure("Panel.TLabel", background=BG_PANEL, foreground=FG_TEXT, font=("Segoe UI", 9))
@@ -655,8 +657,8 @@ del /f "%~f0" > NUL
         self.lbl_subtitle = ttk.Label(title_inner, text=self.L("header_subtitle").format(VERSION=VERSION), font=("Segoe UI", 10, "italic"), foreground=FG_HEADER, style="Panel.TLabel")
         self.lbl_subtitle.pack(side="left", padx=6, pady=4)
 
-        # Header Action Buttons Frame
-        self.header_action_frame = ttk.Frame(self.header_frame, style="Panel.TFrame")
+        # Header Action Buttons Frame (borderless container)
+        self.header_action_frame = ttk.Frame(self.header_frame, style="HeaderAction.TFrame")
         self.header_action_frame.pack(side="right", padx=12, pady=10)
 
         # Gold Save Button on Header Banner
@@ -668,9 +670,9 @@ del /f "%~f0" > NUL
         self.lbl_save_status.pack(side="right", padx=(0, 15))
         self._toast_timer = None
 
-        # Main Notebook Tabs
+        # Main Notebook Tabs (Top Half)
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill="both", expand=True, padx=15, pady=(0, 10))
+        self.notebook.pack(fill="x", expand=False, padx=15, pady=(0, 5))
 
         # Tab 1: General & WoW Settings
         self.tab_general = ttk.Frame(self.notebook)
@@ -692,10 +694,10 @@ del /f "%~f0" > NUL
         self.notebook.add(self.tab_discord, text=self.L("tab_discord"))
         self.build_tab_discord(self.tab_discord)
 
-        # Tab 5: Operations & Logs
-        self.tab_console = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_console, text=self.L("tab_console"))
-        self.build_tab_console(self.tab_console)
+        # Permanent Static Operations & Console Execution Log Panel (Bottom Half)
+        self.static_console_frame = ttk.Frame(self.root, style="Panel.TFrame")
+        self.static_console_frame.pack(fill="both", expand=True, padx=15, pady=(0, 10))
+        self.build_static_console(self.static_console_frame)
 
     def show_toast_banner(self, message, toast_type="success"):
         if not hasattr(self, "lbl_save_status"):
@@ -746,18 +748,11 @@ del /f "%~f0" > NUL
         self.cb_region.grid(row=1, column=1, sticky="w", padx=(10, 0), pady=6)
         self.cb_region.set(self.settings.get("region", "us"))
 
-        # RIO API Delay
-        self.lbl_rio_delay = ttk.Label(grid, text=self.L("lbl_rio_delay"), style="Panel.TLabel")
-        self.lbl_rio_delay.grid(row=2, column=0, sticky="w", pady=6)
-        self.ent_rio_delay = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1, width=20)
-        self.ent_rio_delay.grid(row=2, column=1, sticky="w", padx=(10, 0), pady=6)
-        self.ent_rio_delay.insert(0, str(self.settings.get("rio_delay", 0.35)))
-
         # WoW Directory Selector
         self.lbl_wow_path = ttk.Label(grid, text=self.L("lbl_wow_path"), style="Panel.TLabel")
-        self.lbl_wow_path.grid(row=3, column=0, sticky="w", pady=6)
+        self.lbl_wow_path.grid(row=2, column=0, sticky="w", pady=6)
         dir_frame = ttk.Frame(grid, style="Panel.TFrame")
-        dir_frame.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=6)
+        dir_frame.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=6)
         dir_frame.columnconfigure(0, weight=1)
 
         self.ent_wow_path = tk.Entry(dir_frame, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
@@ -770,124 +765,231 @@ del /f "%~f0" > NUL
         grid.columnconfigure(1, weight=1)
 
     def build_tab_providers(self, parent):
-        card = ttk.Frame(parent, style="Panel.TFrame")
-        card.pack(fill="both", expand=True, padx=10, pady=10)
+        container = ttk.Frame(parent, style="Panel.TFrame")
+        container.pack(fill="both", expand=True, padx=10, pady=10)
 
-        self.lbl_card_providers_hdr = ttk.Label(card, text=self.L("card_providers_hdr"), style="Header.TLabel")
-        self.lbl_card_providers_hdr.pack(fill="x", padx=15, pady=(15, 10))
+        self.lbl_card_providers_hdr = ttk.Label(container, text="🌐 Guild Data Sources & External Integrations", style="Header.TLabel")
+        self.lbl_card_providers_hdr.pack(fill="x", padx=5, pady=(5, 10))
+
+        # 2-Part Grid Container
+        grid_container = ttk.Frame(container, style="Panel.TFrame")
+        grid_container.pack(fill="both", expand=True, padx=5, pady=5)
+        grid_container.columnconfigure(0, weight=1)
+        grid_container.columnconfigure(1, weight=1)
+        grid_container.rowconfigure(0, weight=1)
+
+        # LEFT CARD: Add / Connect New Data Source Action Panel
+        card_left = ttk.Frame(grid_container, style="Panel.TFrame", relief="solid", borderwidth=1)
+        card_left.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=5)
+
+        lbl_left_hdr = ttk.Label(card_left, text="➕ Connect New Guild Data Source", font=("Segoe UI", 11, "bold"), foreground=FG_GOLD_BRIGHT, style="Panel.TLabel")
+        lbl_left_hdr.pack(anchor="w", padx=15, pady=(15, 8))
+
+        lbl_desc = ttk.Label(card_left, text="Connect your guild management providers to sync rosters, calendar events, and alts into World of Warcraft:\n\n• WoWUtils: Automated Roster, Calendar & Alts Sync\n• WoW Audit: API Roster & Calendar Sync\n• Raider.IO: Mythic+ Scores & Dungeon Summaries", font=("Segoe UI", 9), foreground=FG_TEXT, justify="left", wrap=320, style="Panel.TLabel")
+        lbl_desc.pack(anchor="w", padx=15, pady=(0, 15))
+
+        self.btn_open_add_modal = ttk.Button(card_left, text="➕ Connect New Data Source", style="Accent.TButton", command=self.open_add_provider_modal)
+        self.btn_open_add_modal.pack(anchor="w", padx=15, pady=(10, 15))
+
+        # RIGHT CARD: Configured Connections List & Actions
+        card_right = ttk.Frame(grid_container, style="Panel.TFrame", relief="solid", borderwidth=1)
+        card_right.grid(row=0, column=1, sticky="nsew", padx=(8, 0), pady=5)
+
+        lbl_right_hdr = ttk.Label(card_right, text="📋 Active Guild Data Connections", font=("Segoe UI", 11, "bold"), foreground=FG_GOLD_BRIGHT, style="Panel.TLabel")
+        lbl_right_hdr.pack(anchor="w", padx=15, pady=(15, 8))
+
+        self.lst_providers = tk.Listbox(card_right, bg=BG_ENTRY, fg=FG_TEXT, selectbackground=FG_GOLD_DARK, selectforeground=FG_HEADER, highlightbackground=BORDER_GOLD, relief="flat", height=6)
+        self.lst_providers.pack(fill="both", expand=True, padx=15, pady=(0, 10))
+
+        btn_frame = ttk.Frame(card_right, style="Panel.TFrame")
+        btn_frame.pack(fill="x", padx=15, pady=(0, 15))
+
+        self.btn_provider_edit = ttk.Button(btn_frame, text="✏️ Edit Connection", command=self.open_edit_provider_modal)
+        self.btn_provider_edit.pack(side="left", fill="x", expand=True, padx=(0, 4))
+
+        self.btn_provider_test = ttk.Button(btn_frame, text="🧪 Test", command=self.test_provider_connection)
+        self.btn_provider_test.pack(side="left", fill="x", expand=True, padx=2)
+
+        self.btn_provider_del = ttk.Button(btn_frame, text="🗑️ Remove", command=self.del_provider_mapping)
+        self.btn_provider_del.pack(side="left", fill="x", expand=True, padx=(4, 0))
+
+        self.update_providers_listbox()
+
+    def open_add_provider_modal(self):
+        self.open_provider_modal(edit_idx=None)
+
+    def open_edit_provider_modal(self):
+        sel = self.lst_providers.curselection()
+        if not sel:
+            self.show_toast_banner("Please select a data source connection to edit.", toast_type="error")
+            return
+        self.open_provider_modal(edit_idx=sel[0])
+
+    def open_provider_modal(self, edit_idx=None):
+        providers_list = self.settings.get("guild_providers", [])
+        is_edit = edit_idx is not None and 0 <= edit_idx < len(providers_list)
+        p_data = providers_list[edit_idx] if is_edit else {}
+
+        win = tk.Toplevel(self.root)
+        win.title("✏️ Edit Guild Data Connection" if is_edit else "➕ Connect New Guild Data Source")
+        win.geometry("540x460")
+        win.resizable(False, False)
+        win.configure(bg=BG_DARK)
+        win.transient(self.root)
+        win.grab_set()
+
+        card = ttk.Frame(win, style="Panel.TFrame")
+        card.pack(fill="both", expand=True, padx=15, pady=15)
+
+        lbl_hdr = ttk.Label(card, text="✏️ Edit Connection Details" if is_edit else "➕ Configure Data Source Connection", style="Header.TLabel")
+        lbl_hdr.pack(fill="x", padx=15, pady=(15, 10))
 
         grid = ttk.Frame(card, style="Panel.TFrame")
         grid.pack(fill="x", padx=15, pady=5)
-
-        # Provider Selector
-        self.lbl_provider_type = ttk.Label(grid, text=self.L("lbl_provider_type"), style="Panel.TLabel")
-        self.lbl_provider_type.grid(row=0, column=0, sticky="w", pady=5)
-        
-        provider_frame = ttk.Frame(grid, style="Panel.TFrame")
-        provider_frame.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=5)
-
-        self.cb_provider_type = ttk.Combobox(provider_frame, values=["WoW Audit", "WoWUtils", "Guilds of WoW (Pending)"], state="readonly", width=25)
-        self.cb_provider_type.pack(side="left")
-        self.cb_provider_type.set("WoW Audit")
-        self.cb_provider_type.bind("<<ComboboxSelected>>", self.on_provider_type_changed)
-
-        self.lbl_gow_notice = ttk.Label(provider_frame, text=self.L("gow_pending_note"), font=("Segoe UI", 9, "italic"), foreground="#f59e0b", style="Panel.TLabel")
-
-        # API Key
-        self.lbl_provider_key = ttk.Label(grid, text=self.L("lbl_provider_key"), style="Panel.TLabel")
-        self.lbl_provider_key.grid(row=1, column=0, sticky="w", pady=5)
-        self.ent_provider_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
-        self.ent_provider_key.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=5)
-
-        # Group / Team ID (Optional for WoWUtils)
-        self.lbl_group_id = ttk.Label(grid, text=self.L("lbl_group_id"), style="Panel.TLabel")
-        self.lbl_group_id.grid(row=2, column=0, sticky="w", pady=5)
-        self.ent_group_id = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
-        self.ent_group_id.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=5)
-
-        # RLM Profile Selector
-        self.lbl_provider_profile = ttk.Label(grid, text=self.L("lbl_provider_profile"), style="Panel.TLabel")
-        self.lbl_provider_profile.grid(row=3, column=0, sticky="w", pady=5)
-        self.cb_provider_profile = ttk.Combobox(grid, state="readonly")
-        self.cb_provider_profile.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=5)
-
-        # Sync Scope Checkboxes (Default Roster & Calendar enabled)
-        self.lbl_sync_options = ttk.Label(grid, text=self.L("lbl_sync_options"), style="Panel.TLabel")
-        self.lbl_sync_options.grid(row=4, column=0, sticky="w", pady=5)
-
-        chk_frame = ttk.Frame(grid, style="Panel.TFrame")
-        chk_frame.grid(row=4, column=1, sticky="w", padx=(10, 0), pady=5)
-
-        self.var_sync_roster = tk.BooleanVar(value=True)
-        self.chk_sync_roster = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_roster"), variable=self.var_sync_roster, command=self.on_provider_checkbox_toggled)
-        self.chk_sync_roster.pack(side="left", padx=(0, 10))
-
-        self.var_sync_calendar = tk.BooleanVar(value=True)
-        self.chk_sync_calendar = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_calendar"), variable=self.var_sync_calendar, command=self.on_provider_checkbox_toggled)
-        self.chk_sync_calendar.pack(side="left", padx=(0, 10))
-
-        self.var_sync_alts = tk.BooleanVar(value=True)
-        self.chk_sync_alts = ttk.Checkbutton(chk_frame, text=self.L("chk_sync_alts"), variable=self.var_sync_alts, command=self.on_provider_checkbox_toggled)
-        self.chk_sync_alts.pack(side="left")
-
         grid.columnconfigure(1, weight=1)
 
-        # Action Buttons
-        btn_frame = ttk.Frame(card, style="Panel.TFrame")
-        btn_frame.pack(fill="x", padx=15, pady=10)
+        # 1. Provider Type
+        lbl_type = ttk.Label(grid, text="Data Source Provider:", style="Panel.TLabel")
+        lbl_type.grid(row=0, column=0, sticky="w", pady=6)
+        
+        p_frame = ttk.Frame(grid, style="Panel.TFrame")
+        p_frame.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=6)
 
-        self.btn_provider_add = ttk.Button(btn_frame, text=self.L("btn_provider_add"), command=self.add_provider_mapping)
-        self.btn_provider_add.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        cb_type = ttk.Combobox(p_frame, values=["WoWUtils", "WoW Audit", "Guilds of WoW (Pending)"], state="readonly", width=26)
+        cb_type.pack(side="left")
+        
+        init_type = p_data.get("provider", "wowutils").lower()
+        cb_type.set("WoWUtils" if init_type == "wowutils" else ("WoW Audit" if init_type == "wowaudit" else "WoWUtils"))
 
-        self.btn_provider_test = ttk.Button(btn_frame, text=self.L("btn_provider_test"), command=self.test_provider_connection)
-        self.btn_provider_test.pack(side="left", fill="x", expand=True, padx=5)
+        # 2. API Token / Key
+        lbl_key = ttk.Label(grid, text="API Token / Key:", style="Panel.TLabel")
+        lbl_key.grid(row=1, column=0, sticky="w", pady=6)
+        ent_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
+        ent_key.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=6)
+        ent_key.insert(0, p_data.get("api_key", ""))
 
-        self.btn_provider_del = ttk.Button(btn_frame, text=self.L("btn_provider_del"), command=self.del_provider_mapping)
-        self.btn_provider_del.pack(side="left", fill="x", expand=True, padx=(5, 0))
+        # 3. Group / Team ID
+        lbl_group = ttk.Label(grid, text="Group / Team ID (Optional):", style="Panel.TLabel")
+        lbl_group.grid(row=2, column=0, sticky="w", pady=6)
+        ent_group = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
+        ent_group.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=6)
+        ent_group.insert(0, p_data.get("group_id", ""))
 
-        # Providers Listbox with Gold Selection Highlight
-        self.lst_providers = tk.Listbox(card, bg=BG_ENTRY, fg=FG_TEXT, selectbackground=FG_GOLD_DARK, selectforeground=FG_HEADER, highlightbackground=BORDER_GOLD, relief="flat", height=6)
-        self.lst_providers.pack(fill="both", expand=True, padx=15, pady=(5, 15))
-        self.lst_providers.bind("<<ListboxSelect>>", self.on_provider_selected)
+        # 4. RLM Profile Selector
+        lbl_prof = ttk.Label(grid, text="Target RLM Team Roster:", style="Panel.TLabel")
+        lbl_prof.grid(row=3, column=0, sticky="w", pady=6)
+        
+        profile_choices = self.load_profile_choices()
+        cb_prof = ttk.Combobox(grid, values=profile_choices, state="readonly" if profile_choices else "normal")
+        cb_prof.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=6)
+        
+        init_raw_prof = p_data.get("rlm_profile_key", "")
+        init_disp = next((disp for disp, raw in getattr(self, "profile_display_map", {}).items() if raw == init_raw_prof), init_raw_prof)
+        if init_disp and init_disp in profile_choices:
+            cb_prof.set(init_disp)
+        elif profile_choices:
+            cb_prof.set(profile_choices[0])
 
-        self.ent_wow_path.bind("<FocusOut>", self.refresh_profile_dropdown)
-        self.refresh_profile_dropdown()
-        self.update_providers_listbox()
+        # 5. Sync Scope Checkboxes
+        lbl_scope = ttk.Label(grid, text="Sync Scope Options:", style="Panel.TLabel")
+        lbl_scope.grid(row=4, column=0, sticky="w", pady=6)
 
-    def on_provider_type_changed(self, event=None):
-        ptype = self.cb_provider_type.get().lower()
-        if "guild" in ptype or "pending" in ptype:
-            self.lbl_gow_notice.pack(side="left", padx=(10, 0))
-        else:
-            self.lbl_gow_notice.pack_forget()
+        chk_f = ttk.Frame(grid, style="Panel.TFrame")
+        chk_f.grid(row=4, column=1, sticky="w", padx=(10, 0), pady=6)
 
-    def on_provider_selected(self, event=None):
-        sel = self.lst_providers.curselection()
-        if not sel:
-            return
-        idx = sel[0]
-        providers_list = self.settings.get("guild_providers", [])
-        if 0 <= idx < len(providers_list):
-            p = providers_list[idx]
-            ptype = p.get("provider", "wowaudit").lower()
-            ptype_disp = "WoW Audit" if ptype == "wowaudit" else ("WoWUtils" if ptype == "wowutils" else ptype.title())
-            
-            self.cb_provider_type.set(ptype_disp)
-            self.ent_provider_key.delete(0, tk.END)
-            self.ent_provider_key.insert(0, p.get("api_key", ""))
-            self.ent_group_id.delete(0, tk.END)
-            self.ent_group_id.insert(0, p.get("group_id", ""))
-            
-            raw_prof = p.get("rlm_profile_key", "")
-            disp_prof = next((disp for disp, raw in getattr(self, "profile_display_map", {}).items() if raw == raw_prof), raw_prof)
-            if hasattr(self, "cb_provider_profile"):
-                self.cb_provider_profile.set(disp_prof)
-                
-            self.var_sync_roster.set(p.get("sync_roster", True))
-            self.var_sync_calendar.set(p.get("sync_calendar", True))
-            self.var_sync_alts.set(p.get("sync_alts", True))
-            if hasattr(self, "btn_provider_add"):
-                self.btn_provider_add.configure(text="💾 Save / Update Selected Link")
+        var_r = tk.BooleanVar(value=p_data.get("sync_roster", True))
+        chk_r = ttk.Checkbutton(chk_f, text="Roster", variable=var_r)
+        chk_r.pack(side="left", padx=(0, 10))
+
+        var_c = tk.BooleanVar(value=p_data.get("sync_calendar", True))
+        chk_c = ttk.Checkbutton(chk_f, text="Calendar", variable=var_c)
+        chk_c.pack(side="left", padx=(0, 10))
+
+        var_a = tk.BooleanVar(value=p_data.get("sync_alts", True))
+        chk_a = ttk.Checkbutton(chk_f, text="Alts", variable=var_a)
+        chk_a.pack(side="left", padx=(0, 10))
+
+        var_m = tk.BooleanVar(value=p_data.get("sync_mplus", True))
+        chk_m = ttk.Checkbutton(chk_f, text="Mythic+", variable=var_m)
+        chk_m.pack(side="left")
+
+        # Modal Action Buttons
+        modal_btn_frame = ttk.Frame(card, style="Panel.TFrame")
+        modal_btn_frame.pack(fill="x", padx=15, pady=(15, 10))
+
+        def save_modal_connection():
+            selected_type = cb_type.get().lower()
+            provider_id = "wowutils" if "utils" in selected_type else ("wowaudit" if "audit" in selected_type else "wowutils")
+            api_key = ent_key.get().strip()
+            group_id = ent_group.get().strip()
+            selected_disp_prof = cb_prof.get().strip()
+            raw_prof_key = getattr(self, "profile_display_map", {}).get(selected_disp_prof, selected_disp_prof)
+
+            if not api_key:
+                self.show_toast_banner("Please enter a valid API Key / Token.", toast_type="error")
+                return
+
+            team_name = selected_disp_prof if selected_disp_prof else "Guild Team"
+            provider_entry = {
+                "provider": provider_id,
+                "name": team_name,
+                "api_key": api_key,
+                "group_id": group_id,
+                "rlm_profile_key": raw_prof_key,
+                "sync_roster": var_r.get(),
+                "sync_calendar": var_c.get(),
+                "sync_alts": var_a.get(),
+                "sync_mplus": var_m.get()
+            }
+
+            if is_edit:
+                providers_list[edit_idx] = provider_entry
+                self.log_message(f"Updated data connection for '{team_name}' [{provider_id}]")
+            else:
+                providers_list.append(provider_entry)
+                self.log_message(f"Added new data connection for '{team_name}' [{provider_id}]")
+
+            self.settings["guild_providers"] = providers_list
+            self.save_settings()
+            self.update_providers_listbox()
+            win.destroy()
+
+        def test_modal_connection():
+            selected_type = cb_type.get().lower()
+            provider_id = "wowutils" if "utils" in selected_type else "wowaudit"
+            api_key = ent_key.get().strip()
+            group_id = ent_group.get().strip()
+
+            if not api_key:
+                self.show_toast_banner("Please enter an API key to test.", toast_type="error")
+                return
+
+            def task():
+                try:
+                    if provider_id == "wowutils":
+                        res = rlm_guild_providers.test_wowutils_connection(api_key)
+                    else:
+                        res = rlm_guild_providers.test_wowaudit_connection(api_key, group_id)
+                    
+                    if res.get("success"):
+                        gname = res.get("guild_name") or res.get("team_name") or "Connected Guild"
+                        self.root.after(0, lambda: self.show_toast_banner(f"Connected to '{gname}'!"))
+                    else:
+                        err = res.get("error", "Failed")
+                        self.root.after(0, lambda: self.show_toast_banner(f"Connection Failed: {err}", toast_type="error"))
+                except Exception as e:
+                    self.root.after(0, lambda: self.show_toast_banner(f"Test Error: {e}", toast_type="error"))
+
+            threading.Thread(target=task, daemon=True).start()
+
+        btn_save_m = ttk.Button(modal_btn_frame, text="💾 Save Connection", style="Accent.TButton", command=save_modal_connection)
+        btn_save_m.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        btn_test_m = ttk.Button(modal_btn_frame, text="🧪 Test Connection", command=test_modal_connection)
+        btn_test_m.pack(side="left", fill="x", expand=True, padx=5)
+
+        btn_cancel_m = ttk.Button(modal_btn_frame, text="Cancel", command=win.destroy)
+        btn_cancel_m.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
     def on_provider_checkbox_toggled(self):
         sel = self.lst_providers.curselection()
@@ -953,101 +1055,98 @@ del /f "%~f0" > NUL
         self.btn_unregister.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
     def build_tab_discord(self, parent):
-        # Container frame
         container = ttk.Frame(parent, style="Panel.TFrame")
-        container.pack(fill="both", expand=True, padx=10, pady=10)
+        container.pack(fill="x", padx=10, pady=5)
 
-        # Global Options Card
-        card_global = ttk.Frame(container, style="Panel.TFrame")
-        card_global.pack(fill="x", padx=5, pady=(0, 10))
+        card = ttk.Frame(container, style="Panel.TFrame", relief="solid", borderwidth=1)
+        card.pack(fill="x", padx=5, pady=5)
 
-        lbl_hdr = ttk.Label(card_global, text=self.L("card_discord_hdr"), style="Header.TLabel")
-        lbl_hdr.pack(fill="x", padx=15, pady=(12, 8))
+        # Header Row: Title & Active Team Selector
+        top_bar = ttk.Frame(card, style="Panel.TFrame")
+        top_bar.pack(fill="x", padx=12, pady=(10, 4))
 
-        grid_g = ttk.Frame(card_global, style="Panel.TFrame")
-        grid_g.pack(fill="x", padx=15, pady=5)
-
-        self.var_sync_on_import = tk.BooleanVar(value=self.settings.get("sync_on_import", True))
-        chk_imp = ttk.Checkbutton(grid_g, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
-        chk_imp.grid(row=0, column=0, sticky="w", pady=4)
-
-        self.var_pin_update_mode = tk.BooleanVar(value=self.settings.get("pin_update_mode", True))
-        chk_pin = ttk.Checkbutton(grid_g, text="Edit Single Pinned Message in Channel (Recommended)", variable=self.var_pin_update_mode)
-        chk_pin.grid(row=0, column=1, sticky="w", padx=(20, 0), pady=4)
-
-        # Team Selection Card
-        card_select = ttk.Frame(container, style="Panel.TFrame")
-        card_select.pack(fill="x", padx=5, pady=(0, 10))
-
-        lbl_select_hdr = ttk.Label(card_select, text="🛡️ Select Guild Team Profile to Configure", style="Header.TLabel")
-        lbl_select_hdr.pack(fill="x", padx=15, pady=(12, 6))
-
-        grid_sel = ttk.Frame(card_select, style="Panel.TFrame")
-        grid_sel.pack(fill="x", padx=15, pady=(4, 10))
-
-        lbl_team = ttk.Label(grid_sel, text="Active RLM Guild Team:", font=("Segoe UI", 9, "bold"), style="Panel.TLabel")
-        lbl_team.grid(row=0, column=0, sticky="w", pady=4)
+        lbl_hdr = ttk.Label(top_bar, text="💬 Discord Bot Integration", font=("Segoe UI", 11, "bold"), foreground=FG_GOLD_BRIGHT, style="Panel.TLabel")
+        lbl_hdr.pack(side="left")
 
         profile_choices = self.load_profile_choices()
         if not profile_choices:
             profile_choices = ["Default Guild Team"]
 
-        self.cb_active_team = ttk.Combobox(grid_sel, values=profile_choices, state="readonly", width=38)
-        self.cb_active_team.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=4)
+        lbl_team = ttk.Label(top_bar, text="Active Guild Team:", font=("Segoe UI", 9, "bold"), style="Panel.TLabel")
+        lbl_team.pack(side="left", padx=(20, 6))
+
+        self.cb_active_team = ttk.Combobox(top_bar, values=profile_choices, state="readonly", width=32)
+        self.cb_active_team.pack(side="left")
         self.cb_active_team.set(profile_choices[0])
         self.cb_active_team.bind("<<ComboboxSelected>>", self._on_team_selected)
 
-        # Team Discord Settings Panel
-        self.card_team_config = ttk.Frame(container, style="Panel.TFrame", relief="solid", borderwidth=1)
-        self.card_team_config.pack(fill="both", expand=True, padx=5, pady=5)
-
-        self.lbl_team_hdr = ttk.Label(self.card_team_config, text=f"Discord Bot Settings: {profile_choices[0]}", font=("Segoe UI", 11, "bold"), foreground=FG_GOLD_BRIGHT, style="Panel.TLabel")
-        self.lbl_team_hdr.pack(anchor="w", padx=15, pady=(12, 6))
-
-        grid_t = ttk.Frame(self.card_team_config, style="Panel.TFrame")
-        grid_t.pack(fill="x", padx=15, pady=6)
+        # Settings Grid
+        grid_t = ttk.Frame(card, style="Panel.TFrame")
+        grid_t.pack(fill="x", padx=12, pady=4)
+        grid_t.columnconfigure(1, weight=1)
 
         # Row 0: Discord Sync Key + Fetch Channels Button
         lbl_key = ttk.Label(grid_t, text="Discord Sync Key:", style="Panel.TLabel")
-        lbl_key.grid(row=0, column=0, sticky="w", pady=6)
+        lbl_key.grid(row=0, column=0, sticky="w", pady=4)
 
         k_frame = ttk.Frame(grid_t, style="Panel.TFrame")
-        k_frame.grid(row=0, column=1, columnspan=3, sticky="ew", padx=(10, 0), pady=6)
+        k_frame.grid(row=0, column=1, columnspan=3, sticky="ew", padx=(8, 0), pady=4)
         k_frame.columnconfigure(0, weight=1)
 
         self.ent_team_key = tk.Entry(k_frame, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
         self.ent_team_key.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        self.ent_team_key.bind("<FocusOut>", lambda e: [self._save_current_team_view(), self.save_settings()])
+        self.ent_team_key.bind("<KeyRelease>", lambda e: self._save_current_team_view())
 
-        self.btn_team_fetch = ttk.Button(k_frame, text="🔄 Fetch Channels for this Team", command=self.fetch_channels_for_active_team, width=28)
+        self.btn_team_fetch = ttk.Button(k_frame, text="🔄 Fetch Channels", command=self.fetch_channels_for_active_team, width=20)
         self.btn_team_fetch.grid(row=0, column=1, sticky="e")
 
         # Row 1: Connection Status Label
         self.lbl_team_status = ttk.Label(grid_t, text="⚠️ Enter Sync Key and click 'Fetch Channels' to load Discord dropdowns.", font=("Segoe UI", 9), foreground="#f39c12", style="Panel.TLabel")
-        self.lbl_team_status.grid(row=1, column=0, columnspan=4, sticky="w", pady=(2, 8))
+        self.lbl_team_status.grid(row=1, column=0, columnspan=4, sticky="w", pady=(1, 4))
 
-        # Row 2: EPGP Channel Dropdown & Schedule
-        lbl_epgp_c = ttk.Label(grid_t, text="EPGP Standings Channel:", style="Panel.TLabel")
-        lbl_epgp_c.grid(row=2, column=0, sticky="w", pady=6)
-        self.cb_team_epgp_ch = ttk.Combobox(grid_t, values=["#epgp-standings"], width=24)
-        self.cb_team_epgp_ch.grid(row=2, column=1, sticky="w", padx=(10, 20), pady=6)
+        # Row 2: EPGP Channel & Schedule
+        lbl_epgp_c = ttk.Label(grid_t, text="EPGP Channel:", style="Panel.TLabel")
+        lbl_epgp_c.grid(row=2, column=0, sticky="w", pady=4)
+        self.cb_team_epgp_ch = ttk.Combobox(grid_t, values=[], width=22)
+        self.cb_team_epgp_ch.grid(row=2, column=1, sticky="w", padx=(8, 15), pady=4)
+        self.cb_team_epgp_ch.bind("<<ComboboxSelected>>", lambda e: [self._save_current_team_view(), self.save_settings()])
+        self.cb_team_epgp_ch.bind("<FocusOut>", lambda e: [self._save_current_team_view(), self.save_settings()])
 
-        lbl_epgp_s = ttk.Label(grid_t, text="EPGP Auto-Post Schedule:", style="Panel.TLabel")
-        lbl_epgp_s.grid(row=2, column=2, sticky="w", pady=6)
-        self.cb_team_epgp_sched = ttk.Combobox(grid_t, values=["On Roster/Loot Sync", "Post-Raid (On WoW Exit)", "Every 12 Hours", "Daily", "Disabled"], state="readonly", width=24)
-        self.cb_team_epgp_sched.grid(row=2, column=3, sticky="w", padx=(10, 0), pady=6)
+        lbl_epgp_s = ttk.Label(grid_t, text="EPGP Schedule:", style="Panel.TLabel")
+        lbl_epgp_s.grid(row=2, column=2, sticky="w", pady=4)
+        self.cb_team_epgp_sched = ttk.Combobox(grid_t, values=["On Roster/Loot Sync", "Post-Raid (On WoW Exit)", "Every 12 Hours", "Daily", "Disabled"], state="readonly", width=22)
+        self.cb_team_epgp_sched.grid(row=2, column=3, sticky="w", padx=(8, 0), pady=4)
+        self.cb_team_epgp_sched.bind("<<ComboboxSelected>>", lambda e: [self._save_current_team_view(), self.save_settings()])
 
-        # Row 3: M+ Channel Dropdown & Schedule
-        lbl_mplus_c = ttk.Label(grid_t, text="Mythic+ Leaderboard Channel:", style="Panel.TLabel")
-        lbl_mplus_c.grid(row=3, column=0, sticky="w", pady=6)
-        self.cb_team_mplus_ch = ttk.Combobox(grid_t, values=["#mplus-leaderboard"], width=24)
-        self.cb_team_mplus_ch.grid(row=3, column=1, sticky="w", padx=(10, 20), pady=6)
+        # Row 3: Mythic+ Channel & Schedule
+        lbl_mplus_c = ttk.Label(grid_t, text="Mythic+ Channel:", style="Panel.TLabel")
+        lbl_mplus_c.grid(row=3, column=0, sticky="w", pady=4)
+        self.cb_team_mplus_ch = ttk.Combobox(grid_t, values=[], width=22)
+        self.cb_team_mplus_ch.grid(row=3, column=1, sticky="w", padx=(8, 15), pady=4)
+        self.cb_team_mplus_ch.bind("<<ComboboxSelected>>", lambda e: [self._save_current_team_view(), self.save_settings()])
+        self.cb_team_mplus_ch.bind("<FocusOut>", lambda e: [self._save_current_team_view(), self.save_settings()])
 
-        lbl_mplus_s = ttk.Label(grid_t, text="Mythic+ Auto-Post Schedule:", style="Panel.TLabel")
-        lbl_mplus_s.grid(row=3, column=2, sticky="w", pady=6)
-        self.cb_team_mplus_sched = ttk.Combobox(grid_t, values=["Tuesday Post-Reset (Default)", "Daily", "On M+ Import", "Disabled"], state="readonly", width=24)
-        self.cb_team_mplus_sched.grid(row=3, column=3, sticky="w", padx=(10, 0), pady=6)
+        lbl_mplus_s = ttk.Label(grid_t, text="Mythic+ Schedule:", style="Panel.TLabel")
+        lbl_mplus_s.grid(row=3, column=2, sticky="w", pady=4)
+        self.cb_team_mplus_sched = ttk.Combobox(grid_t, values=["Tuesday Post-Reset (Default)", "Daily", "On M+ Import", "Disabled"], state="readonly", width=22)
+        self.cb_team_mplus_sched.grid(row=3, column=3, sticky="w", padx=(8, 0), pady=4)
+        self.cb_team_mplus_sched.bind("<<ComboboxSelected>>", lambda e: [self._save_current_team_view(), self.save_settings()])
 
-        grid_t.columnconfigure(1, weight=1)
+        # Row 4: Checkboxes & Sync Button
+        opts_bar = ttk.Frame(card, style="Panel.TFrame")
+        opts_bar.pack(fill="x", padx=12, pady=(6, 10))
+
+        self.var_sync_on_import = tk.BooleanVar(value=self.settings.get("sync_on_import", True))
+        chk_imp = ttk.Checkbutton(opts_bar, text=self.L("chk_sync_on_import"), variable=self.var_sync_on_import)
+        chk_imp.pack(side="left", padx=(0, 15))
+
+        self.var_pin_update_mode = tk.BooleanVar(value=self.settings.get("pin_update_mode", True))
+        chk_pin = ttk.Checkbutton(opts_bar, text="Edit Pinned Message Mode", variable=self.var_pin_update_mode)
+        chk_pin.pack(side="left")
+
+        self.btn_sync_now = ttk.Button(opts_bar, text=self.L("btn_sync_now"), style="Accent.TButton", command=self.trigger_discord_sync)
+        self.btn_sync_now.pack(side="right")
 
         # Initialize Team Settings Map from Config JSON
         self.team_settings_data = self.settings.get("team_discord_settings", {})
@@ -1056,55 +1155,30 @@ del /f "%~f0" > NUL
         # Load initial team view
         self._load_team_view(self.current_team_key)
 
-        # Action & Status Bar
-        self.btn_sync_now = ttk.Button(self.card_team_config, text=self.L("btn_sync_now"), style="Accent.TButton", command=self.trigger_discord_sync)
-        self.btn_sync_now.pack(padx=15, pady=(12, 5), fill="x")
-
-        status_frame = ttk.Frame(self.card_team_config, style="Panel.TFrame")
-        status_frame.pack(fill="x", padx=15, pady=(0, 12))
-
-        self.lbl_discord_status = ttk.Label(status_frame, text="", font=("Segoe UI", 9, "bold"), style="Panel.TLabel")
-        self.lbl_discord_status.pack(side="left", padx=5)
-
-        btn_view_logs = ttk.Button(
-            status_frame, 
-            text="📋 View Live Console Log", 
-            command=lambda: self.notebook.select(self.tab_console)
-        )
-        btn_view_logs.pack(side="right", padx=5)
-
-    def build_tab_console(self, parent):
+    def build_static_console(self, parent):
         card = ttk.Frame(parent, style="Panel.TFrame")
-        card.pack(fill="both", expand=True, padx=10, pady=10)
+        card.pack(fill="both", expand=True)
 
-        self.lbl_console_hdr = ttk.Label(card, text=self.L("lbl_console_hdr"), style="Header.TLabel")
-        self.lbl_console_hdr.pack(fill="x", padx=15, pady=(15, 10))
+        self.lbl_console_hdr = ttk.Label(card, text="📋 Live Operations & Execution Log", style="Header.TLabel")
+        self.lbl_console_hdr.pack(fill="x", padx=12, pady=(8, 4))
 
         action_bar = ttk.Frame(card, style="Panel.TFrame")
-        action_bar.pack(fill="x", padx=15, pady=5)
-
-        self.lbl_week_mode = ttk.Label(action_bar, text=self.L("lbl_week_mode"), style="Panel.TLabel")
-        self.lbl_week_mode.pack(side="left", pady=4)
-        
-        vals = [self.L("week_both"), self.L("week_current"), self.L("week_last")]
-        self.cb_week_mode = ttk.Combobox(action_bar, values=vals, state="readonly", width=12)
-        self.cb_week_mode.set(self.L("week_both"))
-        self.cb_week_mode.pack(side="left", padx=6)
+        action_bar.pack(fill="x", padx=12, pady=3)
 
         self.btn_run_mplus = ttk.Button(action_bar, text=self.L("btn_run_mplus"), style="Accent.TButton", command=self.trigger_live_import)
-        self.btn_run_mplus.pack(side="left", fill="x", expand=True, padx=4)
+        self.btn_run_mplus.pack(side="left", fill="x", expand=True, padx=(0, 4))
 
         self.btn_run_wowaudit = ttk.Button(action_bar, text=self.L("btn_run_guild"), style="Accent.TButton", command=self.trigger_wowaudit_sync)
         self.btn_run_wowaudit.pack(side="left", fill="x", expand=True, padx=4)
 
         self.btn_run_discord = ttk.Button(action_bar, text=self.L("btn_run_discord"), command=self.trigger_discord_sync)
-        self.btn_run_discord.pack(side="left", fill="x", expand=True, padx=4)
+        self.btn_run_discord.pack(side="left", fill="x", expand=True, padx=(4, 0))
 
         console_frame = ttk.Frame(card, style="Panel.TFrame")
-        console_frame.pack(fill="both", expand=True, padx=15, pady=(5, 15))
+        console_frame.pack(fill="both", expand=True, padx=12, pady=(4, 8))
 
         self.txt_console = tk.Text(console_frame, bg="#090807", fg=FG_GOLD_BRIGHT, insertbackground=FG_GOLD_BRIGHT, 
-                                   font=("Consolas", 9, "bold"), relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1, wrap="word")
+                                   font=("Consolas", 9, "bold"), relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1, height=7, wrap="word")
         self.txt_console.pack(side="left", fill="both", expand=True)
 
         scrollbar = ttk.Scrollbar(console_frame, orient="vertical", command=self.txt_console.yview)
@@ -1153,6 +1227,7 @@ del /f "%~f0" > NUL
             if p.get("sync_roster", True): scope.append("Roster")
             if p.get("sync_calendar", True): scope.append("Calendar")
             if p.get("sync_alts", True): scope.append("Alts")
+            if p.get("sync_mplus", True): scope.append("M+")
             scope_str = "+".join(scope) if scope else "None"
             
             epgp_ch = p.get("epgp_channel", "epgp-standings")
@@ -1274,15 +1349,18 @@ del /f "%~f0" > NUL
     def save_settings(self):
         self.settings["region"] = self.cb_region.get().strip().lower()
         self.settings["wow_path"] = self.ent_wow_path.get().strip()
-        try:
-            self.settings["rio_delay"] = float(self.ent_rio_delay.get().strip())
-        except ValueError:
-            self.settings["rio_delay"] = 0.35
+        if hasattr(self, "ent_rio_delay"):
+            try:
+                self.settings["rio_delay"] = float(self.ent_rio_delay.get().strip())
+            except ValueError:
+                self.settings["rio_delay"] = 0.35
+        else:
+            self.settings["rio_delay"] = float(self.settings.get("rio_delay", 0.35))
 
         self.settings["schedule_am"] = self.ent_sched_am.get().strip()
         self.settings["schedule_pm"] = self.ent_sched_pm.get().strip()
         self.settings["schedule_logon"] = self.var_sched_logon.get()
-        self.settings["discord_sync_key"] = self.ent_discord_key.get().strip()
+        self.settings["discord_sync_key"] = ""
         self.settings["sync_on_import"] = self.var_sync_on_import.get()
         self.settings["sync_on_wow_exit"] = self.var_sync_on_wow_exit.get()
         self.settings["run_on_startup"] = self.var_run_on_startup.get()
@@ -1316,14 +1394,17 @@ del /f "%~f0" > NUL
     def _save_current_team_view(self):
         if hasattr(self, "current_team_key") and self.current_team_key:
             if not hasattr(self, "team_settings_data") or self.team_settings_data is None:
-                self.team_settings_data = {}
+                self.team_settings_data = self.settings.get("team_discord_settings", {})
+            
+            key_val = self.ent_team_key.get().strip() if hasattr(self, "ent_team_key") else ""
             self.team_settings_data[self.current_team_key] = {
-                "discord_sync_key": self.ent_team_key.get().strip() if hasattr(self, "ent_team_key") else "",
+                "discord_sync_key": key_val,
                 "epgp_channel": self.cb_team_epgp_ch.get().strip() if hasattr(self, "cb_team_epgp_ch") else "",
                 "mplus_channel": self.cb_team_mplus_ch.get().strip() if hasattr(self, "cb_team_mplus_ch") else "",
                 "epgp_schedule": self.cb_team_epgp_sched.get().strip() if hasattr(self, "cb_team_epgp_sched") else "",
                 "mplus_schedule": self.cb_team_mplus_sched.get().strip() if hasattr(self, "cb_team_mplus_sched") else ""
             }
+            self.settings["team_discord_settings"] = self.team_settings_data
 
     def _load_team_view(self, team_key):
         self.current_team_key = team_key
@@ -1332,29 +1413,48 @@ del /f "%~f0" > NUL
             self.lbl_team_hdr.configure(text=f"Discord Bot Settings: {display_name}")
 
         p_data = getattr(self, "team_settings_data", {}).get(team_key, {}) or {}
-        key_val = p_data.get("discord_sync_key", self.settings.get("discord_sync_key", ""))
-        epgp_ch = p_data.get("epgp_channel", self.settings.get("epgp_channel", "#epgp-standings"))
-        epgp_sch = p_data.get("epgp_schedule", self.settings.get("epgp_schedule", "Post-Raid (On WoW Exit)"))
-        mplus_ch = p_data.get("mplus_channel", self.settings.get("mplus_channel", "#mplus-leaderboard"))
-        mplus_sch = p_data.get("mplus_schedule", self.settings.get("mplus_schedule", "Tuesday Post-Reset (Default)"))
+        key_val = p_data.get("discord_sync_key", "").strip()
+        epgp_ch = p_data.get("epgp_channel", "").strip()
+        epgp_sch = p_data.get("epgp_schedule", "Post-Raid (On WoW Exit)")
+        mplus_ch = p_data.get("mplus_channel", "").strip()
+        mplus_sch = p_data.get("mplus_schedule", "Tuesday Post-Reset (Default)")
 
         if hasattr(self, "ent_team_key"):
             self.ent_team_key.delete(0, tk.END)
-            self.ent_team_key.insert(0, key_val)
+            if key_val:
+                self.ent_team_key.insert(0, key_val)
 
-        if hasattr(self, "cb_team_epgp_ch"):
-            self.cb_team_epgp_ch.set(epgp_ch)
+        # Dropdowns should be completely BLANK unless a Discord sync key is linked & channels loaded
+        if key_val and key_val != "YOUR_SYNC_KEY_HERE":
+            default_epgp_vals = [epgp_ch] if epgp_ch else []
+            default_mplus_vals = [mplus_ch] if mplus_ch else []
+
+            if hasattr(self, "cb_team_epgp_ch"):
+                self.cb_team_epgp_ch.configure(values=default_epgp_vals)
+                self.cb_team_epgp_ch.set(epgp_ch)
+
+            if hasattr(self, "cb_team_mplus_ch"):
+                self.cb_team_mplus_ch.configure(values=default_mplus_vals)
+                self.cb_team_mplus_ch.set(mplus_ch)
+
+            self.fetch_channels_for_active_team()
+        else:
+            if hasattr(self, "cb_team_epgp_ch"):
+                self.cb_team_epgp_ch.configure(values=[])
+                self.cb_team_epgp_ch.set("")
+
+            if hasattr(self, "cb_team_mplus_ch"):
+                self.cb_team_mplus_ch.configure(values=[])
+                self.cb_team_mplus_ch.set("")
+
+            if hasattr(self, "lbl_team_status"):
+                self.lbl_team_status.configure(text="⚠️ Enter Sync Key and click 'Fetch Channels' to load Discord dropdowns.", foreground="#f39c12")
+
         if hasattr(self, "cb_team_epgp_sched"):
             self.cb_team_epgp_sched.set(epgp_sch)
-        if hasattr(self, "cb_team_mplus_ch"):
-            self.cb_team_mplus_ch.set(mplus_ch)
+
         if hasattr(self, "cb_team_mplus_sched"):
             self.cb_team_mplus_sched.set(mplus_sch)
-
-        if key_val:
-            self.fetch_channels_for_active_team()
-        elif hasattr(self, "lbl_team_status"):
-            self.lbl_team_status.configure(text="⚠️ Enter your Discord Sync Key to load channel dropdowns.", foreground="#f39c12")
 
     def _on_team_selected(self, event=None):
         self._save_current_team_view()
@@ -1370,6 +1470,12 @@ del /f "%~f0" > NUL
         if not key or key == "YOUR_SYNC_KEY_HERE":
             if hasattr(self, "lbl_team_status"):
                 self.lbl_team_status.configure(text="⚠️ Please enter your Discord Sync Key first.", foreground="#e67e22")
+            if hasattr(self, "cb_team_epgp_ch"):
+                self.cb_team_epgp_ch.configure(values=[])
+                self.cb_team_epgp_ch.set("")
+            if hasattr(self, "cb_team_mplus_ch"):
+                self.cb_team_mplus_ch.configure(values=[])
+                self.cb_team_mplus_ch.set("")
             return
 
         if hasattr(self, "lbl_team_status"):
@@ -1390,12 +1496,10 @@ del /f "%~f0" > NUL
                     self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, True, channels_list, msg))
                 else:
                     err_msg = r.json().get("error", "Key mismatch or bot not in server.") if r.headers.get("content-type") == "application/json" else f"HTTP {r.status_code}"
-                    fallback_channels = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
                     status_text = f"⚠️ Server response: {err_msg} (Type !synckey in your Discord server)."
-                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, fallback_channels, status_text))
+                    self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, [], status_text))
             except Exception as e:
-                fallback_channels = ["#epgp-standings", "#mplus-leaderboard", "#general", "#raid-chat", "#officers", "#loot-log"]
-                self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, fallback_channels, f"⚠️ Connection notice: {e}"))
+                self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, [], f"⚠️ Connection notice: {e}"))
                 
         threading.Thread(target=task, daemon=True).start()
 
@@ -1407,20 +1511,27 @@ del /f "%~f0" > NUL
             fg = FG_GOLD_BRIGHT if success else "#f39c12"
             self.lbl_team_status.configure(text=status_msg, foreground=fg)
             
-        if channels_list:
+        if success and channels_list:
             if hasattr(self, "cb_team_epgp_ch"):
                 self.cb_team_epgp_ch.configure(values=channels_list)
                 current_e = self.cb_team_epgp_ch.get()
-                if not current_e:
+                if not current_e or current_e not in channels_list:
                     match_e = next((c for c in channels_list if "epgp" in c.lower() or "standings" in c.lower()), channels_list[0])
                     self.cb_team_epgp_ch.set(match_e)
                 
             if hasattr(self, "cb_team_mplus_ch"):
                 self.cb_team_mplus_ch.configure(values=channels_list)
                 current_m = self.cb_team_mplus_ch.get()
-                if not current_m:
+                if not current_m or current_m not in channels_list:
                     match_m = next((c for c in channels_list if "mplus" in c.lower() or "leaderboard" in c.lower() or "keys" in c.lower()), channels_list[0])
                     self.cb_team_mplus_ch.set(match_m)
+        else:
+            if hasattr(self, "cb_team_epgp_ch"):
+                self.cb_team_epgp_ch.configure(values=[])
+                self.cb_team_epgp_ch.set("")
+            if hasattr(self, "cb_team_mplus_ch"):
+                self.cb_team_mplus_ch.configure(values=[])
+                self.cb_team_mplus_ch.set("")
 
     def _on_channels_fetched(self, success, channels_list, status_msg):
         if hasattr(self, "lbl_channel_status"):
@@ -1500,10 +1611,12 @@ del /f "%~f0" > NUL
     def trigger_discord_sync(self):
         def task():
             if hasattr(self, "btn_sync_now") and self.btn_sync_now:
-                self.root.after(0, lambda: [
-                    self.btn_sync_now.configure(text="⌛ Syncing Discord Bot...", state="disabled"),
-                    self.lbl_discord_status.configure(text="🟢 Uploading EPGP standings and rosters to Discord Bot...", foreground="#34d399")
-                ])
+                self.root.after(0, lambda: self.btn_sync_now.configure(text="⌛ Syncing Discord Bot...", state="disabled"))
+            if hasattr(self, "btn_run_discord") and self.btn_run_discord:
+                self.root.after(0, lambda: self.btn_run_discord.configure(text="⌛ Syncing...", state="disabled"))
+            if hasattr(self, "lbl_discord_status") and self.lbl_discord_status:
+                self.root.after(0, lambda: self.lbl_discord_status.configure(text="🟢 Uploading EPGP standings and rosters to Discord Bot...", foreground="#34d399"))
+            
             self.log_message("--- Starting Discord Sync ---")
             error_occurred = None
             try:
@@ -1517,16 +1630,20 @@ del /f "%~f0" > NUL
                 self.log_message(f"Discord Sync Error: {e}")
 
             if hasattr(self, "btn_sync_now") and self.btn_sync_now:
+                self.root.after(0, lambda: self.btn_sync_now.configure(text=self.L("btn_sync_now"), state="normal"))
+            if hasattr(self, "btn_run_discord") and self.btn_run_discord:
+                self.root.after(0, lambda: self.btn_run_discord.configure(text=self.L("btn_run_discord"), state="normal"))
+
+            if hasattr(self, "lbl_discord_status") and self.lbl_discord_status:
                 if error_occurred:
-                    self.root.after(0, lambda: [
-                        self.btn_sync_now.configure(text=self.L("btn_sync_now"), state="normal"),
-                        self.lbl_discord_status.configure(text=f"❌ Sync Error: {error_occurred}", foreground="#ef4444")
-                    ])
+                    self.root.after(0, lambda: self.lbl_discord_status.configure(text=f"❌ Sync Error: {error_occurred}", foreground="#ef4444"))
                 else:
-                    self.root.after(0, lambda: [
-                        self.btn_sync_now.configure(text=self.L("btn_sync_now"), state="normal"),
-                        self.lbl_discord_status.configure(text="✅ Discord Sync Completed Successfully!", foreground="#fbbf24")
-                    ])
+                    self.root.after(0, lambda: self.lbl_discord_status.configure(text="✅ Discord Sync Completed Successfully!", foreground="#fbbf24"))
+
+            if error_occurred:
+                self.root.after(0, lambda err=error_occurred: self.show_toast_banner(f"Discord Sync Error: {err}", toast_type="error"))
+            else:
+                self.root.after(0, lambda: self.show_toast_banner("Discord Sync Completed Successfully!"))
 
         threading.Thread(target=task, daemon=True).start()
 

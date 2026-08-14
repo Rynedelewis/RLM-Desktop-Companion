@@ -1,0 +1,99 @@
+name: Build Cross-Platform RLM Companion Installers
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows-installer:
+    name: Build Windows Setup Installer (.exe)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller requests pillow
+
+      - name: Compile Executable with PyInstaller
+        run: |
+          python -m PyInstaller RLM_Companion.spec --noconfirm
+
+      - name: Compile Inno Setup Installer
+        uses: MinCienci/action-innosetup@v1
+        with:
+          filepath: installer/RLM_Companion_Setup.iss
+
+      - name: Upload Windows Setup Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Windows-Setup-Installer
+          path: dist_setup/*.exe
+
+  build-macos-installer:
+    name: Build macOS DMG Bundle
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller requests pillow
+
+      - name: Build macOS Application with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "RLM_Companion" rlm_importer_ui.py
+
+      - name: Create DMG Disk Image
+        run: |
+          hdiutil create -volname "RaidLootMatrix Companion" -srcfolder dist/RLM_Companion.app -ov -format UDZO dist/RaidLootMatrix_macOS.dmg
+
+      - name: Upload macOS DMG Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macOS-DMG-Installer
+          path: dist/RaidLootMatrix_macOS.dmg
+
+  release:
+    name: Publish Release Artifacts
+    needs: [build-windows-installer, build-macos-installer]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: Windows-Setup-Installer
+          path: release_assets
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: macOS-DMG-Installer
+          path: release_assets
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

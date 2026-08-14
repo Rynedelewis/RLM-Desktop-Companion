@@ -174,9 +174,149 @@ class RLMHelperBot(commands.Bot):
             payload = await request.json()
             update_guild_data(guild_id, payload)
             
+            # Automatically push / update embeds in target text channels
+            self.loop.create_task(self.post_automatic_updates(guild_id, payload))
+
             return web.json_response({"success": True, "message": "EPGP data synced successfully!"})
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
+
+    async def post_automatic_updates(self, guild_id, payload):
+        try:
+            guild_id_str = str(guild_id)
+            gid_int = int(guild_id)
+            guild = self.get_guild(gid_int)
+            if not guild:
+                try:
+                    guild = await self.fetch_guild(gid_int)
+                except Exception:
+                    guild = None
+            if not guild:
+                print(f"[AUTO-POST] Guild {guild_id} not found in bot cache.")
+                return
+
+            epgp_ch_raw = payload.get("epgp_channel", "").strip().lstrip("#")
+            mplus_ch_raw = payload.get("mplus_channel", "").strip().lstrip("#")
+            pin_mode = payload.get("pin_update_mode", True)
+
+            profiles = payload.get("profiles", {})
+            mplus_data = payload.get("mplus_leaderboard", {})
+
+            # 1. Post/Update EPGP Standings Embed
+            if epgp_ch_raw and profiles:
+                target_ch = None
+                for ch in guild.text_channels:
+                    if ch.name.lower() == epgp_ch_raw.lower():
+                        target_ch = ch
+                        break
+                
+                if target_ch:
+                    for prof_key, roster in profiles.items():
+                        team_display = prof_key.split("::")[-1]
+                        embed = discord.Embed(
+                            title=f"👑 RaidLootMatrix EPGP Standings — {team_display}",
+                            description="Active EPGP standings auto-synced from World of Warcraft",
+                            color=discord.Color.gold()
+                        )
+                        
+                        player_list = []
+                        for name, data in roster.items():
+                            if data.get("isAlt", False):
+                                continue
+                            ep = data.get("ep", 0)
+                            gp = data.get("gp", 1)
+                            pr = ep / max(1, gp)
+                            player_list.append((name, data.get("class", "Unknown"), ep, gp, pr))
+                        
+                        player_list.sort(key=lambda x: x[4], reverse=True)
+                        top_players = player_list[:45]
+                        
+                        if top_players:
+                            chunk_size = 15
+                            for i in range(0, len(top_players), chunk_size):
+                                chunk = top_players[i:i+chunk_size]
+                                table_content = "```\nName            Class             EP      GP      PR\n"
+                                table_content += "-" * 52 + "\n"
+                                for name, cl, ep, gp, pr in chunk:
+                                    clean_name = name.split("-")[0]
+                                    table_content += f"{clean_name:<15} {cl:<17} {int(ep):<7} {int(gp):<7} {pr:.2f}\n"
+                                table_content += "```"
+                                embed.add_field(name=f"Standings Rank {i+1}-{i+len(chunk)}", value=table_content, inline=False)
+                        else:
+                            embed.description = "No active main characters found in roster."
+
+                        embed.set_footer(text=f"Last Synced: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
+                        await self._post_or_pin_embed(target_ch, embed, pin_mode, f"EPGP_{team_display}")
+
+            # 2. Post/Update Mythic+ Leaderboard Embed
+            if mplus_ch_raw and mplus_data:
+                target_ch = None
+                for ch in guild.text_channels:
+                    if ch.name.lower() == mplus_ch_raw.lower():
+                        target_ch = ch
+                        break
+
+                if target_ch:
+                    for prof_key, chars in mplus_data.items():
+                        team_display = prof_key.split("::")[-1]
+                        embed = discord.Embed(
+                            title=f"⚔️ RaidLootMatrix Mythic+ Leaderboard — {team_display}",
+                            description="Weekly Mythic+ dungeon summaries auto-synced from Raider.IO",
+                            color=discord.Color.purple()
+                        )
+                        
+                        chars_sorted = sorted(chars, key=lambda x: x.get("highest_level", 0), reverse=True)[:30]
+                        if chars_sorted:
+                            lines = []
+                            for c in chars_sorted:
+                                cname = c.get("name", "").split("-")[0]
+                                hlevel = c.get("highest_level", 0)
+                                runs_str = ", ".join([f"{r.get('dungeon','?')} +{r.get('level',0)}" for r in c.get("recent_runs", [])[:2]])
+                                if not runs_str:
+                                    runs_str = "No recent runs"
+                                lines.append(f"• **{cname}**: Highest +{hlevel} (*{runs_str}*)")
+                            
+                            chunk_str = "\n".join(lines)
+                            embed.add_field(name="Top Mythic+ Runners", value=chunk_str[:1000], inline=False)
+                        else:
+                            embed.description = "No Mythic+ runs found for this roster."
+
+                        embed.set_footer(text=f"Last Synced: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
+                        await self._post_or_pin_embed(target_ch, embed, pin_mode, f"MPLUS_{team_display}")
+
+        except Exception as e:
+            print(f"[AUTO-POST ERROR] {e}")
+
+    async def _post_or_pin_embed(self, channel, embed, pin_mode, tag_marker):
+        try:
+            if pin_mode:
+                pinned = []
+                try:
+                    pinned = await channel.pins()
+                except Exception:
+                    pass
+
+                target_msg = None
+                for msg in pinned:
+                    if msg.author.id == self.user.id and msg.embeds:
+                        if tag_marker in msg.embeds[0].title or tag_marker in str(msg.embeds[0].footer.text):
+                            target_msg = msg
+                            break
+                
+                if target_msg:
+                    await target_msg.edit(embed=embed)
+                    print(f"Updated pinned embed in #{channel.name}")
+                    return
+
+            msg = await channel.send(embed=embed)
+            if pin_mode:
+                try:
+                    await msg.pin()
+                except Exception:
+                    pass
+            print(f"Posted new embed to #{channel.name}")
+        except Exception as e:
+            print(f"Error posting embed to #{channel.name}: {e}")
 
     async def handle_terms(self, request):
         html = """

@@ -5,6 +5,7 @@ rlm_bot_db.json
 RLM_Companion.exe
 build/
 dist/
+dist_setup/
 err.txt
 out.txt
 .env

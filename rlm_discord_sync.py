@@ -326,11 +326,9 @@ def main():
             print("ℹ️ Post-Raid Sync skipped: No new 'Raid End' event detected since last post.")
             prompt_exit(0)
 
-    # 4. Check Sync Key configuration
-    if sync_key == "YOUR_SYNC_KEY_HERE" or not sync_key:
-        print("❌ Error: You must set your secure SYNC_KEY in the Discord Bot tab settings.")
-        print("To get your sync key, type '!synckey' in your Discord server.")
-        prompt_exit(1)
+    # 4. Check per-team Sync Keys and upload standings for each configured team
+    team_settings = cfg.get("team_discord_settings", {})
+    synced_any = False
 
     # Build Mythic+ leaderboard summary for active roster
     mplus_leaderboard = {}
@@ -361,48 +359,58 @@ def main():
     except Exception as e:
         print(f"[WARNING] Could not fetch Raider.IO M+ leaderboard data: {e}")
 
-    payload = {
-        "timestamp": int(time.time()),
-        "profiles": all_profiles,
-        "epgp_channel": cfg.get("epgp_channel", "epgp-standings"),
-        "epgp_schedule": cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)"),
-        "mplus_channel": cfg.get("mplus_channel", "mplus-leaderboard"),
-        "mplus_schedule": cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)"),
-        "pin_update_mode": cfg.get("pin_update_mode", True),
-        "mplus_leaderboard": mplus_leaderboard
-    }
-    
-    headers = {
-        "Authorization": sync_key,
-        "Content-Type": "application/json"
-    }
+    for profile_key, roster in all_profiles.items():
+        p_cfg = team_settings.get(profile_key, {})
+        team_key = p_cfg.get("discord_sync_key") or (sync_key if sync_key != "YOUR_SYNC_KEY_HERE" else "")
+        display_name = profile_key.split("::")[-1]
 
-    print(f"\nUploading standings data to {sync_url}...")
-    try:
-        response = requests.post(sync_url, json=payload, headers=headers, timeout=10)
-        if response.status_code == 200:
-            res_data = response.json()
-            print("============================================================")
-            print("🚀 Sync Successful! EPGP standings and rosters updated.")
-            print("============================================================")
-            if new_posted_ends:
-                cfg["last_posted_raid_end_timestamps"] = new_posted_ends
+        if not team_key:
+            print(f"ℹ️ Skipping team '{display_name}': No Sync Key set for this team in Discord Bot tab.")
+            continue
+
+        team_profiles = {profile_key: roster}
+        team_mplus = {profile_key: mplus_leaderboard.get(profile_key, [])}
+
+        payload = {
+            "timestamp": int(time.time()),
+            "profiles": team_profiles,
+            "epgp_channel": p_cfg.get("epgp_channel", cfg.get("epgp_channel", "epgp-standings")),
+            "epgp_schedule": p_cfg.get("epgp_schedule", cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)")),
+            "mplus_channel": p_cfg.get("mplus_channel", cfg.get("mplus_channel", "mplus-leaderboard")),
+            "mplus_schedule": p_cfg.get("mplus_schedule", cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)")),
+            "pin_update_mode": cfg.get("pin_update_mode", True),
+            "mplus_leaderboard": team_mplus
+        }
+
+        headers = {
+            "Authorization": team_key,
+            "Content-Type": "application/json"
+        }
+
+        print(f"\nUploading standings data for team '{display_name}' to {sync_url}...")
+        try:
+            response = requests.post(sync_url, json=payload, headers=headers, timeout=10)
+            if response.status_code == 200:
+                print(f"🚀 Sync Successful for team '{display_name}'!")
+                synced_any = True
+            else:
+                print(f"❌ Sync Failed for team '{display_name}' with status code: {response.status_code}")
                 try:
-                    with open(config_path, "w", encoding="utf-8") as f:
-                        json.dump(cfg, f, indent=2)
+                    print(f"Error detail: {response.json().get('error', response.text)}")
                 except Exception:
-                    pass
-        else:
-            print(f"❌ Sync Failed with status code: {response.status_code}")
-            try:
-                print(f"Error detail: {response.json().get('error', response.text)}")
-            except Exception:
-                print(f"Error detail: {response.text}")
-    except requests.exceptions.ConnectionError:
-        print("❌ Sync Failed: Could not connect to the Discord Bot API server.")
-        print(f"Make sure the Discord Bot is active, running, and listening at {SYNC_URL}.")
-    except Exception as e:
-        print(f"❌ Sync Failed: An unexpected error occurred: {e}")
+                    print(f"Error detail: {response.text}")
+        except requests.exceptions.ConnectionError:
+            print(f"❌ Sync Failed for team '{display_name}': Could not connect to Discord Bot API server.")
+        except Exception as e:
+            print(f"❌ Sync Failed for team '{display_name}': {e}")
+
+    if synced_any and new_posted_ends:
+        cfg["last_posted_raid_end_timestamps"] = new_posted_ends
+        try:
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2)
+        except Exception:
+            pass
 
     prompt_exit(0)
 
