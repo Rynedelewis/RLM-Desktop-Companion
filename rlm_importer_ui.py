@@ -33,7 +33,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.5.4"
+VERSION = "1.5.5"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -362,12 +362,23 @@ class RLMImporterApp:
             except Exception:
                 pass
 
-        self.apply_window_icon(self.root)
-
         self.config_path = self.app_dir / "rlm_importer_config.json"
         self.settings = self.load_settings()
         self.team_settings_data = self.settings.get("team_discord_settings", {})
         self.ensure_provider_schema()
+
+        self.apply_window_icon(self.root)
+
+        self.setup_styles()
+        self.create_widgets()
+
+        # Redirect stdout and stderr so all module prints stream live to the GUI console log
+        sys.stdout = StdoutRedirector(self.log_message)
+        sys.stderr = StdoutRedirector(self.log_message)
+
+        self.log_message(f"RaidLootMatrix Companion v{VERSION} (Gold Edition) initialized successfully.")
+        self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
+        self.check_for_updates()
 
     def apply_window_icon(self, window):
         if hasattr(self, "icon_path") and self.icon_path:
@@ -380,17 +391,6 @@ class RLMImporterApp:
                 window.iconphoto(True, self.tk_icon)
             except Exception:
                 pass
-
-        self.setup_styles()
-        self.create_widgets()
-
-        # Redirect stdout and stderr so all module prints stream live to the GUI console log
-        sys.stdout = StdoutRedirector(self.log_message)
-        sys.stderr = StdoutRedirector(self.log_message)
-
-        self.log_message(f"RaidLootMatrix Companion v{VERSION} (Gold Edition) initialized successfully.")
-        self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
-        self.check_for_updates()
 
     def L(self, key):
         lang = self.settings.get("language", "en")
