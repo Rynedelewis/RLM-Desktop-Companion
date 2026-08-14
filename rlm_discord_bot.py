@@ -293,26 +293,30 @@ class RLMHelperBot(commands.Bot):
                 target_ch = resolve_channel(mplus_ch_raw)
                 if target_ch:
                     for prof_key, chars in mplus_data.items():
-                        team_display = prof_key.split("::")[-1]
+                        raw_team = prof_key.split("::")[-1]
+                        team_display = raw_team.rsplit("-", 1)[-1] if "-" in raw_team else raw_team
                         embed = discord.Embed(
                             title=f"⚔️ RaidLootMatrix Mythic+ Leaderboard — {team_display}",
-                            description="Weekly Mythic+ dungeon summaries auto-synced from Raider.IO",
                             color=discord.Color.purple()
                         )
                         
-                        chars_sorted = sorted(chars, key=lambda x: x.get("highest_level", 0), reverse=True)[:30]
+                        chars_sorted = sorted(chars, key=lambda x: (x.get("score", 0.0), x.get("highest_level", 0)), reverse=True)[:35]
                         if chars_sorted:
-                            lines = []
+                            table_content = "```\n"
+                            table_content += f"{'Name':<16} {'Score':<8} {'Best':<6} {'Top Runs'}\n"
+                            table_content += "-" * 48 + "\n"
                             for c in chars_sorted:
-                                cname = c.get("name", "").split("-")[0]
-                                hlevel = c.get("highest_level", 0)
-                                runs_str = ", ".join([f"{r.get('dungeon','?')} +{r.get('level',0)}" for r in c.get("recent_runs", [])[:2]])
+                                cname = c.get("name", "").split("-")[0][:15]
+                                score_val = c.get("score", 0.0)
+                                score_str = f"{score_val:.1f}" if score_val > 0 else "-"
+                                hlevel = f"+{c.get('highest_level', 0)}" if c.get('highest_level', 0) > 0 else "-"
+                                runs_list = c.get("recent_runs", [])
+                                runs_str = ", ".join([f"{r.get('dungeon','?')[:4]}+{r.get('level',0)}" for r in runs_list[:2]])
                                 if not runs_str:
-                                    runs_str = "No recent runs"
-                                lines.append(f"• **{cname}**: Highest +{hlevel} (*{runs_str}*)")
-                            
-                            chunk_str = "\n".join(lines)
-                            embed.add_field(name="Top Mythic+ Runners", value=chunk_str[:1000], inline=False)
+                                    runs_str = "No runs"
+                                table_content += f"{cname:<16} {score_str:<8} {hlevel:<6} {runs_str}\n"
+                            table_content += "```"
+                            embed.description = table_content
                         else:
                             embed.description = "No Mythic+ runs found for this roster."
 

@@ -343,10 +343,16 @@ def main():
                 else:
                     cname, crealm = char_name, "Whisperwind"
                 
-                runs = raidlootmatrix_mplus.fetch_runs(cname, crealm, max_recent=5)
+                res = getattr(raidlootmatrix_mplus, "fetch_runs_with_score", None)
+                if callable(res):
+                    runs, score_val = res(cname, crealm, max_recent=5)
+                else:
+                    runs, score_val = raidlootmatrix_mplus.fetch_runs(cname, crealm, max_recent=5), 0.0
+
                 highest_level = max([r.get("mythic_level", 0) for r in runs], default=0)
                 mplus_leaderboard[p_key].append({
                     "name": char_name,
+                    "score": score_val,
                     "highest_level": highest_level,
                     "recent_runs": [
                         {

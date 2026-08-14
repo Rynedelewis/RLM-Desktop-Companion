@@ -299,23 +299,30 @@ def realm_to_slug(realm):
         return REALM_SLUGS[realm]
     return realm.lower().replace(" ", "-").replace("'", "")
 
-def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
-    """Fetch M+ runs via Raider.IO profile endpoint. Retries up to 3 times on error."""
+def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
+    """Fetch M+ runs and score via Raider.IO profile endpoint. Retries up to 3 times on error."""
     slug = realm_to_slug(realm)
     url  = "https://raider.io/api/v1/characters/profile"
     params = {
         "region": REGION,
         "realm":  slug,
         "name":   name,
-        "fields": "mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs",
+        "fields": "mythic_plus_scores_by_season:current,mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs",
     }
+    score_val = 0.0
     for attempt in range(3):
         try:
             r = requests.get(url, params=params, timeout=15)
             if r.status_code in (400, 404):
-                return []
+                return [], 0.0
             r.raise_for_status()
             data = r.json()
+            try:
+                scores_list = data.get("mythic_plus_scores_by_season", [])
+                if scores_list and len(scores_list) > 0:
+                    score_val = float(scores_list[0].get("scores", {}).get("all", 0.0))
+            except Exception:
+                score_val = 0.0
             break  # success
         except Exception as e:
             if attempt < 2:
@@ -324,9 +331,13 @@ def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
                 time.sleep(wait)
             else:
                 print(f"  [API error after 3 attempts: {e}]", end=" ")
-                return []
+                return [], 0.0
     else:
-        return []
+        return [], 0.0
+
+def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
+    runs, _ = fetch_runs_with_score(name, realm, max_recent)
+    return runs
 
     seen, runs = set(), []
 
