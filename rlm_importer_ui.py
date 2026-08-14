@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.7.3"
+VERSION = "1.7.4"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -637,6 +637,7 @@ class RLMImporterApp:
                 target_exe_name = pathlib.Path(sys.executable).name if getattr(sys, "frozen", False) else "RLM_Companion.exe"
                 app_dir_str = str(self.app_dir)
                 target_file_str = str(target_file)
+                installed_exe_str = str(self.app_dir / target_exe_name)
 
                 if is_setup:
                     batch_content = f"""@echo off
@@ -647,7 +648,7 @@ timeout /t 2 /nobreak > NUL
 start "" /wait "{target_file_str}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 timeout /t 1 /nobreak > NUL
 del /f "{target_file_str}" > NUL 2>&1
-powershell -Command "Remove-Item Env:\\_MEIPASS -ErrorAction SilentlyContinue; Remove-Item Env:\\_MEIPASS2 -ErrorAction SilentlyContinue; Start-Process '{target_exe_name}'"
+powershell -Command "Remove-Item Env:\\_MEIPASS -ErrorAction SilentlyContinue; Remove-Item Env:\\_MEIPASS2 -ErrorAction SilentlyContinue; Start-Process '{installed_exe_str}'"
 del /f "%~f0" > NUL
 """
                 else:
@@ -1184,8 +1185,8 @@ del /f "%~f0" > NUL
         lbl_team = ttk.Label(top_bar, text="Active Guild Team:", font=("Segoe UI", 9, "bold"), style="Panel.TLabel")
         lbl_team.pack(side="left", padx=(20, 6))
 
-        self.cb_active_team = ttk.Combobox(top_bar, values=profile_choices, state="readonly", width=32)
-        self.cb_active_team.pack(side="left")
+        self.cb_active_team = ttk.Combobox(top_bar, values=profile_choices, state="readonly", width=48)
+        self.cb_active_team.pack(side="left", fill="x", expand=True, padx=(0, 6))
         self.cb_active_team.set(profile_choices[0])
         self.cb_active_team.bind("<<ComboboxSelected>>", self._on_team_selected)
 
