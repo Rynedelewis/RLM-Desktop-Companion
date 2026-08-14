@@ -3,6 +3,13 @@ from tkinter import ttk, filedialog, messagebox
 import json
 import os
 import sys
+
+# Self-healing PyInstaller environment cleanup
+meipass_env = os.environ.get("_MEIPASS")
+if meipass_env and not os.path.exists(meipass_env):
+    os.environ.pop("_MEIPASS", None)
+    os.environ.pop("_MEIPASS2", None)
+
 import time
 import pathlib
 import platform
@@ -33,7 +40,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.6.3"
+VERSION = "1.6.4"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -616,8 +623,8 @@ class RLMImporterApp:
                 target_exe_name = pathlib.Path(sys.executable).name if getattr(sys, "frozen", False) else "RLM_Companion.exe"
                 
                 batch_content = f"""@echo off
-set _MEIPASS=
-set _MEIPASS2=
+set "_MEIPASS="
+set "_MEIPASS2="
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
 timeout /t 3 /nobreak > NUL
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
@@ -631,7 +638,7 @@ if exist "RLM_Companion_update.exe" (
 )
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
 timeout /t 1 /nobreak > NUL
-start "" "{target_exe_name}"
+powershell -Command "Remove-Item Env:\\_MEIPASS -ErrorAction SilentlyContinue; Remove-Item Env:\\_MEIPASS2 -ErrorAction SilentlyContinue; Start-Process '{target_exe_name}'"
 del /f "%~f0" > NUL
 """
                 batch_path.write_text(batch_content, encoding="utf-8")
