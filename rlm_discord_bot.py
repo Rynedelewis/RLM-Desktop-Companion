@@ -264,16 +264,15 @@ class RLMHelperBot(commands.Bot):
                             player_list.append((name, data.get("class", "Unknown"), ep, gp, pr))
                         
                         player_list.sort(key=lambda x: x[4], reverse=True)
-                        top_players = player_list[:35]
+                        top_players = player_list[:40]
                         
                         if top_players:
                             table_content = "```\n"
-                            table_content += f"{'Name':<14} {'Class':<16} {'EP':<6} {'GP':<6} {'PR'}\n"
+                            table_content += f"{'Name':<20} {'EP':<9} {'GP':<9} {'PR'}\n"
                             table_content += "-" * 48 + "\n"
                             for name, cl, ep, gp, pr in top_players:
-                                clean_name = name.split("-")[0][:13]
-                                clean_class = cl[:15]
-                                table_content += f"{clean_name:<14} {clean_class:<16} {int(ep):<6} {int(gp):<6} {pr:.2f}\n"
+                                clean_name = name.split("-")[0][:19]
+                                table_content += f"{clean_name:<20} {int(ep):<9} {int(gp):<9} {pr:.2f}\n"
                             table_content += "```"
                             embed.description = table_content
                         else:
@@ -781,14 +780,13 @@ async def standings(ctx, *, team_name: str):
             await ctx.send(L(ctx, "standings_no_mains"))
             return
 
-        top_players = player_list[:35]
+        top_players = player_list[:40]
         table_content = "```\n"
-        table_content += f"{'Name':<14} {'Class':<16} {'EP':<6} {'GP':<6} {'PR'}\n"
+        table_content += f"{'Name':<20} {'EP':<9} {'GP':<9} {'PR'}\n"
         table_content += "-" * 48 + "\n"
         for name, cl, ep, gp, pr in top_players:
-            clean_name = name.split("-")[0][:13]
-            clean_class = cl[:15]
-            table_content += f"{clean_name:<14} {clean_class:<16} {int(ep):<6} {int(gp):<6} {pr:.2f}\n"
+            clean_name = name.split("-")[0][:19]
+            table_content += f"{clean_name:<20} {int(ep):<9} {int(gp):<9} {pr:.2f}\n"
         table_content += "```"
         
         embed.description = table_content
