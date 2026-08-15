@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.8.2"
+VERSION = "1.8.3"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -103,6 +103,10 @@ LOCALES = {
         "chk_minimize_on_close": "Minimize to system tray on window close (instead of exiting)",
         "btn_register": "⚡ Register Background Tasks",
         "btn_unregister": "🗑️ Remove Tasks",
+        "btn_clean_tasks": "🧹 Clean Old/Broken Tasks (Option A)",
+        "btn_register_tasks": "⚡ Register Current Tasks (Option B)",
+        "btn_repair_tasks": "🚀 Repair & Re-Register All (Option A + B)",
+        "btn_remove_tasks": "🗑️ Remove All Tasks",
         "lbl_discord_key": "Discord Sync Key:",
         "lbl_discord_url": "Discord Sync URL:",
         "chk_sync_on_import": "Run Discord Sync after M+ import",
@@ -1156,13 +1160,27 @@ del /f "%~f0" > NUL
         self.chk_minimize_on_close.grid(row=5, column=0, columnspan=2, sticky="w", pady=6)
 
         task_btn_frame = ttk.Frame(card, style="Panel.TFrame")
-        task_btn_frame.pack(fill="x", padx=15, pady=15)
+        task_btn_frame.pack(fill="x", padx=15, pady=12)
 
-        self.btn_register = ttk.Button(task_btn_frame, text=self.L("btn_register"), command=self.register_background_tasks)
-        self.btn_register.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        # Row 1: Option A (Clean) & Option B (Register)
+        r1_frame = ttk.Frame(task_btn_frame, style="Panel.TFrame")
+        r1_frame.pack(fill="x", pady=(0, 6))
 
-        self.btn_unregister = ttk.Button(task_btn_frame, text=self.L("btn_unregister"), command=self.unregister_background_tasks)
-        self.btn_unregister.pack(side="right", fill="x", expand=True, padx=(5, 0))
+        self.btn_clean = ttk.Button(r1_frame, text=self.L("btn_clean_tasks"), command=self.clean_legacy_tasks)
+        self.btn_clean.pack(side="left", fill="x", expand=True, padx=(0, 4))
+
+        self.btn_register = ttk.Button(r1_frame, text=self.L("btn_register_tasks"), command=self.register_background_tasks)
+        self.btn_register.pack(side="right", fill="x", expand=True, padx=(4, 0))
+
+        # Row 2: Repair All (Option A + B) & Remove All
+        r2_frame = ttk.Frame(task_btn_frame, style="Panel.TFrame")
+        r2_frame.pack(fill="x")
+
+        self.btn_repair = ttk.Button(r2_frame, text=self.L("btn_repair_tasks"), style="Accent.TButton", command=self.repair_and_reregister_tasks)
+        self.btn_repair.pack(side="left", fill="x", expand=True, padx=(0, 4))
+
+        self.btn_unregister = ttk.Button(r2_frame, text=self.L("btn_remove_tasks"), command=self.unregister_background_tasks)
+        self.btn_unregister.pack(side="right", fill="x", expand=True, padx=(4, 0))
 
     def build_tab_discord(self, parent):
         container = ttk.Frame(parent, style="Panel.TFrame")
@@ -1803,12 +1821,136 @@ del /f "%~f0" > NUL
 
         threading.Thread(target=task, daemon=True).start()
 
-    def register_background_tasks(self):
-        self.log_message("Registering background Windows scheduled tasks...")
-        messagebox.showinfo("Automation", self.L("msg_success_saved"))
+    def clean_legacy_tasks(self, silent=False):
+        """Option A: Search for and delete any orphaned or broken legacy scheduled tasks in Windows."""
+        self.log_message("--- Starting Legacy Scheduled Tasks Cleanup (Option A) ---")
+        cleaned_count = 0
+        known_legacy_names = [
+            "RLM_MplusImport_1800", "RLM_MplusImport_0600", "RLM_LogonImport",
+            "RLM_MplusImport_AM", "RLM_MplusImport_PM", "RLM_MplusImport",
+            "RaidLootMatrix\\M+ Import - Daily AM", "RaidLootMatrix\\M+ Import - Daily PM",
+            "RaidLootMatrix\\M+ Import - At Logon", "RaidLootMatrix\\M+ Import - WoW Watcher",
+            "RaidLootMatrix"
+        ]
+
+        # 1. Delete known legacy task names directly
+        for tname in known_legacy_names:
+            cmd = f'schtasks /delete /tn "{tname}" /f'
+            res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if res.returncode == 0:
+                cleaned_count += 1
+                self.log_message(f"  ✓ Removed legacy scheduled task: {tname}")
+
+        # 2. Query Windows Task Scheduler for any other tasks containing RLM or RaidLootMatrix
+        try:
+            query_cmd = 'schtasks /query /fo csv /v'
+            q_res = subprocess.run(query_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if q_res.returncode == 0 and q_res.stdout:
+                reader = csv.reader(q_res.stdout.splitlines())
+                headers = next(reader, None)
+                if headers:
+                    tn_idx = 0
+                    act_idx = None
+                    for i, h in enumerate(headers):
+                        h_lower = h.lower()
+                        if "taskname" in h_lower or "任務名稱" in h_lower or "task" in h_lower:
+                            tn_idx = i
+                        elif "task to run" in h_lower or "要執行的任務" in h_lower or "action" in h_lower:
+                            act_idx = i
+
+                    for row in reader:
+                        if not row or len(row) <= tn_idx: continue
+                        t_name = row[tn_idx].strip()
+                        t_action = row[act_idx].strip() if act_idx is not None and len(row) > act_idx else ""
+                        
+                        if any(kw in t_name.lower() or kw in t_action.lower() for kw in ["rlm_", "raidlootmatrix"]):
+                            clean_tn = t_name.lstrip("\\")
+                            del_cmd = f'schtasks /delete /tn "{clean_tn}" /f'
+                            sub_res = subprocess.run(del_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                            if sub_res.returncode == 0:
+                                cleaned_count += 1
+                                self.log_message(f"  ✓ Cleaned orphaned scheduled task: {clean_tn}")
+        except Exception as e:
+            self.log_message(f"Notice during deep task scan: {e}")
+
+        msg = f"Option A Complete: Cleaned {cleaned_count} legacy/broken scheduled tasks."
+        self.log_message(f"--- {msg} ---")
+        if not silent:
+            self.show_toast_banner(msg)
+            messagebox.showinfo("Option A: Task Cleanup", f"Successfully cleaned {cleaned_count} legacy or broken scheduled tasks from Windows Task Scheduler!")
+        return cleaned_count
+
+    def register_background_tasks(self, silent=False):
+        """Option B: Register clean new scheduled tasks for the current version."""
+        self.log_message("--- Registering Current Scheduled Tasks (Option B) ---")
+        self.save_settings()
+
+        am_time = self.ent_sched_am.get().strip() or "06:00"
+        pm_time = self.ent_sched_pm.get().strip() or "18:00"
+
+        # Determine target command line / runner path
+        if getattr(sys, "frozen", False):
+            exe_path = f'"{sys.executable}"'
+            args_am = f'{exe_path} --week current'
+            args_pm = f'{exe_path} --week current'
+        else:
+            py_exe = f'"{sys.executable}"'
+            script_path = f'"{os.path.join(os.path.dirname(os.path.abspath(__file__)), "raidlootmatrix_mplus.py")}"'
+            args_am = f'{py_exe} {script_path} --week current'
+            args_pm = f'{py_exe} {script_path} --week current'
+
+        registered = []
+
+        # 1. Register AM Task
+        cmd_am = f'schtasks /create /tn "RaidLootMatrix\\M+ Import - Daily AM" /tr "{args_am}" /sc daily /st {am_time} /f'
+        r_am = subprocess.run(cmd_am, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if r_am.returncode == 0:
+            registered.append(f"AM Scan ({am_time})")
+            self.log_message(f"  ✓ Registered Daily AM Task: {am_time}")
+        else:
+            self.log_message(f"  ❌ Failed AM Task: {r_am.stderr.strip()}")
+
+        # 2. Register PM Task
+        cmd_pm = f'schtasks /create /tn "RaidLootMatrix\\M+ Import - Daily PM" /tr "{args_pm}" /sc daily /st {pm_time} /f'
+        r_pm = subprocess.run(cmd_pm, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if r_pm.returncode == 0:
+            registered.append(f"PM Scan ({pm_time})")
+            self.log_message(f"  ✓ Registered Daily PM Task: {pm_time}")
+        else:
+            self.log_message(f"  ❌ Failed PM Task: {r_pm.stderr.strip()}")
+
+        # 3. Register Logon Task if checked
+        if self.var_sched_logon.get():
+            cmd_logon = f'schtasks /create /tn "RaidLootMatrix\\M+ Import - At Logon" /tr "{args_am}" /sc onlogon /delay 0005:00 /f'
+            r_logon = subprocess.run(cmd_logon, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if r_logon.returncode == 0:
+                registered.append("Logon Scan")
+                self.log_message("  ✓ Registered Windows Logon Task (+5m delay)")
+
+        msg = f"Option B Complete: Registered {len(registered)} background scheduled tasks."
+        self.log_message(f"--- {msg} ---")
+        if not silent:
+            self.show_toast_banner(msg)
+            messagebox.showinfo("Option B: Task Registration", f"Successfully registered {len(registered)} background tasks in Windows Task Scheduler!\n({', '.join(registered)})")
+        return len(registered)
+
+    def repair_and_reregister_tasks(self):
+        """Option A + B: Full Task Repair & Re-Registration (Cleans old tasks then registers new)."""
+        self.log_message("--- Starting Full Task Repair & Re-Registration (Option A + B) ---")
+        cleaned = self.clean_legacy_tasks(silent=True)
+        registered = self.register_background_tasks(silent=True)
+
+        msg = f"Full Repair Complete! Cleaned {cleaned} old tasks & registered {registered} new tasks."
+        self.log_message(f"--- {msg} ---")
+        self.show_toast_banner("Full Task Repair Completed Successfully!")
+        messagebox.showinfo("Option A + B: Task Repair", f"✨ Full Task Repair Successful!\n\n• Cleaned Old Tasks: {cleaned}\n• Registered New Tasks: {registered}\n\nYour background import schedule is now fully healthy and active.")
 
     def unregister_background_tasks(self):
-        self.log_message("Removing background Windows scheduled tasks...")
+        """Remove all RLM scheduled tasks."""
+        self.log_message("--- Removing All Scheduled Tasks ---")
+        cleaned = self.clean_legacy_tasks(silent=True)
+        self.show_toast_banner(f"Removed {cleaned} scheduled tasks.")
+        messagebox.showinfo("Unregistered", f"Successfully removed {cleaned} scheduled tasks from Windows Task Scheduler.")
 
     def create_tray_icon(self):
         try:
