@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.8.3"
+VERSION = "1.8.4"
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -1226,8 +1226,11 @@ del /f "%~f0" > NUL
         self.ent_team_key.bind("<FocusOut>", lambda e: [self._save_current_team_view(), self.save_settings()])
         self.ent_team_key.bind("<KeyRelease>", lambda e: self._save_current_team_view())
 
-        self.btn_team_fetch = ttk.Button(k_frame, text="🔄 Fetch Channels", command=self.fetch_channels_for_active_team, width=20)
-        self.btn_team_fetch.grid(row=0, column=1, sticky="e")
+        self.btn_team_fetch = ttk.Button(k_frame, text="🔄 Fetch Channels", command=self.fetch_channels_for_active_team, width=16)
+        self.btn_team_fetch.grid(row=0, column=1, sticky="e", padx=(0, 4))
+
+        self.btn_team_diag = ttk.Button(k_frame, text="🔍 Test & Diagnose", command=self.diagnose_active_team_sync_key, width=16)
+        self.btn_team_diag.grid(row=0, column=2, sticky="e")
 
         # Row 1: Connection Status Label
         self.lbl_team_status = ttk.Label(grid_t, text="⚠️ Enter Sync Key and click 'Fetch Channels' to load Discord dropdowns.", font=("Segoe UI", 9), foreground="#f39c12", style="Panel.TLabel")
@@ -1628,12 +1631,66 @@ del /f "%~f0" > NUL
                     msg = f"🟢 Connected to '{guild_name}' ({len(channels_list)} real channels loaded!)"
                     self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, True, channels_list, msg))
                 else:
-                    err_msg = r.json().get("error", "Key mismatch or bot not in server.") if r.headers.get("content-type") == "application/json" else f"HTTP {r.status_code}"
-                    status_text = f"⚠️ Server response: {err_msg} (Type !synckey in your Discord server)."
+                    try:
+                        err_msg = r.json().get("error", f"HTTP {r.status_code}")
+                    except Exception:
+                        err_msg = f"HTTP {r.status_code}"
+                    status_text = f"⚠️ Server response: {err_msg}"
                     self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, [], status_text))
             except Exception as e:
                 self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, [], f"⚠️ Connection notice: {e}"))
                 
+        threading.Thread(target=task, daemon=True).start()
+
+    def diagnose_active_team_sync_key(self):
+        """Perform a deep HTTP diagnostic probe on the current team's Sync Key."""
+        key = self.ent_team_key.get().strip() if hasattr(self, "ent_team_key") else ""
+        sync_url = self.settings.get("discord_sync_url", "https://rlm-desktop-companion-production.up.railway.app/api/sync")
+        
+        if not key or key == "YOUR_SYNC_KEY_HERE":
+            messagebox.showwarning("Sync Key Required", "Please enter a Discord Sync Key to diagnose.")
+            return
+
+        base_url = sync_url.rsplit("/api/", 1)[0] if "/api/" in sync_url else sync_url
+        channels_url = f"{base_url}/api/channels"
+        headers = {"Authorization": key, "Content-Type": "application/json", "User-Agent": getattr(rlm_guild_providers, "DEFAULT_USER_AGENT", "RLMCompanion/1.8.4")}
+
+        def task():
+            try:
+                r = requests.get(channels_url, headers=headers, timeout=8)
+                if r.status_code == 200:
+                    data = r.json()
+                    guild_name = data.get("guild_name", "Discord Server")
+                    channels = data.get("channels", [])
+                    ch_names = [ch.get("name") for ch in channels if ch.get("name")]
+                    ch_preview = ", ".join(ch_names[:8]) + (f" and {len(ch_names)-8} more..." if len(ch_names) > 8 else "")
+                    
+                    diag = (
+                        f"✅ Sync Key Status: VALID & CONNECTED!\n\n"
+                        f"• Connected Server: {guild_name}\n"
+                        f"• Visible Channels Count: {len(channels)}\n"
+                        f"• Text Channels Found: {ch_preview}\n\n"
+                        f"Your Discord Bot connection is 100% healthy!"
+                    )
+                    self.root.after(0, lambda: messagebox.showinfo("Sync Key Diagnosis - SUCCESS", diag))
+                else:
+                    try:
+                        err_msg = r.json().get("error", f"HTTP {r.status_code}")
+                    except Exception:
+                        err_msg = r.text[:200] or f"HTTP {r.status_code}"
+
+                    diag = (
+                        f"❌ Sync Key Diagnosis - ERROR (HTTP {r.status_code})\n\n"
+                        f"Server Response:\n{err_msg}\n\n"
+                        f"Actionable Troubleshooting Steps:\n"
+                        f"1. Type '!synckey' in your Discord server to generate a fresh sync key.\n"
+                        f"2. Verify RLM Helper Bot is invited to your Discord server.\n"
+                        f"3. Ensure the bot has 'View Channels' and 'Send Messages' permissions on text channel roles."
+                    )
+                    self.root.after(0, lambda: messagebox.showerror("Sync Key Diagnosis - FAILED", diag))
+            except Exception as e:
+                self.root.after(0, lambda: messagebox.showerror("Sync Key Diagnosis - Network Error", f"Failed to reach Discord Bot server:\n{e}"))
+
         threading.Thread(target=task, daemon=True).start()
 
     def _on_active_team_channels_fetched(self, target_team_key, success, channels_list, status_msg):
@@ -1890,14 +1947,14 @@ del /f "%~f0" > NUL
 
         # Determine target command line / runner path
         if getattr(sys, "frozen", False):
-            exe_path = f'"{sys.executable}"'
-            args_am = f'{exe_path} --week current'
-            args_pm = f'{exe_path} --week current'
+            exe_path = sys.executable
+            args_am = f'\\"{exe_path}\\" --week current'
+            args_pm = f'\\"{exe_path}\\" --week current'
         else:
-            py_exe = f'"{sys.executable}"'
-            script_path = f'"{os.path.join(os.path.dirname(os.path.abspath(__file__)), "raidlootmatrix_mplus.py")}"'
-            args_am = f'{py_exe} {script_path} --week current'
-            args_pm = f'{py_exe} {script_path} --week current'
+            py_exe = sys.executable
+            script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "raidlootmatrix_mplus.py")
+            args_am = f'\\"{py_exe}\\" \\"{script_path}\\" --week current'
+            args_pm = f'\\"{py_exe}\\" \\"{script_path}\\" --week current'
 
         registered = []
 
