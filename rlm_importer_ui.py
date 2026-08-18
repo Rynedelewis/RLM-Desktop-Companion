@@ -41,7 +41,13 @@ try:
 except Exception:
     pass
 
-VERSION = "1.8.4"
+VERSION = "1.8.5"
+
+def parse_version_tuple(v_str):
+    try:
+        return tuple(map(int, (str(v_str).strip().lstrip("v").split("."))))
+    except Exception:
+        return (0, 0, 0)
 
 # 👑 Premium Gold & Obsidian Theme Design System Tokens
 BG_DARK = "#0c0a09"          # Warm obsidian charcoal
@@ -339,9 +345,31 @@ class RLMImporterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("RaidLootMatrix Companion - Gold Edition")
-        self.root.geometry("980x700")
+        
+        # Load settings early to restore saved window size & position
+        self.config_path = pathlib.Path(os.environ.get("APPDATA", r"C:\Users\Public"), "RaidLootMatrixCompanion", "rlm_importer_config.json")
+        self.settings = self.load_settings()
+        
+        saved_geom = self.settings.get("window_geometry", "")
+        if saved_geom:
+            try:
+                self.root.geometry(saved_geom)
+            except Exception:
+                self.root.geometry("980x700")
+        else:
+            self.root.geometry("980x700")
+
         self.root.minsize(880, 600)
         self.root.configure(bg=BG_DARK)
+
+        # Bind configure event to save window position & size changes dynamically
+        def _on_window_configure(event):
+            if event.widget == self.root:
+                try:
+                    self.settings["window_geometry"] = self.root.winfo_geometry()
+                except Exception:
+                    pass
+        self.root.bind("<Configure>", _on_window_configure)
 
         # Configure global options for Tcl/Tk controls to eliminate white spots on dropdown popups & listboxes
         self.root.option_add('*Listbox.background', BG_ENTRY)
@@ -488,7 +516,7 @@ class RLMImporterApp:
                 if r.status_code == 200:
                     data = r.json()
                     tag = data.get("tag_name", "").strip().lstrip("v")
-                    if tag and tag > VERSION:
+                    if tag and parse_version_tuple(tag) > parse_version_tuple(VERSION):
                         download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion_Setup_v{tag}.exe"
                         for asset in data.get("assets", []):
                             aname = asset.get("name", "").lower()
@@ -1507,6 +1535,15 @@ del /f "%~f0" > NUL
             self.settings["mplus_schedule"] = self.cb_mplus_schedule.get().strip()
         if hasattr(self, "var_pin_update_mode"):
             self.settings["pin_update_mode"] = self.var_pin_update_mode.get()
+
+        # Save current window geometry (width, height, position X, Y)
+        try:
+            if hasattr(self, "root") and self.root:
+                geom = self.root.winfo_geometry()
+                if geom:
+                    self.settings["window_geometry"] = geom
+        except Exception:
+            pass
 
         # Save per-team discord settings
         self._save_current_team_view()
