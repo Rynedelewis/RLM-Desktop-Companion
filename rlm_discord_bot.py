@@ -112,6 +112,10 @@ class RLMHelperBot(commands.Bot):
                 return web.json_response({"error": "Invalid Sync Key. Type !synckey in your Discord server to retrieve your key."}, status=403)
             
             gid_int = int(guild_id)
+            guild_name = "Discord Server"
+            channels = []
+
+            # 1. Check in-memory gateway guild cache first
             guild = self.get_guild(gid_int)
             if not guild:
                 for g in self.guilds:
@@ -119,45 +123,59 @@ class RLMHelperBot(commands.Bot):
                         guild = g
                         break
             
-            if not guild:
-                try:
-                    guild = await self.fetch_guild(gid_int)
-                except Exception:
-                    guild = None
-            
-            if not guild:
-                cached_ids = [str(g.id) for g in self.guilds]
-                return web.json_response({
-                    "error": f"RLM Discord Bot cannot access server (Target Guild ID: {guild_id}, Connected Guild IDs: {cached_ids}). Verify bot is invited to your server."
-                }, status=404)
-            
-            channels = []
-            text_channels = []
-            if hasattr(guild, "text_channels") and guild.text_channels:
-                text_channels = guild.text_channels
-            else:
-                try:
-                    text_channels = await guild.fetch_channels()
-                except Exception:
-                    text_channels = []
+            if guild:
+                guild_name = getattr(guild, "name", "Discord Server")
+                text_channels = getattr(guild, "text_channels", []) or []
+                for ch in text_channels:
+                    if isinstance(ch, discord.TextChannel):
+                        channels.append({
+                            "id": str(ch.id),
+                            "name": f"#{ch.name}"
+                        })
 
-            me = getattr(guild, "me", None)
-            if not me and hasattr(guild, "get_member"):
-                me = guild.get_member(self.user.id) if self.user else None
-
-            for ch in text_channels:
-                if isinstance(ch, discord.TextChannel):
-                    channels.append({
-                        "id": str(ch.id),
-                        "name": f"#{ch.name}"
-                    })
-            
+            # 2. If cached channels are empty (e.g. gateway cache lag after bot restart), query Discord REST API directly
             if not channels:
-                return web.json_response({"error": "No text channels found in this Discord server."}, status=404)
+                try:
+                    g_raw = await self.http.get_guild(gid_int)
+                    if g_raw and isinstance(g_raw, dict):
+                        guild_name = g_raw.get("name", guild_name)
+                except Exception:
+                    pass
+
+                try:
+                    raw_channels = await self.http.get_guild_channels(gid_int)
+                    if raw_channels and isinstance(raw_channels, list):
+                        for ch in raw_channels:
+                            ch_type = ch.get("type", 0)
+                            # Type 0 = GUILD_TEXT, Type 5 = GUILD_ANNOUNCEMENT
+                            if ch_type in (0, 5) and ch.get("name"):
+                                channels.append({
+                                    "id": str(ch.get("id")),
+                                    "name": f"#{ch.get('name')}"
+                                })
+                except discord.Forbidden:
+                    return web.json_response({
+                        "error": f"RLM Discord Bot lacks permissions to read channels in server '{guild_name}' (Guild ID: {guild_id}). Ensure bot role has 'View Channels' permission."
+                    }, status=403)
+                except discord.NotFound:
+                    return web.json_response({
+                        "error": f"RLM Discord Bot is not present in server (Guild ID: {guild_id}). Verify bot is invited to your server."
+                    }, status=404)
+                except Exception:
+                    pass
+
+            if not channels:
+                # Check if bot is missing View Channels or if key is tied to non-existent guild
+                cached_ids = [str(g.id) for g in self.guilds]
+                if str(gid_int) not in cached_ids and not guild:
+                    return web.json_response({
+                        "error": f"RLM Discord Bot cannot access server (Target Guild ID: {guild_id}). Type !synckey in your Discord server to re-register."
+                    }, status=404)
+                return web.json_response({"error": f"No text channels found in server '{guild_name}'. Ensure bot role has 'View Channels' permission."}, status=404)
 
             return web.json_response({
                 "success": True,
-                "guild_name": getattr(guild, "name", "Discord Server"),
+                "guild_name": guild_name,
                 "channels": channels
             })
         except Exception as e:
@@ -669,7 +687,7 @@ async def rlm_help_internal(ctx):
         inline=False
     )
     embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
-    embed.set_footer(text="RaidLootMatrix Bot v1.2.0")
+    embed.set_footer(text="RaidLootMatrix Bot v1.2.1")
     await ctx.send(embed=embed)
 
 # Parent Hybrid Group
