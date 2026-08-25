@@ -48,17 +48,17 @@ class AnnouncementBot(discord.Client):
         print(f"Posting announcement to #{target_ch.name}...")
 
         embed = discord.Embed(
-            title="📢 RaidLootMatrix Companion v1.5.0 Released!",
+            title="📢 RaidLootMatrix Companion v1.5.5 - Update & Stability Notice",
             description=(
-                "Hey everyone! 👋 We just dropped **RaidLootMatrix Desktop Companion v1.5.0**!\n\n"
-                "Starting with v1.5.0, we're transitioning to a brand-new, self-contained **Windows Setup Installer** (`.exe`) and **macOS Package** (`.dmg`) hosted directly on GitHub!\n\n"
-                "✨ **What's New in v1.5.0:**\n"
-                "• **Standalone Setup Installer:** Easy single-click installation with Start Menu shortcuts and full Windows uninstaller integration.\n"
-                "• **Automated Discord Standings & M+ Leaderboards:** The bot now automatically formats, posts, and updates pinned EPGP Standings and Mythic+ Leaderboards in your server channels!\n"
-                "• **Clean Channel Scoping:** Dropdowns remain completely blank until a valid Sync Key is linked to your team.\n\n"
-                "📥 **How to Download & Upgrade:**\n"
-                "Head over to our official GitHub Releases page to download the latest setup file:\n"
-                "👉 **[Download RLM Companion v1.5.0 on GitHub Releases](https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/tag/v1.5.0)**\n\n"
+                "Hey everyone! 👋 Thanks for your patience while we worked through a few initial launch hiccups with the new standalone desktop companion.\n\n"
+                "We've been hard at work troubleshooting and squashing startup & packaging bugs over the last few iterations, and we're happy to report that **v1.5.5 is now live and stable**! 🎉\n\n"
+                "✨ **v1.5.5 Update Highlights:**\n"
+                "• **100% Self-Contained Executable:** Run directly anywhere on your PC without missing DLL errors or extra folders.\n"
+                "• **Seamless In-App Auto-Updates:** Future updates can now be downloaded and applied with a single click right from inside the app.\n"
+                "• **Full Gold & Obsidian UI Branding:** Polished titlebars, taskbar icons, and dark theme modals.\n\n"
+                "📥 **Download & Upgrade to v1.5.5:**\n"
+                "If you experienced any errors on earlier 1.5.x builds, grab the fresh **v1.5.5** executable directly from GitHub Releases:\n"
+                "👉 **[Download RLM Companion v1.5.5 on GitHub](https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/tag/v1.5.5)**\n\n"
                 "Happy raiding and key pushing! ⚔️"
             ),
             color=discord.Color.gold()
@@ -66,7 +66,7 @@ class AnnouncementBot(discord.Client):
         embed.set_footer(text="RaidLootMatrix Helper Bot • Official Announcement")
 
         await target_ch.send(embed=embed)
-        print(f"🟢 Successfully posted announcement to #{target_ch.name}!")
+        print(f"[SUCCESS] Posted announcement to #{target_ch.name}!")
         await self.close()
 
 if __name__ == "__main__":

@@ -307,7 +307,7 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
         "region": REGION,
         "realm":  slug,
         "name":   name,
-        "fields": "mythic_plus_scores_by_season:current,mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs",
+        "fields": "mythic_plus_scores_by_season:current,mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs,mythic_plus_alternate_runs,mythic_plus_highest_level_runs",
     }
     score_val = 0.0
     data = None
@@ -318,16 +318,10 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
                 return [], 0.0
             r.raise_for_status()
             data = r.json()
-            try:
-                scores_list = data.get("mythic_plus_scores_by_season", [])
-                if scores_list and len(scores_list) > 0:
-                    score_val = float(scores_list[0].get("scores", {}).get("all", 0.0))
-            except Exception:
-                score_val = 0.0
-            break  # success
+            break
         except Exception as e:
             if attempt < 2:
-                wait = 2 ** attempt  # 1s, 2s
+                wait = 2 ** attempt
                 print(f"  [retry {attempt+1}/3 after {e}]", end=" ")
                 time.sleep(wait)
             else:
@@ -338,6 +332,15 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
 
     if not data:
         return [], 0.0
+
+    season_slug = None
+    try:
+        scores_list = data.get("mythic_plus_scores_by_season", [])
+        if scores_list and len(scores_list) > 0:
+            score_val = float(scores_list[0].get("scores", {}).get("all", 0.0))
+            season_slug = scores_list[0].get("season")
+    except Exception:
+        score_val = 0.0
 
     seen, runs = set(), []
 
@@ -367,6 +370,42 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
 
     add_runs(data.get("mythic_plus_recent_runs") or [])
     add_runs(data.get("mythic_plus_weekly_highest_level_runs") or [])
+    add_runs(data.get("mythic_plus_best_runs") or [])
+    add_runs(data.get("mythic_plus_alternate_runs") or [])
+    add_runs(data.get("mythic_plus_highest_level_runs") or [])
+
+    # Fetch full run history via search API + internal mythic-plus-runs per-dungeon API
+    if season_slug:
+        try:
+            search_url = "https://raider.io/api/search"
+            r_search = requests.get(search_url, params={"term": f"{name}-{slug}"}, timeout=5)
+            if r_search.status_code == 200:
+                matches = r_search.json().get("matches", [])
+                char_id = None
+                if matches and isinstance(matches, list):
+                    char_id = matches[0].get("data", {}).get("id")
+                
+                if char_id:
+                    # 1. Query overall runs for active season
+                    r_int = requests.get("https://raider.io/api/characters/mythic-plus-runs", params={"season": season_slug, "characterId": char_id}, timeout=5)
+                    if r_int.status_code == 200:
+                        raw_runs = [item.get("summary", {}) for item in r_int.json().get("runs", []) if isinstance(item, dict)]
+                        add_runs(raw_runs)
+                    
+                    # 2. Query per-dungeon runs for active season
+                    static_r = requests.get("https://raider.io/api/v1/mythic-plus/static-data", params={"expansion_id": 11}, timeout=5)
+                    if static_r.status_code == 200:
+                        dungeons = static_r.json().get("dungeons", [])
+                        for d in dungeons:
+                            did = d.get("id")
+                            if did:
+                                d_r = requests.get("https://raider.io/api/characters/mythic-plus-runs", params={"season": season_slug, "characterId": char_id, "dungeonId": did}, timeout=5)
+                                if d_r.status_code == 200:
+                                    raw_d_runs = [item.get("summary", {}) for item in d_r.json().get("runs", []) if isinstance(item, dict)]
+                                    add_runs(raw_d_runs)
+        except Exception as e:
+            pass
+
     return runs, score_val
 
 def fetch_runs(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
