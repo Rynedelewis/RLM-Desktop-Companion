@@ -511,13 +511,18 @@ class RLMImporterApp:
                     "User-Agent": getattr(rlm_guild_providers, "DEFAULT_USER_AGENT", "RLMCompanion/1.3.3"),
                     "Accept": "application/vnd.github.v3+json"
                 }
-                url = "https://api.github.com/repos/Rynedelewis/RLM-Desktop-Companion/releases/latest"
-                r = requests.get(url, headers=headers, timeout=6)
-                if r.status_code == 200:
-                    data = r.json()
-                    tag = data.get("tag_name", "").strip().lstrip("v")
-                    if tag and parse_version_tuple(tag) > parse_version_tuple(VERSION):
-                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{tag}/RLM_Companion_Setup_v{tag}.exe"
+                
+                remote_tag = None
+                download_url = None
+
+                # 1. Check Releases API
+                try:
+                    url = "https://api.github.com/repos/Rynedelewis/RLM-Desktop-Companion/releases/latest"
+                    r = requests.get(url, headers=headers, timeout=6)
+                    if r.status_code == 200:
+                        data = r.json()
+                        remote_tag = data.get("tag_name", "").strip().lstrip("v")
+                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{remote_tag}/RLM_Companion_Setup_v{remote_tag}.exe"
                         for asset in data.get("assets", []):
                             aname = asset.get("name", "").lower()
                             if "setup" in aname and aname.endswith(".exe"):
@@ -527,17 +532,34 @@ class RLMImporterApp:
                                 download_url = asset.get("browser_download_url")
                             elif aname.endswith(".exe"):
                                 download_url = asset.get("browser_download_url")
-                        self.root.after(0, lambda: self.show_update_banner(tag, download_url))
-                        self.root.after(500, lambda: self.show_update_popup(tag, download_url))
-                    elif manual:
-                        self.root.after(0, lambda: self.show_toast_banner(f"✅ You are running the latest version (v{VERSION})!"))
+                except Exception:
+                    pass
+
+                # 2. Check Tags API fallback so pushed git tags (v1.8.7) are detected instantly
+                try:
+                    r_tags = requests.get("https://api.github.com/repos/Rynedelewis/RLM-Desktop-Companion/tags", headers=headers, timeout=6)
+                    if r_tags.status_code == 200:
+                        tags_data = r_tags.json()
+                        if tags_data and isinstance(tags_data, list):
+                            tag_names = [t.get("name", "").strip().lstrip("v") for t in tags_data if t.get("name")]
+                            sorted_tags = sorted(tag_names, key=parse_version_tuple, reverse=True)
+                            if sorted_tags:
+                                latest_tag = sorted_tags[0]
+                                if not remote_tag or parse_version_tuple(latest_tag) > parse_version_tuple(remote_tag):
+                                    remote_tag = latest_tag
+                                    download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/archive/refs/tags/v{latest_tag}.zip"
+                except Exception:
+                    pass
+
+                if remote_tag and parse_version_tuple(remote_tag) > parse_version_tuple(VERSION):
+                    self.root.after(0, lambda: self.show_update_banner(remote_tag, download_url))
+                    self.root.after(500, lambda: self.show_update_popup(remote_tag, download_url))
                 elif manual:
-                    self.root.after(0, lambda: self.show_toast_banner("Could not check for updates. Please try again later.", toast_type="error"))
+                    self.root.after(0, lambda: self.show_toast_banner(f"✅ You are running the latest version (v{VERSION})!"))
             except Exception as e:
                 if manual:
                     self.root.after(0, lambda err=e: self.show_toast_banner(f"Update check failed: {err}", toast_type="error"))
             finally:
-                # Schedule recurring automatic check every 6 hours (21,600,000 ms)
                 try:
                     self.root.after(21600000, lambda: self.check_for_updates(manual=False))
                 except Exception:
