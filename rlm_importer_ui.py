@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.8.6"
+VERSION = "1.8.7"
 
 def parse_version_tuple(v_str):
     try:
@@ -89,7 +89,7 @@ LOCALES = {
         "tab_console": " 📋 Operations & Logs",
         
         "card_wow_hdr": " 👑 WoW Client & Account Configuration",
-        "card_sched_hdr": " ⚡ Windows Task Scheduler Automation",
+        "card_sched_hdr": " ⚡ Windows Task Scheduler Automation (M+ Keys, Guild Roster & Calendar Schedule)",
         "card_discord_hdr": " 💬 Discord Bot Synchronization Settings",
         "card_providers_hdr": " 🌐 Guild Data Sources (WoW Audit, WoWUtils, Guilds of WoW)",
         
@@ -101,9 +101,9 @@ LOCALES = {
         "lbl_rio_delay": "API Delay (seconds):",
         "lbl_wow_path": "WoW Directory or WTF Path:",
         "btn_browse": "Browse...",
-        "lbl_sched_am": "AM Scan (24h HH:MM):",
-        "lbl_sched_pm": "PM Scan (24h HH:MM):",
-        "chk_logon": "Run daily scans 5 minutes after logging into Windows",
+        "lbl_sched_am": "Daily AM Team Sync (24h HH:MM):",
+        "lbl_sched_pm": "Daily PM Team Sync (24h HH:MM):",
+        "chk_logon": "Run daily team syncs 5 minutes after logging into Windows",
         "chk_startup": "Start RLM Desktop UI automatically on Windows logon (Tray)",
         "chk_wow_exit": "Sync immediately when WoW closes (Wow.exe Close Watcher)",
         "chk_minimize_on_close": "Minimize to system tray on window close (instead of exiting)",

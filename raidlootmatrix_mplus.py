@@ -896,6 +896,22 @@ def main():
             print("EP will be calculated in-game from Settings -> Mythic+.")
             print("Log in (or /reload) with an officer and open the Mythic+ tab.")
 
+            # Automatically run Guild Roster & Calendar Event Schedule Sync
+            try:
+                print("\n--- Running Automated Guild Data Sync (Roster & Calendar Schedule) ---")
+                import rlm_wowaudit_sync
+                rlm_wowaudit_sync.main()
+            except Exception as e:
+                print(f"[WARNING] Guild Data Sync error: {e}")
+
+            # Automatically sync to Discord/Web backend if configured
+            try:
+                import rlm_discord_sync
+                if hasattr(rlm_discord_sync, "sync_if_configured"):
+                    rlm_discord_sync.sync_if_configured()
+            except Exception:
+                pass
+
 if __name__ == "__main__":
     try:
         main()
