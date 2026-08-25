@@ -360,7 +360,13 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
                 continue
             if SEASON_START_TS > 0 and ts < SEASON_START_TS:
                 continue
-            key = (completed_str, dungeon_id, run.get("mythic_level", 0))
+            
+            # Robust deduplication by (ts rounded to 60s, dungeon_name, mythic_level)
+            ts_rounded = round(ts / 60) * 60
+            norm_dname = dungeon_name.lower().strip()
+            level_val = int(run.get("mythic_level") or run.get("keystone_level") or 0)
+
+            key = (ts_rounded, norm_dname, level_val)
             if key in seen:
                 continue
             seen.add(key)
@@ -525,6 +531,23 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
     history       = load_history(sv_path)
     applied_flags = read_applied_flags(sv_path)
 
+    # Clean and deduplicate details array for incoming awards
+    for award in awards:
+        seen_det = set()
+        clean_det = []
+        for d in award.get("details", []):
+            dname = str(d.get("dungeon", "")).strip().lower()
+            lvl = int(d.get("level", 0))
+            ts_val = int(d.get("ts", 0))
+            ts_rounded = round(ts_val / 300) * 300 if ts_val > 0 else 0
+            d_key = (ts_rounded, lvl) if ts_rounded > 0 else (dname, lvl)
+            if d_key in seen_det:
+                continue
+            seen_det.add(d_key)
+            clean_det.append(d)
+        award["details"] = clean_det
+        award["run_count"] = len(clean_det)
+
     # Build new week entry (raw runs only, no EP)
     new_week = {
         "week":       week_str,
@@ -535,8 +558,23 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
     }
     history[week_str] = new_week
 
-    # Never prune — keep all history unless manually cleared
-    # (user can delete RaidLootMatrixMplusHistory.json to reset)
+    # Clean and deduplicate details for ALL weeks in history
+    for wk in history.values():
+        for award in wk.get("awards", []):
+            seen_det = set()
+            clean_det = []
+            for d in award.get("details", []):
+                dname = str(d.get("dungeon", "")).strip().lower()
+                lvl = int(d.get("level", 0))
+                ts_val = int(d.get("ts", 0))
+                ts_rounded = round(ts_val / 300) * 300 if ts_val > 0 else 0
+                d_key = (ts_rounded, lvl) if ts_rounded > 0 else (dname, lvl)
+                if d_key in seen_det:
+                    continue
+                seen_det.add(d_key)
+                clean_det.append(d)
+            award["details"] = clean_det
+            award["run_count"] = len(clean_det)
 
     # Save JSON sidecar
     with open(json_path, "w", encoding="utf-8") as f:
@@ -561,7 +599,18 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
             lines.append(f"          player  = {lua_str(award['player'])},")
             lines.append(f"          highest = {award.get('highest', 0)},")
             lines.append(f"          details = {{")
+            
+            # Deduplicate player details by (ts_rounded, level)
+            seen_det = set()
             for d in award.get("details", []):
+                dname = str(d.get("dungeon", "")).strip().lower()
+                lvl = int(d.get("level", 0))
+                ts_val = int(d.get("ts", 0))
+                ts_rounded = round(ts_val / 300) * 300 if ts_val > 0 else 0
+                d_key = (ts_rounded, lvl) if ts_rounded > 0 else (dname, lvl)
+                if d_key in seen_det:
+                    continue
+                seen_det.add(d_key)
                 lines.append(
                     f"            {{dungeon={lua_str(d['dungeon'])}, level={d['level']}, "
                     f"timed={str(d['timed']).lower()}, rosterExtras={d.get('rosterExtras', 0)}, "
