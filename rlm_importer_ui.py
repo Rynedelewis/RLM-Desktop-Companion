@@ -547,7 +547,11 @@ class RLMImporterApp:
                                 latest_tag = sorted_tags[0]
                                 if not remote_tag or parse_version_tuple(latest_tag) > parse_version_tuple(remote_tag):
                                     remote_tag = latest_tag
-                                    download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/archive/refs/tags/v{latest_tag}.zip"
+                                    if not download_url:
+                                        if getattr(sys, "frozen", False):
+                                            download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{latest_tag}/RLM_Companion_Setup_v{latest_tag}.exe"
+                                        else:
+                                            download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/archive/refs/tags/v{latest_tag}.zip"
                 except Exception:
                     pass
 
