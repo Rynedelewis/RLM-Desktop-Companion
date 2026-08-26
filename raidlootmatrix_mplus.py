@@ -99,18 +99,21 @@ if SEASON_START_DATE:
 
 # Realm slug mapping: WoW format → Raider.IO slug
 REALM_SLUGS = {
-    "Illidan":        "illidan",
-    "Area52":         "area-52",
-    "Whisperwind":    "whisperwind",
-    "Tichondrius":    "tichondrius",
-    "Magtheridon":    "magtheridon",
-    "Sargeras":       "sargeras",
-    "Proudmoore":     "proudmoore",
-    "Dentarg":        "dentarg",
-    "Deathwing":      "deathwing",
-    "Stormrage":      "stormrage",
-    "Hyjal":          "hyjal",
-    "Dragonmaw":      "dragonmaw",
+    "Illidan":            "illidan",
+    "Area52":             "area-52",
+    "Whisperwind":        "whisperwind",
+    "Tichondrius":        "tichondrius",
+    "Magtheridon":        "magtheridon",
+    "Sargeras":           "sargeras",
+    "Proudmoore":         "proudmoore",
+    "Dentarg":            "dentarg",
+    "Deathwing":          "deathwing",
+    "Stormrage":          "stormrage",
+    "Hyjal":              "hyjal",
+    "Dragonmaw":          "dragonmaw",
+    "pozzodelleternita":  "pozzo-delleternità",
+    "pozzodelleternità":  "pozzo-delleternità",
+    "pozzo-delleternita": "pozzo-delleternità",
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -297,7 +300,11 @@ def fetch_seasons_for_expansion(expansion_id):
 def realm_to_slug(realm):
     if realm in REALM_SLUGS:
         return REALM_SLUGS[realm]
-    return realm.lower().replace(" ", "-").replace("'", "")
+    norm = re.sub(r"[^a-z0-9àáâäæãåāèéêëēîïíīôöòóœøōûüùúū]", "", realm.lower())
+    if norm in REALM_SLUGS:
+        return REALM_SLUGS[norm]
+    clean = realm.lower().strip()
+    return clean.replace("'", "").replace(" ", "-")
 
 def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
     """Fetch M+ runs and score via Raider.IO profile endpoint. Retries up to 3 times on error."""
