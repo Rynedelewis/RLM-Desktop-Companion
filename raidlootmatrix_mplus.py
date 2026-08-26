@@ -518,6 +518,27 @@ def read_applied_flags(sv_path):
         pass
     return flags
 
+def read_cleared_weeks(sv_path):
+    """
+    Read cleared/deleted week flags from RaidLootMatrixMplusImport or profiles in RaidLootMatrix.lua.
+    Returns: (wipe_all: bool, cleared_weeks_set: set)
+    """
+    rc_path = sv_path / "RaidLootMatrix.lua"
+    if not rc_path.exists():
+        return False, set()
+    try:
+        text = rc_path.read_text(encoding="utf-8", errors="replace")
+        idx = text.rfind("RaidLootMatrixMplusImport")
+        block = text[idx:] if idx != -1 else text
+        wipe_all = ("wipe_all = true" in block) or ('["_ALL_"] = true' in block)
+        cleared_weeks = set()
+        for m in re.finditer(r'\["(\d{4}-\d{2}-\d{2})"\]\s*=\s*true', block):
+            cleared_weeks.add(m.group(1))
+        return wipe_all, cleared_weeks
+    except Exception:
+        pass
+    return False, set()
+
 def write_sidecar(sv_path, week_start, awards, lock=False):
     """
     Write raw run data to RaidLootMatrixMplusImport in RaidLootMatrix.lua.
@@ -530,6 +551,14 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
 
     history       = load_history(sv_path)
     applied_flags = read_applied_flags(sv_path)
+    wipe_all, cleared_weeks = read_cleared_weeks(sv_path)
+
+    if wipe_all:
+        history = {}
+    else:
+        for cw in cleared_weeks:
+            if cw in history:
+                del history[cw]
 
     # Clean and deduplicate details array for incoming awards
     for award in awards:
