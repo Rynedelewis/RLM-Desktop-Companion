@@ -31,6 +31,7 @@ import platform
 import re
 import sys
 import time
+import unicodedata
 
 # Force UTF-8 output on Windows to avoid charmap errors
 if sys.platform == "win32" and sys.stdout is not None:
@@ -307,7 +308,7 @@ def realm_to_slug(realm):
     return clean.replace("'", "").replace(" ", "-")
 
 def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
-    """Fetch M+ runs and score via Raider.IO profile endpoint. Retries up to 3 times on error."""
+    """Fetch M+ runs and score via Raider.IO profile endpoint. Retries up to 3 times on error with 3-tier realm resolution."""
     slug = realm_to_slug(realm)
     url  = "https://raider.io/api/v1/characters/profile"
     params = {
@@ -322,6 +323,38 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
         try:
             r = requests.get(url, params=params, timeout=15)
             if r.status_code in (400, 404):
+                # Tier 2: NFKD De-accented slug fallback
+                nfkd = unicodedata.normalize('NFKD', realm)
+                deaccent_slug = re.sub(r"[^a-z0-9\s-]", "", nfkd.lower()).strip().replace("'", "").replace(" ", "-")
+                if deaccent_slug != slug:
+                    params["realm"] = deaccent_slug
+                    r2 = requests.get(url, params=params, timeout=10)
+                    if r2.status_code == 200:
+                        data = r2.json()
+                        break
+
+                # Tier 3: Raider.IO Search API Lookup fallback
+                try:
+                    search_url = "https://raider.io/api/search"
+                    r_search = requests.get(search_url, params={"term": name}, timeout=5)
+                    if r_search.status_code == 200:
+                        matches = r_search.json().get("matches", [])
+                        for m in matches:
+                            if m.get("type") == "character":
+                                cdata = m.get("data", {})
+                                cname = cdata.get("name", "")
+                                crealm_slug = cdata.get("realm", {}).get("slug")
+                                if cname.lower() == name.lower() and crealm_slug:
+                                    params["realm"] = crealm_slug
+                                    r3 = requests.get(url, params=params, timeout=10)
+                                    if r3.status_code == 200:
+                                        data = r3.json()
+                                        break
+                        if data:
+                            break
+                except Exception:
+                    pass
+
                 return [], 0.0
             r.raise_for_status()
             data = r.json()

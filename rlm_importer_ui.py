@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.1"
+VERSION = "1.9.2"
 
 def parse_version_tuple(v_str):
     try:
