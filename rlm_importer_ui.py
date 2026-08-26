@@ -41,7 +41,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.8.9"
+VERSION = "1.9.0"
 
 def parse_version_tuple(v_str):
     try:
@@ -702,12 +702,14 @@ class RLMImporterApp:
 set "_MEIPASS="
 set "_MEIPASS2="
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
-timeout /t 4 /nobreak > NUL
+timeout /t 3 /nobreak > NUL
 start "" /wait "{target_file_str}" /DIR="{app_dir_str}" /FORCECLOSEAPPLICATIONS /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 timeout /t 2 /nobreak > NUL
 del /f "{target_file_str}" > NUL 2>&1
-powershell -Command "Remove-Item Env:\\_MEIPASS -ErrorAction SilentlyContinue; Remove-Item Env:\\_MEIPASS2 -ErrorAction SilentlyContinue; Start-Process '{installed_exe_str}'"
-del /f "%~f0" > NUL
+set "_MEIPASS="
+set "_MEIPASS2="
+start "" "{installed_exe_str}"
+(goto) 2>nul & del "%~f0"
 """
                 else:
                     batch_content = f"""@echo off
@@ -728,8 +730,10 @@ if exist "{target_file_str}" (
 )
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
 timeout /t 1 /nobreak > NUL
-powershell -Command "Remove-Item Env:\\_MEIPASS -ErrorAction SilentlyContinue; Remove-Item Env:\\_MEIPASS2 -ErrorAction SilentlyContinue; Start-Process '{target_exe_name}'"
-del /f "%~f0" > NUL
+set "_MEIPASS="
+set "_MEIPASS2="
+start "" "{target_exe_name}"
+(goto) 2>nul & del "%~f0"
 """
                 batch_path.write_text(batch_content, encoding="utf-8")
                 
