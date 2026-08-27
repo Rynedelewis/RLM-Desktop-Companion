@@ -1456,26 +1456,58 @@ start "" "{target_exe_name}"
             self.lst_providers.insert(tk.END, f"[{ptype}] {name} ➔ {profile} ({scope_str}) | Discord: #{epgp_ch} & #{mplus_ch}{key_override}")
 
     def test_provider_connection(self):
-        ptype_raw = self.cb_provider_type.get()
-        ptype = ptype_raw.lower().replace(" ", "")
+        sel = self.lst_providers.curselection() if hasattr(self, "lst_providers") else None
         
+        ptype, key, gid = None, None, None
+        
+        # Scenario 1: User selected an existing item in the listbox on main tab
+        if sel:
+            idx = sel[0]
+            providers_list = self.settings.get("guild_providers", [])
+            if 0 <= idx < len(providers_list):
+                p = providers_list[idx]
+                ptype = p.get("provider", "wowaudit").lower()
+                key = p.get("api_key", "").strip()
+                gid = (p.get("group_id", "") or p.get("team_key", "")).strip()
+            
+        # Scenario 2: Testing from active modal window fields
+        if not key and hasattr(self, "cb_provider_type") and self.cb_provider_type:
+            try:
+                ptype_raw = self.cb_provider_type.get()
+                ptype = ptype_raw.lower().replace(" ", "")
+                if "utils" in ptype:
+                    ptype = "wowutils"
+                elif "audit" in ptype:
+                    ptype = "wowaudit"
+                key = self.ent_provider_key.get().strip() if hasattr(self, "ent_provider_key") and self.ent_provider_key else ""
+                gid = self.ent_group_id.get().strip() if hasattr(self, "ent_group_id") and self.ent_group_id else ""
+            except Exception:
+                pass
+
+        if not key or not ptype:
+            self.show_toast_banner("Please select a data source connection to test.", toast_type="error")
+            return
+
         if "guild" in ptype or "pending" in ptype:
             messagebox.showwarning(self.L("gow_pending_title"), self.L("gow_pending_dialog"))
             return
 
-        key = self.ent_provider_key.get().strip()
-        gid = self.ent_group_id.get().strip()
-        if not key:
-            messagebox.showerror("Error", "API Key is required to test connection.")
-            return
-        
-        provider_cls = rlm_guild_providers.PROVIDER_CLASSES.get(ptype, rlm_guild_providers.WoWAuditProvider)
-        ok, name, msg = provider_cls.test_connection(key, gid if gid else None)
-        if ok:
-            messagebox.showinfo("Success", f"Connection Successful!\nTarget: {name}")
-            self.log_message(f"Provider test [{ptype.upper()}] succeeded: {name}")
-        else:
-            messagebox.showerror("Connection Failed", f"Could not connect: {msg}")
+        def task():
+            provider_cls = rlm_guild_providers.PROVIDER_CLASSES.get(ptype, rlm_guild_providers.WoWAuditProvider)
+            ok, name, msg = provider_cls.test_connection(key, gid if gid else None)
+            if ok:
+                self.root.after(0, lambda n=name, t=ptype: [
+                    messagebox.showinfo("Success", f"Connection Successful!\nTarget: {n}"),
+                    self.log_message(f"Provider test [{t.upper()}] succeeded: {n}"),
+                    self.show_toast_banner(f"Connected successfully to '{n}'!")
+                ])
+            else:
+                self.root.after(0, lambda m=msg: [
+                    messagebox.showerror("Connection Failed", f"Could not connect: {m}"),
+                    self.show_toast_banner(f"Connection Failed: {m}", toast_type="error")
+                ])
+                
+        threading.Thread(target=task, daemon=True).start()
 
     def add_provider_mapping(self):
         ptype_display = self.cb_provider_type.get()
