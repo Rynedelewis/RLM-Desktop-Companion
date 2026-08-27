@@ -1174,12 +1174,13 @@ start "" "{target_exe_name}"
                     
                     if res.get("success"):
                         gname = res.get("guild_name") or res.get("team_name") or "Connected Guild"
-                        self.root.after(0, lambda: self.show_toast_banner(f"Connected to '{gname}'!"))
+                        self.root.after(0, lambda name=gname: self.show_toast_banner(f"Connected to '{name}'!"))
                     else:
                         err = res.get("error", "Failed")
-                        self.root.after(0, lambda: self.show_toast_banner(f"Connection Failed: {err}", toast_type="error"))
+                        self.root.after(0, lambda msg=err: self.show_toast_banner(f"Connection Failed: {msg}", toast_type="error"))
                 except Exception as e:
-                    self.root.after(0, lambda: self.show_toast_banner(f"Test Error: {e}", toast_type="error"))
+                    err_str = str(e)
+                    self.root.after(0, lambda msg=err_str: self.show_toast_banner(f"Test Error: {msg}", toast_type="error"))
 
             threading.Thread(target=task, daemon=True).start()
 
