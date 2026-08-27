@@ -128,13 +128,13 @@ def get_sv_path(account=None, override=None):
     custom_path = config_data.get("wow_path")
     if custom_path:
         p = pathlib.Path(custom_path)
-        if (p / "RaidLootMatrix.lua").exists():
-            return p
-        if (p / "SavedVariables" / "RaidLootMatrix.lua").exists():
-            return p / "SavedVariables"
+        for fname in ["RaidLootMatrixDB.lua", "RaidLootMatrixMplusImport.lua", "RaidLootMatrix.lua"]:
+            if (p / fname).exists():
+                return p
+            if (p / "SavedVariables" / fname).exists():
+                return p / "SavedVariables"
         if p.name == "SavedVariables":
             return p
-        # If it's a path to Account, we append SavedVariables
         return p / "SavedVariables"
 
     acct = account or ACCOUNT
@@ -201,9 +201,16 @@ def parse_sv(sv_path):
     Returns: (roster: list of "Name-Realm", config: dict)
     Config is used for terminal EP preview only — EP is calculated in-game.
     """
-    lua_file = sv_path / "RaidLootMatrix.lua"
+    lua_file = None
+    for candidate in ["RaidLootMatrixDB.lua", "RaidLootMatrix.lua"]:
+        p = sv_path / candidate
+        if p.exists():
+            lua_file = p
+            break
+    if not lua_file:
+        lua_file = sv_path / "RaidLootMatrixDB.lua"
     if not lua_file.exists():
-        raise FileNotFoundError(f"RaidLootMatrix.lua not found at: {lua_file}")
+        raise FileNotFoundError(f"SavedVariables file not found at: {lua_file}")
 
     with open(lua_file, encoding="utf-8", errors="replace") as f:
         text = f.read()
@@ -541,43 +548,45 @@ def load_history(sv_path):
     return {}
 
 def read_applied_flags(sv_path):
-    """Read applied=true flags from RaidLootMatrix.lua to preserve them on re-import."""
-    rc_path = sv_path / "RaidLootMatrix.lua"
-    flags   = {}
-    if not rc_path.exists():
-        return flags
-    try:
-        text  = rc_path.read_text(encoding="utf-8", errors="replace")
-        idx   = text.rfind("RaidLootMatrixMplusImport")
-        if idx == -1:
-            return flags
-        block = text[idx:]
-        for m in re.finditer(r'\["(\d{4}-\d{2}-\d{2})"\].*?applied\s*=\s*(true|false)', block, re.DOTALL):
-            flags[m.group(1)] = (m.group(2) == "true")
-    except Exception:
-        pass
+    """Read applied=true flags to preserve them on re-import."""
+    flags = {}
+    for fname in ["RaidLootMatrixMplusImport.lua", "RaidLootMatrixDB.lua", "RaidLootMatrix.lua"]:
+        rc_path = sv_path / fname
+        if not rc_path.exists():
+            continue
+        try:
+            text  = rc_path.read_text(encoding="utf-8", errors="replace")
+            idx   = text.rfind("RaidLootMatrixMplusImport")
+            if idx != -1:
+                block = text[idx:]
+                for m in re.finditer(r'\["(\d{4}-\d{2}-\d{2})"\].*?applied\s*=\s*(true|false)', block, re.DOTALL):
+                    flags[m.group(1)] = (m.group(2) == "true")
+        except Exception:
+            pass
     return flags
 
 def read_cleared_weeks(sv_path):
     """
-    Read cleared/deleted week flags from RaidLootMatrixMplusImport or profiles in RaidLootMatrix.lua.
+    Read cleared/deleted week flags from RaidLootMatrixMplusImport or profiles.
     Returns: (wipe_all: bool, cleared_weeks_set: set)
     """
-    rc_path = sv_path / "RaidLootMatrix.lua"
-    if not rc_path.exists():
-        return False, set()
-    try:
-        text = rc_path.read_text(encoding="utf-8", errors="replace")
-        idx = text.rfind("RaidLootMatrixMplusImport")
-        block = text[idx:] if idx != -1 else text
-        wipe_all = ("wipe_all = true" in block) or ('["_ALL_"] = true' in block)
-        cleared_weeks = set()
-        for m in re.finditer(r'\["(\d{4}-\d{2}-\d{2})"\]\s*=\s*true', block):
-            cleared_weeks.add(m.group(1))
-        return wipe_all, cleared_weeks
-    except Exception:
-        pass
-    return False, set()
+    wipe_all = False
+    cleared_weeks = set()
+    for fname in ["RaidLootMatrixMplusImport.lua", "RaidLootMatrixDB.lua", "RaidLootMatrix.lua"]:
+        rc_path = sv_path / fname
+        if not rc_path.exists():
+            continue
+        try:
+            text = rc_path.read_text(encoding="utf-8", errors="replace")
+            idx = text.rfind("RaidLootMatrixMplusImport")
+            block = text[idx:] if idx != -1 else text
+            if ("wipe_all = true" in block) or ('["_ALL_"] = true' in block):
+                wipe_all = True
+            for m in re.finditer(r'\["(\d{4}-\d{2}-\d{2})"\]\s*=\s*true', block):
+                cleared_weeks.add(m.group(1))
+        except Exception:
+            pass
+    return wipe_all, cleared_weeks
 
 def write_sidecar(sv_path, week_start, awards, lock=False):
     """
@@ -694,8 +703,8 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
 
     lua_block = "\n".join(lines)
 
-    # Inject into RaidLootMatrix.lua
-    rc_path = sv_path / "RaidLootMatrix.lua"
+    # Dedicated SavedVariables file registered in RaidLootMatrix.toc
+    mplus_sv_path = sv_path / "RaidLootMatrixMplusImport.lua"
 
     # Warn if WoW is running — simultaneous writes cause file corruption
     try:
@@ -716,24 +725,42 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
 
         if is_running:
             print("\n[WARNING] World of Warcraft is running.")
-            print("          Writing M+ data while WoW is open can corrupt SavedVariables.")
-            print("          Close WoW first, or do /reload after this script finishes.\n")
+            print("          Writing M+ data while WoW is open can overwrite SavedVariables upon logout.")
+            print("          Do /reload after this script finishes to pull in static sync data!\n")
     except Exception:
         pass
 
-    # Always back up before writing (timestamped so nothing is ever overwritten)
+    # Always back up existing SavedVariables file before writing
     import datetime, shutil
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    bak_path = rc_path.with_suffix(f".lua.backup_{ts}")
-    shutil.copy2(rc_path, bak_path)
+    if mplus_sv_path.exists():
+        bak_path = mplus_sv_path.with_suffix(f".lua.backup_{ts}")
+        try:
+            shutil.copy2(mplus_sv_path, bak_path)
+        except Exception:
+            pass
 
-    rc_text = rc_path.read_text(encoding="utf-8", errors="replace")
-    idx = rc_text.rfind("\nRaidLootMatrixMplusImport")
-    if idx == -1:
-        rc_text = rc_text.rstrip() + "\n" + lua_block + "\n"
-    else:
-        rc_text = rc_text[:idx] + "\n" + lua_block + "\n"
-    rc_path.write_text(rc_text, encoding="utf-8")
+    # Write directly to RaidLootMatrixMplusImport.lua
+    try:
+        mplus_sv_path.write_text(lua_block + "\n", encoding="utf-8")
+        print(f"[SUCCESS] SavedVariables written to {mplus_sv_path}")
+    except Exception as e:
+        print(f"[WARNING] Failed to write {mplus_sv_path}: {e}")
+
+    # Also update RaidLootMatrixDB.lua or RaidLootMatrix.lua if present
+    for db_name in ["RaidLootMatrixDB.lua", "RaidLootMatrix.lua"]:
+        db_file = sv_path / db_name
+        if db_file.exists():
+            try:
+                db_text = db_file.read_text(encoding="utf-8", errors="replace")
+                idx = db_text.rfind("\nRaidLootMatrixMplusImport")
+                if idx == -1:
+                    db_text = db_text.rstrip() + "\n" + lua_block + "\n"
+                else:
+                    db_text = db_text[:idx] + "\n" + lua_block + "\n"
+                db_file.write_text(db_text, encoding="utf-8")
+            except Exception:
+                pass
 
     # Write to static addon sync data file to allow direct updates via /reload without logout!
     try:
@@ -753,7 +780,7 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
     except Exception as e:
         print(f"[WARNING] Failed to write addon folder M+ sync file: {e}")
 
-    return rc_path
+    return mplus_sv_path
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Main

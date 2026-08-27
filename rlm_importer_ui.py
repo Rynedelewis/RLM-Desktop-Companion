@@ -42,7 +42,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.3"
+VERSION = "1.9.4"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
