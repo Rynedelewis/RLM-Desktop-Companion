@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 import json
 import os
 import sys
+import socket
 
 # Self-healing PyInstaller environment cleanup
 meipass_env = os.environ.get("_MEIPASS")
@@ -41,7 +42,8 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.2"
+VERSION = "1.9.3"
+SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
     try:
@@ -427,6 +429,29 @@ class RLMImporterApp:
         self.log_message(f"RaidLootMatrix Companion v{VERSION} (Gold Edition) initialized successfully.")
         self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
         self.check_for_updates()
+
+        if hasattr(self, "primary_sock") and self.primary_sock:
+            self.start_instance_listener(self.primary_sock)
+
+        if any(arg in sys.argv for arg in ["--auto", "--sync", "--week", "--scheduled"]):
+            self.root.after(500, self.hide_to_tray)
+            self.root.after(1000, self.trigger_combined_full_sync)
+
+    def start_instance_listener(self, primary_sock):
+        def listen_loop():
+            while True:
+                try:
+                    conn, _ = primary_sock.accept()
+                    data = conn.recv(1024).decode("utf-8", errors="ignore").strip()
+                    conn.close()
+                    if data:
+                        if "FULL_SYNC" in data or "AUTO" in data or "SYNC" in data:
+                            self.root.after(0, self.trigger_combined_full_sync)
+                        elif "SHOW" in data:
+                            self.root.after(0, self.show_window)
+                except Exception:
+                    break
+        threading.Thread(target=listen_loop, daemon=True).start()
 
     def apply_window_icon(self, window):
         if hasattr(self, "icon_path") and self.icon_path and self.icon_path.exists():
@@ -1852,52 +1877,72 @@ start "" "{target_exe_name}"
             self.txt_console.insert(tk.END, f"{msg}\n")
             self.txt_console.see(tk.END)
 
+    def trigger_combined_full_sync(self):
+        """Runs complete sync cycle: Mythic+ Weekly Import -> WoWAudit Calendar Sync -> Discord Sync"""
+        def task():
+            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
+                self.root.after(0, lambda: self.btn_run_mplus.configure(text="⌛ Importing...", state="disabled"))
+            if hasattr(self, "btn_run_wowaudit") and self.btn_run_wowaudit:
+                self.root.after(0, lambda: self.btn_run_wowaudit.configure(text="⌛ Syncing...", state="disabled"))
+
+            self.log_message("==================================================")
+            self.log_message("--- Starting Combined Full Sync (M+ Runs + Guild Calendar + Discord) ---")
+            self.log_message("==================================================")
+            
+            # Step 1: Mythic+ Import & WoWAudit Calendar Sync (raidlootmatrix_mplus triggers both)
+            try:
+                import importlib
+                import raidlootmatrix_mplus
+                importlib.reload(raidlootmatrix_mplus)
+                raidlootmatrix_mplus.main()
+                self.log_message("✓ Mythic+ Runs & Guild Calendar Sync Completed Successfully!")
+            except Exception as e:
+                self.log_message(f"❌ M+ / Guild Calendar Sync Error: {e}")
+            
+            # Step 2: Discord Sync if enabled
+            try:
+                should_sync = True
+                if hasattr(self, "var_sync_on_import"):
+                    should_sync = self.var_sync_on_import.get()
+                if should_sync:
+                    self.log_message("--- Starting Discord Bot Sync ---")
+                    import rlm_discord_sync
+                    importlib.reload(rlm_discord_sync)
+                    if "--force" not in sys.argv:
+                        sys.argv.append("--force")
+                    rlm_discord_sync.main()
+                    self.log_message("✓ Discord Bot Sync Completed Successfully!")
+            except Exception as e:
+                self.log_message(f"❌ Discord Sync Error: {e}")
+                
+            self.log_message("==================================================")
+            self.log_message("--- Combined Full Sync Task Finished ---")
+            self.log_message("==================================================")
+
+            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
+                self.root.after(0, lambda: self.btn_run_mplus.configure(text=self.L("btn_run_mplus"), state="normal"))
+            if hasattr(self, "btn_run_wowaudit") and self.btn_run_wowaudit:
+                self.root.after(0, lambda: self.btn_run_wowaudit.configure(text=self.L("btn_run_guild"), state="normal"))
+            
+            self.root.after(0, lambda: self.show_toast_banner("Full Team & M+ Sync Completed Successfully!"))
+            
+        threading.Thread(target=task, daemon=True).start()
+
     def trigger_live_import(self):
         try:
             self._save_current_team_view()
             self.save_settings()
         except Exception:
             pass
-        def task():
-            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
-                self.root.after(0, lambda: self.btn_run_mplus.configure(text="⌛ Importing M+ Data...", state="disabled"))
-            self.log_message("--- Starting Mythic+ Import ---")
-            error_occurred = None
-            try:
-                import importlib
-                import raidlootmatrix_mplus
-                importlib.reload(raidlootmatrix_mplus)
-                raidlootmatrix_mplus.main()
-                self.log_message("--- Mythic+ Import Completed ---")
-            except Exception as e:
-                error_occurred = str(e)
-                self.log_message(f"Import Error: {e}")
-
-            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
-                self.root.after(0, lambda: self.btn_run_mplus.configure(text=self.L("btn_run_mplus"), state="normal"))
-
-            if not error_occurred:
-                should_sync = True
-                if hasattr(self, "var_sync_on_import"):
-                    should_sync = self.var_sync_on_import.get()
-                if should_sync:
-                    self.log_message("Triggering automatic Discord Sync after M+ import...")
-                    self.trigger_discord_sync()
-
-        threading.Thread(target=task, daemon=True).start()
+        self.trigger_combined_full_sync()
 
     def trigger_wowaudit_sync(self):
-        def task():
-            self.log_message("--- Starting Guild Data Sync (All Sources) ---")
-            try:
-                import importlib
-                import rlm_wowaudit_sync
-                importlib.reload(rlm_wowaudit_sync)
-                rlm_wowaudit_sync.main()
-                self.log_message("--- Guild Data Sync Task Finished ---")
-            except Exception as e:
-                self.log_message(f"Sync Error: {e}")
-        threading.Thread(target=task, daemon=True).start()
+        try:
+            self._save_current_team_view()
+            self.save_settings()
+        except Exception:
+            pass
+        self.trigger_combined_full_sync()
 
     def trigger_discord_sync(self):
         try:
@@ -2126,7 +2171,30 @@ start "" "{target_exe_name}"
         self.root.destroy()
         sys.exit(0)
 
+def check_single_instance():
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", SINGLE_INSTANCE_PORT))
+        sock.listen(5)
+        return sock
+    except OSError:
+        # Port is already bound by an existing running process of RLM_Companion!
+        try:
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.settimeout(2.0)
+            client.connect(("127.0.0.1", SINGLE_INSTANCE_PORT))
+            msg = "FULL_SYNC" if any(arg in sys.argv for arg in ["--auto", "--sync", "--week", "--scheduled"]) else "SHOW"
+            client.sendall(msg.encode("utf-8"))
+            client.close()
+        except Exception:
+            pass
+        sys.exit(0)
+
 if __name__ == "__main__":
+    primary_sock = check_single_instance()
     root = tk.Tk()
     app = RLMImporterApp(root)
+    app.primary_sock = primary_sock
+    if hasattr(app, "start_instance_listener") and primary_sock:
+        app.start_instance_listener(primary_sock)
     root.mainloop()
