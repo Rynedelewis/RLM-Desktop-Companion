@@ -1052,7 +1052,8 @@ start "" "{target_exe_name}"
         p_frame = ttk.Frame(grid, style="Panel.TFrame")
         p_frame.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=6)
 
-        cb_type = ttk.Combobox(p_frame, values=["WoWUtils", "WoW Audit", "Guilds of WoW (Pending)"], state="readonly", width=26)
+        self.cb_provider_type = ttk.Combobox(p_frame, values=["WoWUtils", "WoW Audit", "Guilds of WoW (Pending)"], state="readonly", width=26)
+        cb_type = self.cb_provider_type
         cb_type.pack(side="left")
         
         init_type = p_data.get("provider", "wowutils").lower()
@@ -1061,14 +1062,16 @@ start "" "{target_exe_name}"
         # 2. API Token / Key
         lbl_key = ttk.Label(grid, text="API Token / Key:", style="Panel.TLabel")
         lbl_key.grid(row=1, column=0, sticky="w", pady=6)
-        ent_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
+        self.ent_provider_key = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
+        ent_key = self.ent_provider_key
         ent_key.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=6)
         ent_key.insert(0, p_data.get("api_key", ""))
 
         # 3. Group / Team ID
         lbl_group = ttk.Label(grid, text="Group / Team ID (Optional):", style="Panel.TLabel")
         lbl_group.grid(row=2, column=0, sticky="w", pady=6)
-        ent_group = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
+        self.ent_group_id = tk.Entry(grid, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_GOLD_BRIGHT, relief="flat", highlightbackground=BORDER_GOLD, highlightthickness=1)
+        ent_group = self.ent_group_id
         ent_group.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=6)
         ent_group.insert(0, p_data.get("group_id", ""))
 
@@ -1077,7 +1080,8 @@ start "" "{target_exe_name}"
         lbl_prof.grid(row=3, column=0, sticky="w", pady=6)
         
         profile_choices = self.load_profile_choices()
-        cb_prof = ttk.Combobox(grid, values=profile_choices, state="readonly" if profile_choices else "normal")
+        self.cb_provider_profile = ttk.Combobox(grid, values=profile_choices, state="readonly" if profile_choices else "normal")
+        cb_prof = self.cb_provider_profile
         cb_prof.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=6)
         
         init_raw_prof = p_data.get("rlm_profile_key", "")
