@@ -42,7 +42,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.4"
+VERSION = "1.9.5"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -560,7 +560,7 @@ class RLMImporterApp:
                 except Exception:
                     pass
 
-                # 2. Check Tags API fallback so pushed git tags (v1.8.7) are detected instantly
+                # 2. Check Tags API fallback so pushed git tags are detected instantly
                 try:
                     r_tags = requests.get("https://api.github.com/repos/Rynedelewis/RLM-Desktop-Companion/tags", headers=headers, timeout=6)
                     if r_tags.status_code == 200:
@@ -572,13 +572,23 @@ class RLMImporterApp:
                                 latest_tag = sorted_tags[0]
                                 if not remote_tag or parse_version_tuple(latest_tag) > parse_version_tuple(remote_tag):
                                     remote_tag = latest_tag
-                                    if not download_url:
-                                        if getattr(sys, "frozen", False):
-                                            download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{latest_tag}/RLM_Companion_Setup_v{latest_tag}.exe"
-                                        else:
-                                            download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/archive/refs/tags/v{latest_tag}.zip"
+                                    if getattr(sys, "frozen", False):
+                                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/releases/download/v{latest_tag}/RLM_Companion_Setup_v{latest_tag}.exe"
+                                    else:
+                                        download_url = f"https://github.com/Rynedelewis/RLM-Desktop-Companion/archive/refs/tags/v{latest_tag}.zip"
                 except Exception:
                     pass
+
+                # 3. Validate download_url to ensure the target installer asset actually exists (avoid 404 loops)
+                if download_url and getattr(sys, "frozen", False):
+                    try:
+                        h_res = requests.head(download_url, allow_redirects=True, timeout=4, headers=headers)
+                        if h_res.status_code == 404:
+                            # Target release installer does not exist on GitHub Releases; fallback to release API or suppress
+                            remote_tag = None
+                            download_url = None
+                    except Exception:
+                        pass
 
                 if remote_tag and parse_version_tuple(remote_tag) > parse_version_tuple(VERSION):
                     self.root.after(0, lambda: self.show_update_banner(remote_tag, download_url))
