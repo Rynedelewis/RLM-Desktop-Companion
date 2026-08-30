@@ -42,7 +42,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.5"
+VERSION = "1.9.6"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -66,16 +66,29 @@ FG_SUCCESS = "#22c55e"       # Emerald green
 FG_BLUE = "#38bdf8"          # Sky blue accent
 
 class StdoutRedirector:
-    """Redirects stdout and stderr prints directly into the GUI console text widget."""
-    def __init__(self, log_func):
+    """Redirects stdout and stderr prints safely into the GUI console text widget."""
+    def __init__(self, log_func, original_stream=None):
         self.log_func = log_func
+        self.original_stream = original_stream
 
     def write(self, str_val):
         if str_val and str_val.strip():
-            self.log_func(str_val.strip('\r\n'))
+            try:
+                self.log_func(str_val.strip('\r\n'))
+            except Exception:
+                pass
+        if self.original_stream:
+            try:
+                self.original_stream.write(str_val)
+            except Exception:
+                pass
 
     def flush(self):
-        pass
+        if self.original_stream:
+            try:
+                self.original_stream.flush()
+            except Exception:
+                pass
 
     def reconfigure(self, **kwargs):
         pass
@@ -423,8 +436,8 @@ class RLMImporterApp:
         self.create_widgets()
 
         # Redirect stdout and stderr so all module prints stream live to the GUI console log
-        sys.stdout = StdoutRedirector(self.log_message)
-        sys.stderr = StdoutRedirector(self.log_message)
+        sys.stdout = StdoutRedirector(self.log_message, sys.__stdout__)
+        sys.stderr = StdoutRedirector(self.log_message, sys.__stderr__)
 
         self.log_message(f"RaidLootMatrix Companion v{VERSION} (Gold Edition) initialized successfully.")
         self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
@@ -734,13 +747,18 @@ class RLMImporterApp:
 
                 if is_setup:
                     batch_content = f"""@echo off
+setlocal
 set "_MEIPASS="
 set "_MEIPASS2="
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
-timeout /t 3 /nobreak > NUL
-start "" /wait "{target_file_str}" /DIR="{app_dir_str}" /FORCECLOSEAPPLICATIONS /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 timeout /t 2 /nobreak > NUL
-del /f "{target_file_str}" > NUL 2>&1
+if exist "{installed_exe_str}" (
+    ren "{installed_exe_str}" "{target_exe_name}.old_%RANDOM%" > NUL 2>&1
+)
+start "" /wait "{target_file_str}" /DIR="{app_dir_str}" /FORCECLOSEAPPLICATIONS /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+timeout /t 1 /nobreak > NUL
+del /f /q "{target_file_str}" > NUL 2>&1
+del /f /q "{app_dir_str}\\*.old_*" > NUL 2>&1
 set "_MEIPASS="
 set "_MEIPASS2="
 start "" "{installed_exe_str}"
@@ -748,10 +766,11 @@ start "" "{installed_exe_str}"
 """
                 else:
                     batch_content = f"""@echo off
+setlocal
 set "_MEIPASS="
 set "_MEIPASS2="
 taskkill /F /IM "{target_exe_name}" > NUL 2>&1
-timeout /t 3 /nobreak > NUL
+timeout /t 2 /nobreak > NUL
 cd /d "{app_dir_str}"
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
 if exist "{target_file_str}" (
@@ -759,15 +778,19 @@ if exist "{target_file_str}" (
         powershell -Command "Expand-Archive -Path '{target_file_str}' -DestinationPath '.' -Force" > NUL 2>&1
         del /f "{target_file_str}" > NUL 2>&1
     ) else (
-        copy /y "{target_file_str}" "{target_exe_name}" > NUL
-        del /f "{target_file_str}" > NUL
+        if exist "{target_exe_name}" (
+            ren "{target_exe_name}" "{target_exe_name}.old_%RANDOM%" > NUL 2>&1
+        )
+        copy /y "{target_file_str}" "{target_exe_name}" > NUL 2>&1
+        del /f "{target_file_str}" > NUL 2>&1
+        del /f /q "*.old_*" > NUL 2>&1
     )
 )
 if exist "_internal" rmdir /s /q "_internal" > NUL 2>&1
 timeout /t 1 /nobreak > NUL
 set "_MEIPASS="
 set "_MEIPASS2="
-start "" "{target_exe_name}"
+start "" "{installed_exe_str}"
 (goto) 2>nul & del "%~f0"
 """
                 batch_path.write_text(batch_content, encoding="utf-8")
@@ -1920,9 +1943,20 @@ start "" "{target_exe_name}"
         self.save_settings()
 
     def log_message(self, msg):
-        if hasattr(self, "txt_console"):
-            self.txt_console.insert(tk.END, f"{msg}\n")
-            self.txt_console.see(tk.END)
+        if not msg:
+            return
+        def _append():
+            try:
+                if hasattr(self, "txt_console") and self.txt_console and self.txt_console.winfo_exists():
+                    self.txt_console.insert(tk.END, f"{msg}\n")
+                    self.txt_console.see(tk.END)
+            except Exception:
+                pass
+        if hasattr(self, "root") and self.root and self.root.winfo_exists():
+            try:
+                self.root.after(0, _append)
+            except Exception:
+                pass
 
     def trigger_combined_full_sync(self):
         """Runs complete sync cycle: Mythic+ Weekly Import -> WoWAudit Calendar Sync -> Discord Sync"""
@@ -2205,9 +2239,15 @@ start "" "{target_exe_name}"
         self.log_message("Minimized to system tray. Double-click the tray icon to reopen.")
 
     def show_window(self):
-        self.root.deiconify()
-        self.root.lift()
-        self.root.focus_force()
+        try:
+            self.root.deiconify()
+            self.root.state('normal')
+            self.root.lift()
+            self.root.attributes('-topmost', True)
+            self.root.after_idle(self.root.attributes, '-topmost', False)
+            self.root.focus_force()
+        except Exception:
+            pass
 
     def exit_app(self):
         if hasattr(self, "tray_icon") and self.tray_icon:
