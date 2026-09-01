@@ -357,8 +357,9 @@ LOCALES = {
 }
 
 class RLMImporterApp:
-    def __init__(self, root):
+    def __init__(self, root, primary_sock=None):
         self.root = root
+        self.primary_sock = primary_sock
         self.root.title("RaidLootMatrix Companion - Gold Edition")
         
         # Load settings early to restore saved window size & position
@@ -446,9 +447,14 @@ class RLMImporterApp:
         if hasattr(self, "primary_sock") and self.primary_sock:
             self.start_instance_listener(self.primary_sock)
 
+        # Always initialize tray icon on application startup
+        self.create_tray_icon()
+
         if any(arg in sys.argv for arg in ["--auto", "--sync", "--week", "--scheduled"]):
             self.root.after(500, self.hide_to_tray)
             self.root.after(1000, self.trigger_combined_full_sync)
+        else:
+            self.show_window()
 
     def start_instance_listener(self, primary_sock):
         def listen_loop():
@@ -2246,6 +2252,15 @@ start "" "{installed_exe_str}"
             self.root.attributes('-topmost', True)
             self.root.after_idle(self.root.attributes, '-topmost', False)
             self.root.focus_force()
+
+            if sys.platform == "win32":
+                try:
+                    import ctypes
+                    hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id()) or self.root.winfo_id()
+                    ctypes.windll.user32.ShowWindow(hwnd, 9) # SW_RESTORE = 9
+                    ctypes.windll.user32.SetForegroundWindow(hwnd)
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -2261,27 +2276,31 @@ start "" "{installed_exe_str}"
 def check_single_instance():
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("127.0.0.1", SINGLE_INSTANCE_PORT))
         sock.listen(5)
         return sock
     except OSError:
-        # Port is already bound by an existing running process of RLM_Companion!
+        # Port is already bound by an existing running process
+        responsive = False
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.settimeout(2.0)
+            client.settimeout(1.5)
             client.connect(("127.0.0.1", SINGLE_INSTANCE_PORT))
             msg = "FULL_SYNC" if any(arg in sys.argv for arg in ["--auto", "--sync", "--week", "--scheduled"]) else "SHOW"
             client.sendall(msg.encode("utf-8"))
             client.close()
+            responsive = True
         except Exception:
-            pass
-        sys.exit(0)
+            responsive = False
+
+        if responsive and not any(arg in sys.argv for arg in ["--force-show", "--show"]):
+            sys.exit(0)
+        
+        return None
 
 if __name__ == "__main__":
     primary_sock = check_single_instance()
     root = tk.Tk()
-    app = RLMImporterApp(root)
-    app.primary_sock = primary_sock
-    if hasattr(app, "start_instance_listener") and primary_sock:
-        app.start_instance_listener(primary_sock)
+    app = RLMImporterApp(root, primary_sock=primary_sock)
     root.mainloop()
