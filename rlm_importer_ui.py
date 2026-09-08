@@ -42,7 +42,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.6"
+VERSION = "1.9.7"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -2274,6 +2274,31 @@ start "" "{installed_exe_str}"
         sys.exit(0)
 
 def check_single_instance():
+    # 1. Windows Kernel Mutex Check
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            mutex_name = "Global\\RLMDesktopCompanionSingleInstanceMutex"
+            mutex = kernel32.CreateMutexW(None, False, mutex_name)
+            last_error = kernel32.GetLastError()
+            # 183 = ERROR_ALREADY_EXISTS
+            if last_error == 183:
+                try:
+                    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    client.settimeout(1.0)
+                    client.connect(("127.0.0.1", SINGLE_INSTANCE_PORT))
+                    msg = "FULL_SYNC" if any(arg in sys.argv for arg in ["--auto", "--sync", "--week", "--scheduled"]) else "SHOW"
+                    client.sendall(msg.encode("utf-8"))
+                    client.close()
+                except Exception:
+                    pass
+
+                if not any(arg in sys.argv for arg in ["--force-show", "--show"]):
+                    sys.exit(0)
+        except Exception:
+            pass
+
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -2281,8 +2306,6 @@ def check_single_instance():
         sock.listen(5)
         return sock
     except OSError:
-        # Port is already bound by an existing running process
-        responsive = False
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client.settimeout(1.5)
@@ -2290,11 +2313,10 @@ def check_single_instance():
             msg = "FULL_SYNC" if any(arg in sys.argv for arg in ["--auto", "--sync", "--week", "--scheduled"]) else "SHOW"
             client.sendall(msg.encode("utf-8"))
             client.close()
-            responsive = True
         except Exception:
-            responsive = False
+            pass
 
-        if responsive and not any(arg in sys.argv for arg in ["--force-show", "--show"]):
+        if not any(arg in sys.argv for arg in ["--force-show", "--show"]):
             sys.exit(0)
         
         return None
