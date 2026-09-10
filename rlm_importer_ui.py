@@ -42,7 +42,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.7"
+VERSION = "1.9.8"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -104,7 +104,7 @@ LOCALES = {
         "tab_console": " 📋 Operations & Logs",
         
         "card_wow_hdr": " 👑 WoW Client & Account Configuration",
-        "card_sched_hdr": " ⚡ Windows Task Scheduler Automation (M+ Keys, Guild Roster & Calendar Schedule)",
+        "card_sched_hdr": " ⚡ Internal Companion Automation & Scheduler (M+ Keys, Guild Roster & Calendar Schedule)",
         "card_discord_hdr": " 💬 Discord Bot Synchronization Settings",
         "card_providers_hdr": " 🌐 Guild Data Sources (WoW Audit, WoWUtils, Guilds of WoW)",
         
@@ -450,6 +450,12 @@ class RLMImporterApp:
         # Always initialize tray icon on application startup
         self.create_tray_icon()
 
+        # Purge legacy Windows Task Scheduler tasks from OS on startup
+        self.clean_legacy_tasks(silent=True)
+
+        # Start internal companion scheduler loop & WoW process watcher
+        self.start_internal_scheduler()
+
         if any(arg in sys.argv for arg in ["--auto", "--sync", "--week", "--scheduled"]):
             self.root.after(500, self.hide_to_tray)
             self.root.after(1000, self.trigger_combined_full_sync)
@@ -471,6 +477,58 @@ class RLMImporterApp:
                 except Exception:
                     break
         threading.Thread(target=listen_loop, daemon=True).start()
+
+    def start_internal_scheduler(self):
+        """Internal background thread timer that monitors scheduled AM/PM times and WoW.exe process exit."""
+        def scheduler_loop():
+            last_run_am_date = None
+            last_run_pm_date = None
+            wow_was_running = False
+
+            def is_wow_running():
+                try:
+                    res = subprocess.run('tasklist /fi "IMAGENAME eq Wow.exe"', shell=True, capture_output=True, text=True)
+                    if "Wow.exe" in res.stdout or "wow.exe" in res.stdout:
+                        return True
+                except Exception:
+                    pass
+                return False
+
+            self.log_message("🤖 Internal Companion Scheduler & WoW Watcher active.")
+
+            while True:
+                try:
+                    time.sleep(30)
+                    now = datetime.now()
+                    today_str = now.strftime("%Y-%m-%d")
+                    current_time_str = now.strftime("%H:%M")
+
+                    sched_am = self.settings.get("schedule_am", "06:00").strip()
+                    sched_pm = self.settings.get("schedule_pm", "18:00").strip()
+
+                    # AM Check
+                    if sched_am and current_time_str == sched_am and last_run_am_date != today_str:
+                        last_run_am_date = today_str
+                        self.log_message(f"⏰ Internal Scheduler: Triggering Daily AM Sync ({sched_am})...")
+                        self.root.after(0, self.trigger_combined_full_sync)
+
+                    # PM Check
+                    if sched_pm and current_time_str == sched_pm and last_run_pm_date != today_str:
+                        last_run_pm_date = today_str
+                        self.log_message(f"⏰ Internal Scheduler: Triggering Daily PM Sync ({sched_pm})...")
+                        self.root.after(0, self.trigger_combined_full_sync)
+
+                    # WoW Exit Watcher
+                    if self.settings.get("sync_on_wow_exit", True):
+                        wow_running = is_wow_running()
+                        if wow_was_running and not wow_running:
+                            self.log_message("⚔️ Internal Scheduler: WoW exit detected! Triggering post-raid sync...")
+                            self.root.after(0, self.trigger_combined_full_sync)
+                        wow_was_running = wow_running
+                except Exception as e:
+                    pass
+
+        threading.Thread(target=scheduler_loop, daemon=True).start()
 
     def apply_window_icon(self, window):
         if hasattr(self, "icon_path") and self.icon_path and self.icon_path.exists():
@@ -1287,27 +1345,13 @@ start "" "{installed_exe_str}"
         self.chk_minimize_on_close.grid(row=5, column=0, columnspan=2, sticky="w", pady=6)
 
         task_btn_frame = ttk.Frame(card, style="Panel.TFrame")
-        task_btn_frame.pack(fill="x", padx=15, pady=12)
+        task_btn_frame.pack(fill="x", padx=15, pady=15)
 
-        # Row 1: Option A (Clean) & Option B (Register)
-        r1_frame = ttk.Frame(task_btn_frame, style="Panel.TFrame")
-        r1_frame.pack(fill="x", pady=(0, 6))
+        self.btn_save_sched = ttk.Button(task_btn_frame, text="💾 Save Automation Settings", style="Accent.TButton", command=self.save_settings)
+        self.btn_save_sched.pack(side="left", fill="x", expand=True, padx=(0, 5))
 
-        self.btn_clean = ttk.Button(r1_frame, text=self.L("btn_clean_tasks"), command=self.clean_legacy_tasks)
-        self.btn_clean.pack(side="left", fill="x", expand=True, padx=(0, 4))
-
-        self.btn_register = ttk.Button(r1_frame, text=self.L("btn_register_tasks"), command=self.register_background_tasks)
-        self.btn_register.pack(side="right", fill="x", expand=True, padx=(4, 0))
-
-        # Row 2: Repair All (Option A + B) & Remove All
-        r2_frame = ttk.Frame(task_btn_frame, style="Panel.TFrame")
-        r2_frame.pack(fill="x")
-
-        self.btn_repair = ttk.Button(r2_frame, text=self.L("btn_repair_tasks"), style="Accent.TButton", command=self.repair_and_reregister_tasks)
-        self.btn_repair.pack(side="left", fill="x", expand=True, padx=(0, 4))
-
-        self.btn_unregister = ttk.Button(r2_frame, text=self.L("btn_remove_tasks"), command=self.unregister_background_tasks)
-        self.btn_unregister.pack(side="right", fill="x", expand=True, padx=(4, 0))
+        self.btn_clean = ttk.Button(task_btn_frame, text="🧹 Purge Windows Task Scheduler Tasks", command=lambda: self.clean_legacy_tasks(silent=False))
+        self.btn_clean.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
     def build_tab_discord(self, parent):
         container = ttk.Frame(parent, style="Panel.TFrame")
@@ -2233,10 +2277,10 @@ start "" "{installed_exe_str}"
             print(f"Tray icon error: {e}")
 
     def on_window_close(self):
-        if self.settings.get("minimize_on_close", True):
-            self.hide_to_tray()
-        else:
-            self.exit_app()
+            if self.settings.get("minimize_on_close", True):
+                self.hide_to_tray()
+            else:
+                self.exit_app()
 
     def hide_to_tray(self):
         self.root.withdraw()
@@ -2274,6 +2318,9 @@ start "" "{installed_exe_str}"
         sys.exit(0)
 
 def check_single_instance():
+    if "--force-multi" in sys.argv:
+        return None
+
     # 1. Windows Kernel Mutex Check
     if sys.platform == "win32":
         try:
@@ -2293,9 +2340,7 @@ def check_single_instance():
                     client.close()
                 except Exception:
                     pass
-
-                if not any(arg in sys.argv for arg in ["--force-show", "--show"]):
-                    sys.exit(0)
+                sys.exit(0)
         except Exception:
             pass
 
@@ -2315,11 +2360,7 @@ def check_single_instance():
             client.close()
         except Exception:
             pass
-
-        if not any(arg in sys.argv for arg in ["--force-show", "--show"]):
-            sys.exit(0)
-        
-        return None
+        sys.exit(0)
 
 if __name__ == "__main__":
     primary_sock = check_single_instance()
