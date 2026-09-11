@@ -104,7 +104,10 @@ class WoWAuditProvider:
         if sync_roster:
             try:
                 r = requests.get(f"{base_url}/characters", headers=headers, timeout=10)
-                if r.status_code == 200:
+                if r.status_code == 401:
+                    result["auth_error"] = "HTTP 401: Expired or Revoked API Key"
+                    print("  [ERROR] WoW Audit API Key is expired or revoked (HTTP 401).")
+                elif r.status_code == 200:
                     wa_roster = r.json()
                     for c in wa_roster:
                         if c.get("status") == "tracking":
@@ -167,15 +170,16 @@ class WoWAuditProvider:
             except Exception as e:
                 print(f"  [ERROR] WoW Audit wishlists fetch failed: {e}")
 
-        # 3. Fetch Calendar Raids & Signups (Filtered to -1 to +7 days)
+        # 3. Fetch Calendar Raids & Signups (Filtered to -7 to +14 days)
         if sync_calendar:
             try:
                 r = requests.get(f"{base_url}/raids", headers=headers, timeout=10)
                 if r.status_code == 200:
-                    raid_list = r.json().get("raids", [])
+                    raw_data = r.json()
+                    raid_list = raw_data.get("raids", []) if isinstance(raw_data, dict) else (raw_data if isinstance(raw_data, list) else [])
                     today = datetime.date.today()
-                    min_date = today - datetime.timedelta(days=1)
-                    max_date = today + datetime.timedelta(days=7)
+                    min_date = today - datetime.timedelta(days=7)
+                    max_date = today + datetime.timedelta(days=14)
 
                     for rd in raid_list:
                         r_date_str = rd.get("date")
@@ -305,7 +309,10 @@ class WoWUtilsProvider:
         # 1. Fetch Roster
         try:
             r = requests.get(f"{base_url}/groups/{group_id}/roster", headers=headers, timeout=10)
-            if r.status_code == 200:
+            if r.status_code == 401:
+                result["auth_error"] = "HTTP 401: Expired or Revoked API Key"
+                print("  [ERROR] WoWUtils API Key is expired or revoked (HTTP 401).")
+            elif r.status_code == 200:
                 data = r.json()
                 members = data.get("members", [])
                 for m in members:
@@ -367,8 +374,8 @@ class WoWUtilsProvider:
                     events = body.get("data", body) if isinstance(body, dict) else body
                     if isinstance(events, list):
                         today = datetime.date.today()
-                        min_date = today - datetime.timedelta(days=1)
-                        max_date = today + datetime.timedelta(days=7)
+                        min_date = today - datetime.timedelta(days=7)
+                        max_date = today + datetime.timedelta(days=14)
 
                         for ev in events:
                             ev_id = ev.get("eventId") or ev.get("id")

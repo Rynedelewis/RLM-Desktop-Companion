@@ -42,7 +42,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.8"
+VERSION = "1.9.9"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -156,6 +156,8 @@ LOCALES = {
         "btn_run_mplus": "⚔️ Import M+ Data",
         "btn_run_guild": "🔄 Sync Guild Data",
         "btn_run_discord": "💬 Sync Discord Bot",
+        "btn_run_import_all": "🔄 Import Guild Data & M+ Runs",
+        "btn_run_full": "🚀 Combined Full Sync",
         "lbl_update_available": "Update Available: v{remote_version}",
         "btn_update_now": "Update Now",
         "gow_pending_note": "⚠️ Guilds of WoW is Pending API access. Please use WoW Audit or WoWUtils.",
@@ -220,6 +222,8 @@ LOCALES = {
         "btn_run_mplus": "⚔️ 导入 M+ 数据",
         "btn_run_guild": "🔄 同步公会数据",
         "btn_run_discord": "💬 同步 Discord 机器人",
+        "btn_run_import_all": "🔄 导入公会数据与 M+ 记录",
+        "btn_run_full": "🚀 组合全量同步",
         "lbl_update_available": "有可用更新: v{remote_version}",
         "btn_update_now": "立即更新",
         "gow_pending_note": "⚠️ Guilds of WoW 暂未开放 API。请使用 WoW Audit 或 WoWUtils。",
@@ -284,6 +288,8 @@ LOCALES = {
         "btn_run_mplus": "⚔️ 匯入 M+ 數據",
         "btn_run_guild": "🔄 同步公會數據",
         "btn_run_discord": "💬 同步 Discord 機器人",
+        "btn_run_import_all": "🔄 匯入公會數據與 M+ 記錄",
+        "btn_run_full": "🚀 組合全量同步",
         "lbl_update_available": "有可用更新: v{remote_version}",
         "btn_update_now": "更新",
         "gow_pending_note": "⚠️ Guilds of WoW 暫未開放 API。請使用 WoW Audit 或 WoWUtils。",
@@ -348,6 +354,8 @@ LOCALES = {
         "btn_run_mplus": "⚔️ Importar Datos de Mítica+",
         "btn_run_guild": "🔄 Sincronizar Fuentes de Hermandad",
         "btn_run_discord": "💬 Sincronizar Bot de Discord",
+        "btn_run_import_all": "🔄 Importar Datos de Hermandad y Mítica+",
+        "btn_run_full": "🚀 Sincronización Completa",
         "lbl_update_available": "Update Available: v{remote_version}",
         "btn_update_now": "Actualizar Ahora",
         "gow_pending_note": "⚠️ Guilds of WoW está pendiente de API. Use WoW Audit o WoWUtils.",
@@ -479,15 +487,17 @@ class RLMImporterApp:
         threading.Thread(target=listen_loop, daemon=True).start()
 
     def start_internal_scheduler(self):
-        """Internal background thread timer that monitors scheduled AM/PM times and WoW.exe process exit."""
+        """Internal background thread timer that monitors scheduled AM/PM times, periodic background intervals, and WoW.exe process exit."""
         def scheduler_loop():
             last_run_am_date = None
             last_run_pm_date = None
+            last_periodic_ts = time.time()
             wow_was_running = False
 
             def is_wow_running():
                 try:
-                    res = subprocess.run('tasklist /fi "IMAGENAME eq Wow.exe"', shell=True, capture_output=True, text=True)
+                    cflags = 0x08000000 if sys.platform == "win32" else 0
+                    res = subprocess.run('tasklist /fi "IMAGENAME eq Wow.exe"', shell=True, capture_output=True, text=True, creationflags=cflags)
                     if "Wow.exe" in res.stdout or "wow.exe" in res.stdout:
                         return True
                 except Exception:
@@ -506,21 +516,30 @@ class RLMImporterApp:
                     sched_am = self.settings.get("schedule_am", "06:00").strip()
                     sched_pm = self.settings.get("schedule_pm", "18:00").strip()
 
-                    # AM Check
-                    if sched_am and current_time_str == sched_am and last_run_am_date != today_str:
-                        last_run_am_date = today_str
-                        self.log_message(f"⏰ Internal Scheduler: Triggering Daily AM Sync ({sched_am})...")
-                        self.root.after(0, self.trigger_combined_full_sync)
+                    # AM Check (Triggers at sched_am or catches up if app started after sched_am before PM time)
+                    if sched_am:
+                        if (current_time_str >= sched_am and current_time_str < (sched_pm or "23:59")) and last_run_am_date != today_str:
+                            last_run_am_date = today_str
+                            self.log_message(f"⏰ Internal Scheduler: Triggering Daily AM Sync ({sched_am})...")
+                            self.root.after(0, self.trigger_combined_full_sync)
 
-                    # PM Check
-                    if sched_pm and current_time_str == sched_pm and last_run_pm_date != today_str:
-                        last_run_pm_date = today_str
-                        self.log_message(f"⏰ Internal Scheduler: Triggering Daily PM Sync ({sched_pm})...")
-                        self.root.after(0, self.trigger_combined_full_sync)
+                    # PM Check (Triggers at sched_pm or catches up if app started after sched_pm)
+                    if sched_pm:
+                        if current_time_str >= sched_pm and last_run_pm_date != today_str:
+                            last_run_pm_date = today_str
+                            self.log_message(f"⏰ Internal Scheduler: Triggering Daily PM Sync ({sched_pm})...")
+                            self.root.after(0, self.trigger_combined_full_sync)
+
+                    # Periodic Background Refresh (every 4 hours while companion is idle and WoW is not running)
+                    wow_running = is_wow_running()
+                    if (time.time() - last_periodic_ts) >= 14400:
+                        last_periodic_ts = time.time()
+                        if not wow_running:
+                            self.log_message("🔄 Internal Scheduler: Periodic 4-hour background sync cycle triggered...")
+                            self.root.after(0, self.trigger_combined_full_sync)
 
                     # WoW Exit Watcher
                     if self.settings.get("sync_on_wow_exit", True):
-                        wow_running = is_wow_running()
                         if wow_was_running and not wow_running:
                             self.log_message("⚔️ Internal Scheduler: WoW exit detected! Triggering post-raid sync...")
                             self.root.after(0, self.trigger_combined_full_sync)
@@ -1181,7 +1200,7 @@ start "" "{installed_exe_str}"
         cb_prof = self.cb_provider_profile
         cb_prof.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=6)
         
-        init_raw_prof = p_data.get("rlm_profile_key", "")
+        init_raw_prof = p_data.get("rlm_profile_key") or p_data.get("mapped_profile", "")
         init_disp = next((disp for disp, raw in getattr(self, "profile_display_map", {}).items() if raw == init_raw_prof), init_raw_prof)
         if init_disp and init_disp in profile_choices:
             cb_prof.set(init_disp)
@@ -1234,6 +1253,7 @@ start "" "{installed_exe_str}"
                 "api_key": api_key,
                 "group_id": group_id,
                 "rlm_profile_key": raw_prof_key,
+                "mapped_profile": raw_prof_key,
                 "sync_roster": var_r.get(),
                 "sync_calendar": var_c.get(),
                 "sync_alts": var_a.get(),
@@ -1467,11 +1487,8 @@ start "" "{installed_exe_str}"
         action_bar = ttk.Frame(card, style="Panel.TFrame")
         action_bar.pack(fill="x", padx=12, pady=3)
 
-        self.btn_run_mplus = ttk.Button(action_bar, text=self.L("btn_run_mplus"), style="Accent.TButton", command=self.trigger_live_import)
-        self.btn_run_mplus.pack(side="left", fill="x", expand=True, padx=(0, 4))
-
-        self.btn_run_wowaudit = ttk.Button(action_bar, text=self.L("btn_run_guild"), style="Accent.TButton", command=self.trigger_wowaudit_sync)
-        self.btn_run_wowaudit.pack(side="left", fill="x", expand=True, padx=4)
+        self.btn_run_import_all = ttk.Button(action_bar, text=self.L("btn_run_import_all"), style="Accent.TButton", command=self.trigger_guild_and_mplus_import)
+        self.btn_run_import_all.pack(side="left", fill="x", expand=True, padx=(0, 4))
 
         self.btn_run_discord = ttk.Button(action_bar, text=self.L("btn_run_discord"), command=self.trigger_discord_sync)
         self.btn_run_discord.pack(side="left", fill="x", expand=True, padx=(4, 0))
@@ -1523,7 +1540,7 @@ start "" "{installed_exe_str}"
         for p in self.settings.get("guild_providers", []):
             ptype = p.get("provider", "wowaudit").upper()
             name = p.get("name", "Guild")
-            raw_prof = p.get("rlm_profile_key", "")
+            raw_prof = p.get("rlm_profile_key") or p.get("mapped_profile", "")
             profile = raw_prof.split("::")[-1] if raw_prof else "Default"
             scope = []
             if p.get("sync_roster", True): scope.append("Roster")
@@ -1621,7 +1638,7 @@ start "" "{installed_exe_str}"
         if existing_idx is None:
             # Check if this team/profile is already linked to a source for this provider
             for idx, existing in enumerate(providers_list):
-                if existing.get("rlm_profile_key") == raw_profile and existing.get("provider") == ptype:
+                if (existing.get("rlm_profile_key") == raw_profile or existing.get("mapped_profile") == raw_profile) and existing.get("provider") == ptype:
                     existing_idx = idx
                     break
 
@@ -1637,6 +1654,7 @@ start "" "{installed_exe_str}"
             "api_key": key,
             "group_id": gid,
             "rlm_profile_key": raw_profile,
+            "mapped_profile": raw_profile,
             "sync_roster": self.var_sync_roster.get(),
             "sync_calendar": self.var_sync_calendar.get(),
             "sync_alts": self.var_sync_alts.get()
@@ -2008,72 +2026,89 @@ start "" "{installed_exe_str}"
             except Exception:
                 pass
 
-    def trigger_combined_full_sync(self):
-        """Runs complete sync cycle: Mythic+ Weekly Import -> WoWAudit Calendar Sync -> Discord Sync"""
+    def trigger_guild_and_mplus_import(self):
+        """Imports Mythic+ Raider.IO runs & WoWAudit/WoWUtils Guild Roster & Calendar into WoW SavedVariables."""
+        try:
+            self._save_current_team_view()
+            self.save_settings()
+        except Exception:
+            pass
+
         def task():
-            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
-                self.root.after(0, lambda: self.btn_run_mplus.configure(text="⌛ Importing...", state="disabled"))
-            if hasattr(self, "btn_run_wowaudit") and self.btn_run_wowaudit:
-                self.root.after(0, lambda: self.btn_run_wowaudit.configure(text="⌛ Syncing...", state="disabled"))
+            if hasattr(self, "btn_run_import_all") and self.btn_run_import_all:
+                self.root.after(0, lambda: self.btn_run_import_all.configure(text="⌛ Importing Data...", state="disabled"))
 
             self.log_message("==================================================")
-            self.log_message("--- Starting Combined Full Sync (M+ Runs + Guild Calendar + Discord) ---")
+            self.log_message("--- Starting Guild Roster, Calendar & Mythic+ Import ---")
             self.log_message("==================================================")
-            
-            # Step 1: Mythic+ Import & WoWAudit Calendar Sync (raidlootmatrix_mplus triggers both)
+
+            # Step 1: Mythic+ Import (Standalone mode)
             try:
+                self.log_message("--- [1/2] Importing Mythic+ Runs from Raider.IO ---")
                 import importlib
                 import raidlootmatrix_mplus
                 importlib.reload(raidlootmatrix_mplus)
-                raidlootmatrix_mplus.main()
-                self.log_message("✓ Mythic+ Runs & Guild Calendar Sync Completed Successfully!")
+                old_argv = sys.argv[:]
+                sys.argv = [sys.argv[0], "--standalone"]
+                try:
+                    raidlootmatrix_mplus.main()
+                finally:
+                    sys.argv = old_argv
+                self.log_message("✓ [1/2] Mythic+ Runs Import Completed Successfully!")
             except Exception as e:
-                self.log_message(f"❌ M+ / Guild Calendar Sync Error: {e}")
-            
-            # Step 2: Discord Sync if enabled
+                self.log_message(f"❌ [1/2] Mythic+ Import Error: {e}")
+
+            # Step 2: WoWAudit / Guild Data Sync
+            try:
+                self.log_message("--- [2/2] Syncing Guild Roster & Calendar Events ---")
+                import importlib
+                import rlm_wowaudit_sync
+                importlib.reload(rlm_wowaudit_sync)
+                rlm_wowaudit_sync.main()
+                self.log_message("✓ [2/2] Guild Roster & Calendar Sync Completed Successfully!")
+            except Exception as e:
+                self.log_message(f"❌ [2/2] Guild Data Sync Error: {e}")
+
+            # Step 3: Optional Auto Discord Sync if checkbox is enabled
             try:
                 should_sync = True
                 if hasattr(self, "var_sync_on_import"):
                     should_sync = self.var_sync_on_import.get()
                 if should_sync:
-                    self.log_message("--- Starting Discord Bot Sync ---")
+                    self.log_message("--- Auto-Triggering Discord Bot Standings Upload ---")
+                    import importlib
                     import rlm_discord_sync
                     importlib.reload(rlm_discord_sync)
+                    old_argv = sys.argv[:]
                     if "--force" not in sys.argv:
                         sys.argv.append("--force")
-                    rlm_discord_sync.main()
-                    self.log_message("✓ Discord Bot Sync Completed Successfully!")
+                    try:
+                        rlm_discord_sync.main()
+                    finally:
+                        sys.argv = old_argv
+                    self.log_message("✓ Auto Discord Bot Upload Completed Successfully!")
             except Exception as e:
-                self.log_message(f"❌ Discord Sync Error: {e}")
-                
+                self.log_message(f"❌ Auto Discord Sync Error: {e}")
+
             self.log_message("==================================================")
-            self.log_message("--- Combined Full Sync Task Finished ---")
+            self.log_message("--- Guild Data & Mythic+ Import Finished ---")
             self.log_message("==================================================")
 
-            if hasattr(self, "btn_run_mplus") and self.btn_run_mplus:
-                self.root.after(0, lambda: self.btn_run_mplus.configure(text=self.L("btn_run_mplus"), state="normal"))
-            if hasattr(self, "btn_run_wowaudit") and self.btn_run_wowaudit:
-                self.root.after(0, lambda: self.btn_run_wowaudit.configure(text=self.L("btn_run_guild"), state="normal"))
-            
-            self.root.after(0, lambda: self.show_toast_banner("Full Team & M+ Sync Completed Successfully!"))
-            
+            if hasattr(self, "btn_run_import_all") and self.btn_run_import_all:
+                self.root.after(0, lambda: self.btn_run_import_all.configure(text=self.L("btn_run_import_all"), state="normal"))
+
+            self.root.after(0, lambda: self.show_toast_banner("Guild Roster, Calendar & Mythic+ Import Completed!"))
+
         threading.Thread(target=task, daemon=True).start()
 
+    def trigger_combined_full_sync(self):
+        self.trigger_guild_and_mplus_import()
+
     def trigger_live_import(self):
-        try:
-            self._save_current_team_view()
-            self.save_settings()
-        except Exception:
-            pass
-        self.trigger_combined_full_sync()
+        self.trigger_guild_and_mplus_import()
 
     def trigger_wowaudit_sync(self):
-        try:
-            self._save_current_team_view()
-            self.save_settings()
-        except Exception:
-            pass
-        self.trigger_combined_full_sync()
+        self.trigger_guild_and_mplus_import()
 
     def trigger_discord_sync(self):
         try:
@@ -2265,8 +2300,7 @@ start "" "{installed_exe_str}"
             menu = pystray.Menu(
                 pystray.MenuItem("Open RLM Companion", lambda icon, item: self.root.after(0, self.show_window), default=True),
                 pystray.Menu.SEPARATOR,
-                pystray.MenuItem("⚔️ Import M+ Data", lambda icon, item: self.root.after(0, self.trigger_live_import)),
-                pystray.MenuItem("🔄 Sync Guild Data", lambda icon, item: self.root.after(0, self.trigger_wowaudit_sync)),
+                pystray.MenuItem("🔄 Import Guild Data & M+ Runs", lambda icon, item: self.root.after(0, self.trigger_guild_and_mplus_import)),
                 pystray.MenuItem("💬 Sync Discord Bot", lambda icon, item: self.root.after(0, self.trigger_discord_sync)),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Exit RLM Companion", lambda icon, item: self.root.after(0, self.exit_app))

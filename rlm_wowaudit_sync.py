@@ -114,6 +114,87 @@ def parse_profile_roster(text, profile_key):
             
     return active_players
 
+def parse_existing_upcoming_events(content, profile_key):
+    """Extract existing upcomingEvents dict for profile_key from lua_content if present."""
+    for var_name in ["RaidLootMatrixCompanionSync", "RaidLootMatrixWoWAuditSync", "RaidLootMatrixWoWAuditSyncStatic"]:
+        sync_idx = content.find(var_name)
+        if sync_idx == -1:
+            continue
+            
+        sync_table = extract_lua_table(content, sync_idx)
+        if not sync_table:
+            continue
+
+        prof_idx = sync_table.find(f'"{profile_key}"')
+        if prof_idx == -1:
+            continue
+
+        prof_table = extract_lua_table(sync_table, prof_idx)
+        if not prof_table:
+            continue
+
+        ev_idx = prof_table.find('"upcomingEvents"')
+        if ev_idx == -1:
+            continue
+
+        ev_table = extract_lua_table(prof_table, ev_idx)
+        if not ev_table or ev_table.strip() == "{}":
+            continue
+
+        events = {}
+        event_pattern = re.compile(r'\["([^"]+\|\d{4}-\d{2}-\d{2})"\]\s*=')
+        for em in event_pattern.finditer(ev_table):
+            event_key = em.group(1)
+            event_text = extract_lua_table(ev_table, em.end())
+            if not event_text:
+                continue
+            
+            title = event_key.split("|")[0]
+            date_str = event_key.split("|")[-1]
+            diff_m = re.search(r'\["difficulty"\]\s*=\s*"([^"]+)"', event_text)
+            start_m = re.search(r'\["startTime"\]\s*=\s*"([^"]+)"', event_text)
+            end_m = re.search(r'\["endTime"\]\s*=\s*"([^"]+)"', event_text)
+            id_m = re.search(r'\["id"\]\s*=\s*"?([^",\s\}]+)"?', event_text)
+            
+            signups = []
+            signups_idx = event_text.find('"signups"')
+            if signups_idx != -1:
+                signups_table = extract_lua_table(event_text, signups_idx)
+                if signups_table:
+                    s_pattern = re.compile(r'\{\s*\["role"\]')
+                    for sm in s_pattern.finditer(signups_table):
+                        s_text = extract_lua_table(signups_table, sm.start())
+                        if s_text:
+                            s_name = (re.search(r'\["name"\]\s*=\s*"([^"]+)"', s_text) or re.search(r'name\s*=\s*"([^"]+)"', s_text))
+                            s_realm = (re.search(r'\["realm"\]\s*=\s*"([^"]+)"', s_text) or re.search(r'realm\s*=\s*"([^"]+)"', s_text))
+                            s_class = (re.search(r'\["class"\]\s*=\s*"([^"]+)"', s_text) or re.search(r'class\s*=\s*"([^"]+)"', s_text))
+                            s_role = (re.search(r'\["role"\]\s*=\s*"([^"]+)"', s_text) or re.search(r'role\s*=\s*"([^"]+)"', s_text))
+                            s_status = (re.search(r'\["status"\]\s*=\s*"([^"]+)"', s_text) or re.search(r'status\s*=\s*"([^"]+)"', s_text))
+                            
+                            if s_name:
+                                signups.append({
+                                    "name": s_name.group(1),
+                                    "realm": s_realm.group(1) if s_realm else "",
+                                    "class": s_class.group(1) if s_class else "UNKNOWN",
+                                    "role": s_role.group(1) if s_role else "DAMAGER",
+                                    "status": s_status.group(1) if s_status else "Invited"
+                                })
+
+            events[event_key] = {
+                "id": id_m.group(1) if id_m else "event",
+                "title": title,
+                "date": date_str,
+                "startTime": start_m.group(1) if start_m else "19:30",
+                "endTime": end_m.group(1) if end_m else "22:00",
+                "difficulty": diff_m.group(1) if diff_m else "Mythic",
+                "signups": signups
+            }
+
+        if events:
+            return events
+
+    return {}
+
 def get_normalized_providers(config):
     """Normalize guild_providers list, auto-migrating legacy wowaudit_sync if necessary."""
     providers = config.get("guild_providers")
@@ -193,7 +274,7 @@ def main():
 
     file_to_targets = {}
     for target in sync_targets:
-        rlm_profile_cfg = target.get("rlm_profile_key", "").strip()
+        rlm_profile_cfg = (target.get("rlm_profile_key") or target.get("mapped_profile") or target.get("profile") or "").strip()
         if not rlm_profile_cfg:
             continue
         
@@ -227,7 +308,7 @@ def main():
         for target, rlm_profile, rlm_profile_cfg in targets_info:
             provider_type = target.get("provider", "wowaudit").lower()
             api_key = target.get("api_key", "").strip()
-            group_id = target.get("group_id", target.get("team_id"))
+            group_id = target.get("group_id") or target.get("team_id") or target.get("team_key")
             team_name = target.get("name", "Guild Team").strip()
             
             sync_roster = target.get("sync_roster", True)
@@ -253,9 +334,22 @@ def main():
                 sync_alts=sync_alts
             )
             
+            if fetched.get("auth_error"):
+                print(f"  ❌ [WARNING] {provider_type.upper()} API key for '{team_name}' is EXPIRED or REVOKED ({fetched.get('auth_error')}). Please update your API key in Data Sources tab.")
+
             remote_roster = fetched.get("roster", [])
             remote_wishlists = fetched.get("wishlists", {})
             remote_events = fetched.get("upcomingEvents", {})
+            if not remote_events:
+                prev_in_run = sync_output.get("profiles", {}).get(rlm_profile, {}).get("upcomingEvents", {})
+                if prev_in_run:
+                    remote_events = prev_in_run
+                else:
+                    live_lua_content = lua_file.read_text(encoding="utf-8", errors="replace") if lua_file.exists() else lua_content
+                    existing_events = parse_existing_upcoming_events(live_lua_content, rlm_profile)
+                    if existing_events:
+                        remote_events = existing_events
+                        print(f"  [INFO] Retained {len(remote_events)} existing calendar events from database.")
             
             # Perform roster diff if roster sync is enabled
             local_roster = parse_profile_roster(lua_content, rlm_profile)

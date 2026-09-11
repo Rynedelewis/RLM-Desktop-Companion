@@ -387,10 +387,29 @@ def main():
             continue
 
         team_profiles = {profile_key: roster}
-        team_mplus = {profile_key: mplus_leaderboard.get(profile_key, [])}
+        epgp_ch_clean = (p_cfg.get("epgp_channel") or cfg.get("epgp_channel") or "").strip().lstrip("#")
+        mplus_ch_clean = (p_cfg.get("mplus_channel") or cfg.get("mplus_channel") or "").strip().lstrip("#")
 
-        epgp_ch_clean = p_cfg.get("epgp_channel", "").strip().lstrip("#")
-        mplus_ch_clean = p_cfg.get("mplus_channel", "").strip().lstrip("#")
+        if not epgp_ch_clean or not mplus_ch_clean:
+            try:
+                base_api_url = sync_url.rsplit('/', 1)[0]
+                ch_resp = requests.get(f"{base_api_url}/channels", headers={"Authorization": team_key}, timeout=5)
+                if ch_resp.status_code == 200:
+                    ch_data = ch_resp.json()
+                    c_list = [c.get("name") for c in ch_data.get("channels", []) if c.get("name")]
+                    if not epgp_ch_clean and c_list:
+                        m_ep = next((c for c in c_list if "epgp" in c.lower() or "standings" in c.lower()), "")
+                        if m_ep: epgp_ch_clean = m_ep.lstrip("#")
+                    if not mplus_ch_clean and c_list:
+                        m_mp = next((c for c in c_list if "mplus" in c.lower() or "leaderboard" in c.lower() or "keys" in c.lower()), "")
+                        if m_mp: mplus_ch_clean = m_mp.lstrip("#")
+            except Exception:
+                pass
+
+        if not epgp_ch_clean:
+            epgp_ch_clean = "epgp-standings"
+        if not mplus_ch_clean:
+            mplus_ch_clean = "mplus-leaderboard"
 
         payload = {
             "timestamp": int(time.time()),
