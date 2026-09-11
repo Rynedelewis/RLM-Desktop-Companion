@@ -309,6 +309,15 @@ def main():
             ts_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             bak_path = lua_file.with_suffix(f".lua.backup_{ts_str}")
             shutil.copy2(lua_file, bak_path)
+            # Keep only the 3 most recent backups to prevent WTF folder accumulation
+            parent_dir = lua_file.parent
+            base_name = lua_file.name
+            old_baks = sorted(parent_dir.glob(f"{base_name}.backup_*"), key=lambda p: os.path.getmtime(p), reverse=True)
+            for old_f in old_baks[3:]:
+                try:
+                    old_f.unlink()
+                except Exception:
+                    pass
             
             idx = lua_content.rfind("\nRaidLootMatrixWoWAuditSync")
             if idx == -1:

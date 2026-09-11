@@ -315,11 +315,11 @@ def realm_to_slug(realm):
     return clean.replace("'", "").replace(" ", "-")
 
 def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
-    """Fetch M+ runs and score via Raider.IO profile endpoint. Retries up to 3 times on error with 3-tier realm resolution."""
+    """Fetch M+ runs and score via Raider.IO profile endpoint. Retries up to 3 times on error with multi-region and 3-tier realm resolution."""
     slug = realm_to_slug(realm)
     url  = "https://raider.io/api/v1/characters/profile"
     params = {
-        "region": REGION,
+        "region": REGION or "us",
         "realm":  slug,
         "name":   name,
         "fields": "mythic_plus_scores_by_season:current,mythic_plus_recent_runs,mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs,mythic_plus_alternate_runs,mythic_plus_highest_level_runs",
@@ -330,6 +330,15 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
         try:
             r = requests.get(url, params=params, timeout=15)
             if r.status_code in (400, 404):
+                # Tier 1.5: Automatic Region Fallback (e.g. US -> EU or EU -> US)
+                alt_region = "eu" if params["region"].lower() == "us" else "us"
+                params_alt = dict(params)
+                params_alt["region"] = alt_region
+                r_alt = requests.get(url, params=params_alt, timeout=10)
+                if r_alt.status_code == 200:
+                    data = r_alt.json()
+                    break
+
                 # Tier 2: NFKD De-accented slug fallback
                 nfkd = unicodedata.normalize('NFKD', realm)
                 deaccent_slug = re.sub(r"[^a-z0-9\s-]", "", nfkd.lower()).strip().replace("'", "").replace(" ", "-")
@@ -338,6 +347,11 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
                     r2 = requests.get(url, params=params, timeout=10)
                     if r2.status_code == 200:
                         data = r2.json()
+                        break
+                    params_alt["realm"] = deaccent_slug
+                    r2_alt = requests.get(url, params=params_alt, timeout=10)
+                    if r2_alt.status_code == 200:
+                        data = r2_alt.json()
                         break
 
                 # Tier 3: Raider.IO Search API Lookup fallback
@@ -350,9 +364,13 @@ def fetch_runs_with_score(name, realm, max_recent=MAX_RUNS_PER_PLAYER):
                             if m.get("type") == "character":
                                 cdata = m.get("data", {})
                                 cname = cdata.get("name", "")
-                                crealm_slug = cdata.get("realm", {}).get("slug")
+                                crealm_info = cdata.get("realm", {})
+                                crealm_slug = crealm_info.get("slug") if isinstance(crealm_info, dict) else None
+                                cregion = crealm_info.get("region", {}).get("short_name") if isinstance(crealm_info, dict) else None
                                 if cname.lower() == name.lower() and crealm_slug:
                                     params["realm"] = crealm_slug
+                                    if cregion:
+                                        params["region"] = cregion
                                     r3 = requests.get(url, params=params, timeout=10)
                                     if r3.status_code == 200:
                                         data = r3.json()
@@ -470,10 +488,15 @@ def norm_key(key):
     Normalize 'Name-Realm' for cross-referencing.
     Strips spaces/hyphens/apostrophes from the realm part so that
     Raider.IO's 'Area 52' matches WoW's 'Area52', etc.
+    Decomposes unicode accents (e.g. à -> a) to ensure exact matching across APIs.
     """
     parts = key.split("-", 1)
     if len(parts) == 2:
-        return parts[0].lower() + "-" + re.sub(r"[^a-z0-9]", "", parts[1].lower())
+        name = parts[0].lower()
+        realm = parts[1].lower()
+        realm_ascii = unicodedata.normalize('NFKD', realm).encode('ASCII', 'ignore').decode('utf-8')
+        clean_realm = re.sub(r"[^a-z0-9]", "", realm_ascii)
+        return f"{name}-{clean_realm}"
     return key.lower()
 
 _RUN_ROSTER_CACHE = {}
@@ -497,7 +520,7 @@ def fetch_run_roster(keystone_run_id, season_slug="season-mn-1"):
                 realm_info = char.get("realm", {})
                 crealm = realm_info.get("name", "") if isinstance(realm_info, dict) else str(realm_info)
                 if cname and crealm:
-                    roster_names.add(cname.lower() + "-" + re.sub(r"[^a-z0-9]", "", crealm.lower()))
+                    roster_names.add(norm_key(f"{cname}-{crealm}"))
             _RUN_ROSTER_CACHE[keystone_run_id] = roster_names
             return roster_names
     except Exception:
@@ -514,8 +537,7 @@ def parse_rio_run(rio_run):
         realm_info = char.get("realm", {})
         char_realm = realm_info.get("name", "") if isinstance(realm_info, dict) else str(realm_info)
         if char_name and char_realm:
-            # Normalize realm so "Area 52" == "Area52" == "area-52" etc.
-            roster_names.add(char_name.lower() + "-" + re.sub(r"[^a-z0-9]", "", char_realm.lower()))
+            roster_names.add(norm_key(f"{char_name}-{char_realm}"))
 
     # If roster array was missing on summary object, fetch via run-details API!
     if not roster_names and rio_run.get("keystone_run_id"):
@@ -550,17 +572,29 @@ def load_history(sv_path):
 def read_applied_flags(sv_path):
     """Read applied=true flags to preserve them on re-import."""
     flags = {}
+    
+    # 1. Preserve existing applied flags from JSON sidecar history
+    history = load_history(sv_path)
+    for wk_str, wk_data in history.items():
+        if isinstance(wk_data, dict) and wk_data.get("applied"):
+            flags[wk_str] = True
+
+    # 2. Inspect SavedVariables files (RaidLootMatrixMplusImport.lua, RaidLootMatrixDB.lua, etc.)
     for fname in ["RaidLootMatrixMplusImport.lua", "RaidLootMatrixDB.lua", "RaidLootMatrix.lua"]:
         rc_path = sv_path / fname
         if not rc_path.exists():
             continue
         try:
-            text  = rc_path.read_text(encoding="utf-8", errors="replace")
-            idx   = text.rfind("RaidLootMatrixMplusImport")
-            if idx != -1:
-                block = text[idx:]
-                for m in re.finditer(r'\["(\d{4}-\d{2}-\d{2})"\].*?applied\s*=\s*(true|false)', block, re.DOTALL):
-                    flags[m.group(1)] = (m.group(2) == "true")
+            text = rc_path.read_text(encoding="utf-8", errors="replace")
+            # Scan for week keys like ["2026-09-08"] followed by applied = true
+            for m in re.finditer(r'\["(\d{4}-\d{2}-\d{2})"\]\s*=\s*\{', text):
+                wk = m.group(1)
+                chunk = text[m.start():m.start()+350]
+                if re.search(r'\[?"?applied"\]?\s*=\s*true', chunk):
+                    flags[wk] = True
+            # Also scan for historical M+ Week log entries in RaidLootMatrixDB
+            for m in re.finditer(r'M\+\s+Week\s+(\d{4}-\d{2}-\d{2})', text):
+                flags[m.group(1)] = True
         except Exception:
             pass
     return flags
@@ -626,18 +660,27 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
         award["details"] = clean_det
         award["run_count"] = len(clean_det)
 
+    # Determine if week was previously applied
+    is_applied = False
+    if week_str in history and history[week_str].get("applied"):
+        is_applied = True
+    if applied_flags.get(week_str):
+        is_applied = True
+
     # Build new week entry (raw runs only, no EP)
     new_week = {
         "week":       week_str,
         "generated":  int(time.time()),
-        "applied":    applied_flags.get(week_str, False),
+        "applied":    is_applied,
         "finalized":  lock,   # True only when written AFTER the week's reset passed
         "awards":     sorted(awards, key=lambda a: -a.get("run_count", 0)),
     }
     history[week_str] = new_week
 
-    # Clean and deduplicate details for ALL weeks in history
-    for wk in history.values():
+    # Clean, deduplicate details, and preserve applied flags for ALL weeks in history
+    for wk_str, wk in history.items():
+        if applied_flags.get(wk_str):
+            wk["applied"] = True
         for award in wk.get("awards", []):
             seen_det = set()
             clean_det = []
@@ -737,6 +780,15 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
         bak_path = mplus_sv_path.with_suffix(f".lua.backup_{ts}")
         try:
             shutil.copy2(mplus_sv_path, bak_path)
+            # Keep only the 3 most recent backups to prevent WTF folder accumulation
+            parent_dir = mplus_sv_path.parent
+            base_name = mplus_sv_path.name
+            old_baks = sorted(parent_dir.glob(f"{base_name}.backup_*"), key=lambda p: os.path.getmtime(p), reverse=True)
+            for old_f in old_baks[3:]:
+                try:
+                    old_f.unlink()
+                except Exception:
+                    pass
         except Exception:
             pass
 
