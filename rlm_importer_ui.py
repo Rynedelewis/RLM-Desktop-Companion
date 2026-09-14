@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import json
+import csv
 import os
 import sys
 import socket
@@ -42,7 +43,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.9"
+VERSION = "1.9.10"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -1868,7 +1869,7 @@ start "" "{installed_exe_str}"
                     status_text = f"⚠️ Server response: {err_msg}"
                     self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, [], status_text))
             except Exception as e:
-                self.root.after(0, lambda: self._on_active_team_channels_fetched(team_key, False, [], f"⚠️ Connection notice: {e}"))
+                self.root.after(0, lambda err=e: self._on_active_team_channels_fetched(team_key, False, [], f"⚠️ Connection notice: {err}"))
                 
         threading.Thread(target=task, daemon=True).start()
 
@@ -1919,7 +1920,7 @@ start "" "{installed_exe_str}"
                     )
                     self.root.after(0, lambda: messagebox.showerror("Sync Key Diagnosis - FAILED", diag))
             except Exception as e:
-                self.root.after(0, lambda: messagebox.showerror("Sync Key Diagnosis - Network Error", f"Failed to reach Discord Bot server:\n{e}"))
+                self.root.after(0, lambda err=e: messagebox.showerror("Sync Key Diagnosis - Network Error", f"Failed to reach Discord Bot server:\n{err}"))
 
         threading.Thread(target=task, daemon=True).start()
 
