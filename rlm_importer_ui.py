@@ -13,6 +13,7 @@ if meipass_env and not os.path.exists(meipass_env):
     os.environ.pop("_MEIPASS2", None)
 
 import time
+from datetime import datetime, timedelta
 import pathlib
 import platform
 import tempfile
@@ -43,7 +44,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.10"
+VERSION = "1.9.12"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -546,7 +547,7 @@ class RLMImporterApp:
                             self.root.after(0, self.trigger_combined_full_sync)
                         wow_was_running = wow_running
                 except Exception as e:
-                    pass
+                    self.log_message(f"⚠️ Internal Scheduler Notice: {e}")
 
         threading.Thread(target=scheduler_loop, daemon=True).start()
 
@@ -2163,11 +2164,14 @@ start "" "{installed_exe_str}"
         cleaned_count = 0
         known_legacy_names = [
             "RLM_MplusImport_1800", "RLM_MplusImport_0600", "RLM_LogonImport",
-            "RLM_MplusImport_AM", "RLM_MplusImport_PM", "RLM_MplusImport",
-            "RaidLootMatrix\\M+ Import - Daily AM", "RaidLootMatrix\\M+ Import - Daily PM",
-            "RaidLootMatrix\\M+ Import - At Logon", "RaidLootMatrix\\M+ Import - WoW Watcher",
-            "RaidLootMatrix"
+            "RLM_MplusImport_AM", "RLM_MplusImport_PM", "RLM_MplusImport"
         ]
+        if not silent:
+            known_legacy_names.extend([
+                "RaidLootMatrix\\M+ Import - Daily AM", "RaidLootMatrix\\M+ Import - Daily PM",
+                "RaidLootMatrix\\M+ Import - At Logon", "RaidLootMatrix\\M+ Import - WoW Watcher",
+                "RaidLootMatrix"
+            ])
 
         # 1. Delete known legacy task names directly
         for tname in known_legacy_names:
@@ -2177,37 +2181,38 @@ start "" "{installed_exe_str}"
                 cleaned_count += 1
                 self.log_message(f"  ✓ Removed legacy scheduled task: {tname}")
 
-        # 2. Query Windows Task Scheduler for any other tasks containing RLM or RaidLootMatrix
-        try:
-            query_cmd = 'schtasks /query /fo csv /v'
-            q_res = subprocess.run(query_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            if q_res.returncode == 0 and q_res.stdout:
-                reader = csv.reader(q_res.stdout.splitlines())
-                headers = next(reader, None)
-                if headers:
-                    tn_idx = 0
-                    act_idx = None
-                    for i, h in enumerate(headers):
-                        h_lower = h.lower()
-                        if "taskname" in h_lower or "任務名稱" in h_lower or "task" in h_lower:
-                            tn_idx = i
-                        elif "task to run" in h_lower or "要執行的任務" in h_lower or "action" in h_lower:
-                            act_idx = i
+        # 2. Query Windows Task Scheduler for any other tasks containing RLM or RaidLootMatrix (only on manual explicit cleanup)
+        if not silent:
+            try:
+                query_cmd = 'schtasks /query /fo csv /v'
+                q_res = subprocess.run(query_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                if q_res.returncode == 0 and q_res.stdout:
+                    reader = csv.reader(q_res.stdout.splitlines())
+                    headers = next(reader, None)
+                    if headers:
+                        tn_idx = 0
+                        act_idx = None
+                        for i, h in enumerate(headers):
+                            h_lower = h.lower()
+                            if "taskname" in h_lower or "任務名稱" in h_lower or "task" in h_lower:
+                                tn_idx = i
+                            elif "task to run" in h_lower or "要執行的任務" in h_lower or "action" in h_lower:
+                                act_idx = i
 
-                    for row in reader:
-                        if not row or len(row) <= tn_idx: continue
-                        t_name = row[tn_idx].strip()
-                        t_action = row[act_idx].strip() if act_idx is not None and len(row) > act_idx else ""
-                        
-                        if any(kw in t_name.lower() or kw in t_action.lower() for kw in ["rlm_", "raidlootmatrix"]):
-                            clean_tn = t_name.lstrip("\\")
-                            del_cmd = f'schtasks /delete /tn "{clean_tn}" /f'
-                            sub_res = subprocess.run(del_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                            if sub_res.returncode == 0:
-                                cleaned_count += 1
-                                self.log_message(f"  ✓ Cleaned orphaned scheduled task: {clean_tn}")
-        except Exception as e:
-            self.log_message(f"Notice during deep task scan: {e}")
+                        for row in reader:
+                            if not row or len(row) <= tn_idx: continue
+                            t_name = row[tn_idx].strip()
+                            t_action = row[act_idx].strip() if act_idx is not None and len(row) > act_idx else ""
+                            
+                            if any(kw in t_name.lower() or kw in t_action.lower() for kw in ["rlm_", "raidlootmatrix"]):
+                                clean_tn = t_name.lstrip("\\")
+                                del_cmd = f'schtasks /delete /tn "{clean_tn}" /f'
+                                sub_res = subprocess.run(del_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                                if sub_res.returncode == 0:
+                                    cleaned_count += 1
+                                    self.log_message(f"  ✓ Cleaned orphaned scheduled task: {clean_tn}")
+            except Exception as e:
+                self.log_message(f"Notice during deep task scan: {e}")
 
         msg = f"Option A Complete: Cleaned {cleaned_count} legacy/broken scheduled tasks."
         self.log_message(f"--- {msg} ---")
@@ -2227,13 +2232,13 @@ start "" "{installed_exe_str}"
         # Determine target command line / runner path
         if getattr(sys, "frozen", False):
             exe_path = sys.executable
-            args_am = f'\\"{exe_path}\\" --week current'
-            args_pm = f'\\"{exe_path}\\" --week current'
+            args_am = f'"{exe_path}" --auto'
+            args_pm = f'"{exe_path}" --auto'
         else:
             py_exe = sys.executable
             script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "raidlootmatrix_mplus.py")
-            args_am = f'\\"{py_exe}\\" \\"{script_path}\\" --week current'
-            args_pm = f'\\"{py_exe}\\" \\"{script_path}\\" --week current'
+            args_am = f'"{py_exe}" "{script_path}" --standalone'
+            args_pm = f'"{py_exe}" "{script_path}" --standalone'
 
         registered = []
 
@@ -2256,7 +2261,7 @@ start "" "{installed_exe_str}"
             self.log_message(f"  ❌ Failed PM Task: {r_pm.stderr.strip()}")
 
         # 3. Register Logon Task if checked
-        if self.var_sched_logon.get():
+        if hasattr(self, "var_sched_logon") and self.var_sched_logon.get():
             cmd_logon = f'schtasks /create /tn "RaidLootMatrix\\M+ Import - At Logon" /tr "{args_am}" /sc onlogon /delay 0005:00 /f'
             r_logon = subprocess.run(cmd_logon, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             if r_logon.returncode == 0:

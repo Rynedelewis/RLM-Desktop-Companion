@@ -411,6 +411,7 @@ def main():
         if not mplus_ch_clean:
             mplus_ch_clean = "mplus-leaderboard"
 
+        team_mplus = {profile_key: mplus_leaderboard.get(profile_key, [])}
         payload = {
             "timestamp": int(time.time()),
             "profiles": team_profiles,
