@@ -44,7 +44,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.12"
+VERSION = "1.9.13"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -2082,8 +2082,6 @@ start "" "{installed_exe_str}"
                     import rlm_discord_sync
                     importlib.reload(rlm_discord_sync)
                     old_argv = sys.argv[:]
-                    if "--force" not in sys.argv:
-                        sys.argv.append("--force")
                     try:
                         rlm_discord_sync.main()
                     finally:

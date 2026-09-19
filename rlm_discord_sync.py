@@ -365,6 +365,7 @@ def main():
     except Exception as e:
         print(f"[WARNING] Could not fetch Raider.IO M+ leaderboard data: {e}")
 
+    processed_team_keys = set()
     for profile_key, roster in all_profiles.items():
         p_cfg = team_settings.get(profile_key, {})
         if not p_cfg:
@@ -385,6 +386,10 @@ def main():
         if not team_key:
             print(f"ℹ️ Skipping team '{display_name}': No Sync Key set for this team in Discord Bot tab.")
             continue
+
+        if team_key in processed_team_keys:
+            continue
+        processed_team_keys.add(team_key)
 
         team_profiles = {profile_key: roster}
         epgp_ch_clean = (p_cfg.get("epgp_channel") or cfg.get("epgp_channel") or "").strip().lstrip("#")
