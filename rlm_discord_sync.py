@@ -411,19 +411,54 @@ def main():
             except Exception:
                 pass
 
-        if not epgp_ch_clean:
-            epgp_ch_clean = "epgp-standings"
-        if not mplus_ch_clean:
-            mplus_ch_clean = "mplus-leaderboard"
+        epgp_sched = p_cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)")
+        mplus_sched = p_cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)")
+
+        should_send_epgp = True
+        should_send_mplus = True
+
+        if "--force" not in sys.argv:
+            # 1. EPGP Schedule Check
+            if epgp_sched == "Disabled":
+                should_send_epgp = False
+            elif epgp_sched == "Post-Raid (On WoW Exit)":
+                latest_ts = 0
+                for sv_file in sv_files:
+                    r_ends = extract_raid_end_timestamps(sv_file)
+                    latest_ts = max(latest_ts, r_ends.get(profile_key, 0))
+                last_ts = last_posted_ends.get(profile_key, 0)
+                
+                if latest_ts <= last_ts and not ("--post-raid" in sys.argv and latest_ts > 0):
+                    should_send_epgp = False
+                    print(f"ℹ️ Skipping EPGP post for '{display_name}': Schedule is 'Post-Raid' and no new Raid End event was recorded.")
+                elif latest_ts > last_ts:
+                    new_posted_ends[profile_key] = latest_ts
+
+            # 2. Mythic+ Schedule Check
+            if mplus_sched == "Disabled":
+                should_send_mplus = False
+            elif mplus_sched == "Tuesday Post-Reset (Default)":
+                if datetime.now().weekday() != 1 and "--mplus-reset" not in sys.argv:
+                    should_send_mplus = False
+                    print(f"ℹ️ Skipping Mythic+ post for '{display_name}': Schedule is 'Tuesday Post-Reset' and today is not Tuesday.")
+
+        if not should_send_epgp:
+            epgp_ch_clean = ""
+        if not should_send_mplus:
+            mplus_ch_clean = ""
+
+        if not epgp_ch_clean and not mplus_ch_clean:
+            print(f"ℹ️ No channel targets active for team '{display_name}' for this sync run — skipping HTTP post.")
+            continue
 
         team_mplus = {profile_key: mplus_leaderboard.get(profile_key, [])}
         payload = {
             "timestamp": int(time.time()),
             "profiles": team_profiles,
             "epgp_channel": epgp_ch_clean,
-            "epgp_schedule": p_cfg.get("epgp_schedule", "Post-Raid (On WoW Exit)"),
+            "epgp_schedule": epgp_sched,
             "mplus_channel": mplus_ch_clean,
-            "mplus_schedule": p_cfg.get("mplus_schedule", "Tuesday Post-Reset (Default)"),
+            "mplus_schedule": mplus_sched,
             "pin_update_mode": cfg.get("pin_update_mode", True),
             "mplus_leaderboard": team_mplus
         }

@@ -373,10 +373,36 @@ class RLMHelperBot(commands.Bot):
                             target_msg = msg
                             break
                 
+                # Fallback: search recent channel history if not found in pinned messages
+                if not target_msg:
+                    try:
+                        async for msg in channel.history(limit=30):
+                            if msg.author.id == self.user.id and msg.embeds:
+                                title_text = str(msg.embeds[0].title or "")
+                                footer_text = str(msg.embeds[0].footer.text or "") if msg.embeds[0].footer else ""
+                                if tag_marker.lower() in title_text.lower() or tag_marker.lower() in footer_text.lower():
+                                    target_msg = msg
+                                    break
+                    except Exception:
+                        pass
+
                 if target_msg:
                     await target_msg.edit(embed=embed)
-                    print(f"Updated pinned embed in #{channel.name}")
+                    print(f"Updated embed in #{channel.name}")
                     return None
+
+            # Secondary Fallback: even if pin_mode is False, try editing any recent matching embed first
+            try:
+                async for msg in channel.history(limit=30):
+                    if msg.author.id == self.user.id and msg.embeds:
+                        title_text = str(msg.embeds[0].title or "")
+                        footer_text = str(msg.embeds[0].footer.text or "") if msg.embeds[0].footer else ""
+                        if tag_marker.lower() in title_text.lower() or tag_marker.lower() in footer_text.lower():
+                            await msg.edit(embed=embed)
+                            print(f"Updated unpinned embed in #{channel.name}")
+                            return None
+            except Exception:
+                pass
 
             msg = await channel.send(embed=embed)
             if pin_mode:

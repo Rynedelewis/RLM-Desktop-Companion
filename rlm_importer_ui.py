@@ -44,7 +44,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.13"
+VERSION = "1.9.14"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -544,7 +544,7 @@ class RLMImporterApp:
                     if self.settings.get("sync_on_wow_exit", True):
                         if wow_was_running and not wow_running:
                             self.log_message("⚔️ Internal Scheduler: WoW exit detected! Triggering post-raid sync...")
-                            self.root.after(0, self.trigger_combined_full_sync)
+                            self.root.after(0, lambda: self.trigger_guild_and_mplus_import(is_post_raid=True))
                         wow_was_running = wow_running
                 except Exception as e:
                     self.log_message(f"⚠️ Internal Scheduler Notice: {e}")
@@ -2028,7 +2028,7 @@ start "" "{installed_exe_str}"
             except Exception:
                 pass
 
-    def trigger_guild_and_mplus_import(self):
+    def trigger_guild_and_mplus_import(self, is_post_raid=False):
         """Imports Mythic+ Raider.IO runs & WoWAudit/WoWUtils Guild Roster & Calendar into WoW SavedVariables."""
         try:
             self._save_current_team_view()
@@ -2082,6 +2082,8 @@ start "" "{installed_exe_str}"
                     import rlm_discord_sync
                     importlib.reload(rlm_discord_sync)
                     old_argv = sys.argv[:]
+                    if is_post_raid and "--post-raid" not in sys.argv:
+                        sys.argv.append("--post-raid")
                     try:
                         rlm_discord_sync.main()
                     finally:
