@@ -44,7 +44,7 @@ try:
 except Exception:
     pass
 
-VERSION = "1.9.14"
+VERSION = "1.9.15"
 SINGLE_INSTANCE_PORT = 59388
 
 def parse_version_tuple(v_str):
@@ -2030,6 +2030,11 @@ start "" "{installed_exe_str}"
 
     def trigger_guild_and_mplus_import(self, is_post_raid=False):
         """Imports Mythic+ Raider.IO runs & WoWAudit/WoWUtils Guild Roster & Calendar into WoW SavedVariables."""
+        if getattr(self, "_is_importing", False):
+            self.log_message("⏳ Import already in progress — skipping duplicate trigger.")
+            return
+        self._is_importing = True
+
         try:
             self._save_current_team_view()
             self.save_settings()
@@ -2037,69 +2042,72 @@ start "" "{installed_exe_str}"
             pass
 
         def task():
-            if hasattr(self, "btn_run_import_all") and self.btn_run_import_all:
-                self.root.after(0, lambda: self.btn_run_import_all.configure(text="⌛ Importing Data...", state="disabled"))
-
-            self.log_message("==================================================")
-            self.log_message("--- Starting Guild Roster, Calendar & Mythic+ Import ---")
-            self.log_message("==================================================")
-
-            # Step 1: Mythic+ Import (Standalone mode)
             try:
-                self.log_message("--- [1/2] Importing Mythic+ Runs from Raider.IO ---")
-                import importlib
-                import raidlootmatrix_mplus
-                importlib.reload(raidlootmatrix_mplus)
-                old_argv = sys.argv[:]
-                sys.argv = [sys.argv[0], "--standalone"]
+                if hasattr(self, "btn_run_import_all") and self.btn_run_import_all:
+                    self.root.after(0, lambda: self.btn_run_import_all.configure(text="⌛ Importing Data...", state="disabled"))
+
+                self.log_message("==================================================")
+                self.log_message("--- Starting Guild Roster, Calendar & Mythic+ Import ---")
+                self.log_message("==================================================")
+
+                # Step 1: Mythic+ Import (Standalone mode)
                 try:
-                    raidlootmatrix_mplus.main()
-                finally:
-                    sys.argv = old_argv
-                self.log_message("✓ [1/2] Mythic+ Runs Import Completed Successfully!")
-            except Exception as e:
-                self.log_message(f"❌ [1/2] Mythic+ Import Error: {e}")
-
-            # Step 2: WoWAudit / Guild Data Sync
-            try:
-                self.log_message("--- [2/2] Syncing Guild Roster & Calendar Events ---")
-                import importlib
-                import rlm_wowaudit_sync
-                importlib.reload(rlm_wowaudit_sync)
-                rlm_wowaudit_sync.main()
-                self.log_message("✓ [2/2] Guild Roster & Calendar Sync Completed Successfully!")
-            except Exception as e:
-                self.log_message(f"❌ [2/2] Guild Data Sync Error: {e}")
-
-            # Step 3: Optional Auto Discord Sync if checkbox is enabled
-            try:
-                should_sync = True
-                if hasattr(self, "var_sync_on_import"):
-                    should_sync = self.var_sync_on_import.get()
-                if should_sync:
-                    self.log_message("--- Auto-Triggering Discord Bot Standings Upload ---")
+                    self.log_message("--- [1/2] Importing Mythic+ Runs from Raider.IO ---")
                     import importlib
-                    import rlm_discord_sync
-                    importlib.reload(rlm_discord_sync)
+                    import raidlootmatrix_mplus
+                    importlib.reload(raidlootmatrix_mplus)
                     old_argv = sys.argv[:]
-                    if is_post_raid and "--post-raid" not in sys.argv:
-                        sys.argv.append("--post-raid")
+                    sys.argv = [sys.argv[0], "--standalone"]
                     try:
-                        rlm_discord_sync.main()
+                        raidlootmatrix_mplus.main()
                     finally:
                         sys.argv = old_argv
-                    self.log_message("✓ Auto Discord Bot Upload Completed Successfully!")
-            except Exception as e:
-                self.log_message(f"❌ Auto Discord Sync Error: {e}")
+                    self.log_message("✓ [1/2] Mythic+ Runs Import Completed Successfully!")
+                except Exception as e:
+                    self.log_message(f"❌ [1/2] Mythic+ Import Error: {e}")
 
-            self.log_message("==================================================")
-            self.log_message("--- Guild Data & Mythic+ Import Finished ---")
-            self.log_message("==================================================")
+                # Step 2: WoWAudit / Guild Data Sync
+                try:
+                    self.log_message("--- [2/2] Syncing Guild Roster & Calendar Events ---")
+                    import importlib
+                    import rlm_wowaudit_sync
+                    importlib.reload(rlm_wowaudit_sync)
+                    rlm_wowaudit_sync.main()
+                    self.log_message("✓ [2/2] Guild Roster & Calendar Sync Completed Successfully!")
+                except Exception as e:
+                    self.log_message(f"❌ [2/2] Guild Data Sync Error: {e}")
 
-            if hasattr(self, "btn_run_import_all") and self.btn_run_import_all:
-                self.root.after(0, lambda: self.btn_run_import_all.configure(text=self.L("btn_run_import_all"), state="normal"))
+                # Step 3: Optional Auto Discord Sync if checkbox is enabled
+                try:
+                    should_sync = True
+                    if hasattr(self, "var_sync_on_import"):
+                        should_sync = self.var_sync_on_import.get()
+                    if should_sync:
+                        self.log_message("--- Auto-Triggering Discord Bot Standings Upload ---")
+                        import importlib
+                        import rlm_discord_sync
+                        importlib.reload(rlm_discord_sync)
+                        old_argv = sys.argv[:]
+                        if is_post_raid and "--post-raid" not in sys.argv:
+                            sys.argv.append("--post-raid")
+                        try:
+                            rlm_discord_sync.main()
+                        finally:
+                            sys.argv = old_argv
+                        self.log_message("✓ Auto Discord Bot Upload Completed Successfully!")
+                except Exception as e:
+                    self.log_message(f"❌ Auto Discord Sync Error: {e}")
 
-            self.root.after(0, lambda: self.show_toast_banner("Guild Roster, Calendar & Mythic+ Import Completed!"))
+                self.log_message("==================================================")
+                self.log_message("--- Guild Data & Mythic+ Import Finished ---")
+                self.log_message("==================================================")
+
+                if hasattr(self, "btn_run_import_all") and self.btn_run_import_all:
+                    self.root.after(0, lambda: self.btn_run_import_all.configure(text=self.L("btn_run_import_all"), state="normal"))
+
+                self.root.after(0, lambda: self.show_toast_banner("Guild Roster, Calendar & Mythic+ Import Completed!"))
+            finally:
+                self._is_importing = False
 
         threading.Thread(target=task, daemon=True).start()
 

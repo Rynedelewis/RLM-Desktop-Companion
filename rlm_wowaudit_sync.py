@@ -413,13 +413,48 @@ def main():
                 except Exception:
                     pass
             
-            idx = lua_content.rfind("\nRaidLootMatrixWoWAuditSync")
-            if idx == -1:
+            m_sync = re.search(r'(?:^|\n)\s*RaidLootMatrixWoWAuditSync\s*=\s*\{', lua_content)
+            if not m_sync:
                 new_lua_content = lua_content.rstrip() + "\n" + lua_block
             else:
-                new_lua_content = lua_content[:idx] + "\n" + lua_block
-                
-            lua_file.write_text(new_lua_content, encoding="utf-8")
+                brace_start = lua_content.find("{", m_sync.start())
+                depth = 0
+                in_str = False
+                escape = False
+                block_end = -1
+                for i in range(brace_start, len(lua_content)):
+                    c = lua_content[i]
+                    if escape:
+                        escape = False
+                        continue
+                    if c == "\\":
+                        escape = True
+                        continue
+                    if c == '"':
+                        in_str = not in_str
+                        continue
+                    if not in_str:
+                        if c == "{":
+                            depth += 1
+                        elif c == "}":
+                            depth -= 1
+                            if depth == 0:
+                                block_end = i + 1
+                                break
+                if block_end != -1:
+                    start_pos = m_sync.start()
+                    if lua_content[start_pos] == "\n":
+                        start_pos += 1
+                    new_lua_content = lua_content[:start_pos] + lua_block.strip() + "\n" + lua_content[block_end:].lstrip("\r\n")
+                else:
+                    new_lua_content = lua_content.rstrip() + "\n" + lua_block
+
+            if "RaidLootMatrixDB" not in new_lua_content:
+                raise RuntimeError("Safety check failed: RaidLootMatrixDB would have been lost!")
+
+            tmp_file = lua_file.with_suffix(f".lua.tmp_{os.getpid()}")
+            tmp_file.write_text(new_lua_content, encoding="utf-8")
+            os.replace(tmp_file, lua_file)
             print(f"[SUCCESS] Sync data written to SavedVariables: {lua_file}")
         except Exception as e:
             print(f"[ERROR] Failed to save sync data to {lua_file}: {e}")

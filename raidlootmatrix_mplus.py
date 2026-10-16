@@ -799,18 +799,57 @@ def write_sidecar(sv_path, week_start, awards, lock=False):
     except Exception as e:
         print(f"[WARNING] Failed to write {mplus_sv_path}: {e}")
 
-    # Also update RaidLootMatrixDB.lua or RaidLootMatrix.lua if present
+    # Also update RaidLootMatrixDB.lua or RaidLootMatrix.lua if present (using brace-matched replacement so RaidLootMatrixDB is never truncated)
+    def _replace_lua_global_block(src_text: str, var_name: str, replacement_block: str) -> str:
+        m = re.search(rf'(?:^|\n)\s*{re.escape(var_name)}\s*=\s*\{{', src_text)
+        if not m:
+            return src_text.rstrip() + "\n\n" + replacement_block.strip() + "\n"
+        brace_start = src_text.find("{", m.start())
+        depth = 0
+        in_str = False
+        escape = False
+        block_end = -1
+        for i in range(brace_start, len(src_text)):
+            c = src_text[i]
+            if escape:
+                escape = False
+                continue
+            if c == "\\":
+                escape = True
+                continue
+            if c == '"':
+                in_str = not in_str
+                continue
+            if not in_str:
+                if c == "{":
+                    depth += 1
+                elif c == "}":
+                    depth -= 1
+                    if depth == 0:
+                        block_end = i + 1
+                        break
+        if block_end == -1:
+            return src_text
+        start_pos = m.start()
+        if src_text[start_pos] == "\n":
+            start_pos += 1
+        return src_text[:start_pos] + replacement_block.strip() + "\n" + src_text[block_end:].lstrip("\r\n")
+
     for db_name in ["RaidLootMatrixDB.lua", "RaidLootMatrix.lua"]:
         db_file = sv_path / db_name
         if db_file.exists():
             try:
                 db_text = db_file.read_text(encoding="utf-8", errors="replace")
-                idx = db_text.rfind("\nRaidLootMatrixMplusImport")
-                if idx == -1:
-                    db_text = db_text.rstrip() + "\n" + lua_block + "\n"
-                else:
-                    db_text = db_text[:idx] + "\n" + lua_block + "\n"
-                db_file.write_text(db_text, encoding="utf-8")
+                if "RaidLootMatrixDB" not in db_text:
+                    print(f"[WARNING] Skipping update to {db_file}: RaidLootMatrixDB not found in file.")
+                    continue
+                new_db_text = _replace_lua_global_block(db_text, "RaidLootMatrixMplusImport", lua_block)
+                if "RaidLootMatrixDB" not in new_db_text:
+                    print(f"[ERROR] Aborted write to {db_file}: RaidLootMatrixDB would have been lost!")
+                    continue
+                tmp_file = db_file.with_suffix(f".lua.tmp_{os.getpid()}_{threading.get_ident() if 'threading' in sys.modules else 0}")
+                tmp_file.write_text(new_db_text, encoding="utf-8")
+                os.replace(tmp_file, db_file)
             except Exception:
                 pass
 
